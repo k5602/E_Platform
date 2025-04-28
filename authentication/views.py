@@ -56,5 +56,5 @@ def logout_view(request):
     return redirect('login')
 
 def home_view(request):
-    # Placeholder for home view
-    return render(request, 'authentication/home.html')
+    # Redirect to the home app's home view
+    return redirect('home:home')

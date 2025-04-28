@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - KFS University{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'home/css/home_S.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="animated-background">
+    <div class="wave">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</section>
+
+<div class="page-container">
+    <header class="main-header">
+        <div class="logo-placeholder">ID</div>
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="side_nav" id="side-nav">
+        <div class="user">
+            <img src="{% static 'home/images/student.jpeg' %}" alt="std_img" class="user-img">
+            <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+            <p>{{ user.username }}</p>
+        </div>
+        <ul class="main-menu">
+            <li>
+                <a href="{% url 'home:home' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828765.png" alt="dashboard">
+                    <p>Dashboard</p>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="profile">
+                    <p>Profile</p>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <img src="https://cdn-icons-png.flaticon.com/512/6941/6941697.png" alt="quiz">
+                    <p>Quiz</p>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="Subjects">
+                    <p>Subjects</p>
+                </a>
+            </li>
+        </ul>
+        <ul class="logout-menu">
+            <li>
+                <a href="{% url 'logout' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828479.png" alt="logout">
+                    <p>Logout</p>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content-area">
+        <nav class="main_nav">
+            <a href="{% url 'home:home' %}" class="active">Home</a>
+            <a href="#">Subjects</a>
+            <a href="#">Quiz</a>
+            <a href="#">Profile</a>
+            <a href="#">Contact</a>
+            <div class="animation start-home"></div>
+        </nav>
+
+        <div class="addpost-outer">
+            <form id="add-post-form" class="addpost-container" method="post" action="{% url 'home:create_post' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="addpost-inputs">
+                    {{ form.content }}
+                    <label for="add-img" class="icon-label" title="Add Image">
+                        <img src="{% static 'home/images/image.svg' %}" alt="img">
+                        {{ form.image }}
+                    </label>
+                    <label for="add-video" class="icon-label" title="Add Video">
+                        <img src="{% static 'home/images/video.svg' %}" alt="video">
+                        {{ form.video }}
+                    </label>
+                </div>
+                <button type="submit" class="add-btn">Add Post</button>
+            </form>
+        </div>
+
+        <div class="posts-container">
+            {% for post in page_obj %}
+            <div class="post">
+                <div class="poster-info" style="display:flex;align-items:center;margin-bottom:10px;">
+                    <img src="{% static 'home/images/student.jpeg' %}" alt="{{ post.user.username }}" style="width:36px;height:36px;border-radius:50%;margin-right:10px;">
+                    <span style="font-weight:bold;">{{ post.user.first_name }} {{ post.user.last_name }}</span>
+                </div>
+                
+                {% if post.image %}
+                <img src="{{ post.image.url }}" alt="" class="post-img">
+                {% endif %}
+                
+                {% if post.video %}
+                <video src="{{ post.video.url }}" controls class="post-video"></video>
+                {% endif %}
+                
+                <div class="content collapsed">
+                    {{ post.content }}
+                </div>
+                
+                <div class="post-actions">
+                    <button class="read-more-btn">Read More</button>
+                    <button class="like_btn" data-post-id="{{ post.id }}">
+                        <img src="{% static 'home/images/like.svg' %}" alt="like">
+                        <span class="like-count">{{ post.likes.count }}</span>
+                    </button>
+                    <button class="Comment" data-post-id="{{ post.id }}">Comment</button>
+                    {% if post.user == user %}
+                    <button class="remove-btn" data-post-id="{{ post.id }}">Remove</button>
+                    {% endif %}
+                </div>
+                
+                <ul class="comment-list">
+                    {% for comment in post.comments.all %}
+                    <li>
+                        <span class="commenter-info">
+                            <img src="{% static 'home/images/student.jpeg' %}" alt="{{ comment.user.username }}">
+                            <span>{{ comment.user.username }}</span>
+                        </span>
+                        {{ comment.content }}
+                        {% if comment.user == user %}
+                        <button class="remove-comment-btn" data-comment-id="{{ comment.id }}">X</button>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% empty %}
+            <div class="post">
+                <div class="content">
+                    <p>No posts yet. Be the first to share something!</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+            
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <button class="toggle" id="toggle">
+        <img src="{% static 'authentication/images/lightoff.svg' %}" alt="lightoff">
+        <img src="{% static 'authentication/images/lighton.svg' %}" alt="lighton">
+    </button>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'home/js/home.js' %}"></script>
+<script src="{% static 'home/js/darkmode.js' %}"></script>
+{% endblock %}
