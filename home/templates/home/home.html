@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'home/css/home_S.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/post-enhancements.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -91,6 +92,10 @@
                         <img src="{% static 'home/images/video.svg' %}" alt="video">
                         {{ form.video }}
                     </label>
+                    <label for="add-document" class="icon-label" title="Add Document (PDF, Markdown, Word, Excel, LaTeX, PowerPoint)">
+                        <img src="{% static 'home/images/document.svg' %}" alt="document">
+                        {{ form.document }}
+                    </label>
                 </div>
                 <button type="submit" class="add-btn">Add Post</button>
             </form>
@@ -103,19 +108,51 @@
                     <img src="{% static 'home/images/student.jpeg' %}" alt="{{ post.user.username }}" style="width:36px;height:36px;border-radius:50%;margin-right:10px;">
                     <span style="font-weight:bold;">{{ post.user.first_name }} {{ post.user.last_name }}</span>
                 </div>
-                
+
                 {% if post.image %}
                 <img src="{{ post.image.url }}" alt="" class="post-img">
                 {% endif %}
-                
+
                 {% if post.video %}
                 <video src="{{ post.video.url }}" controls class="post-video"></video>
                 {% endif %}
-                
+
+                {% if post.document %}
+                <div class="document-container">
+                    <a href="{{ post.document.url }}" target="_blank" class="document-link">
+                        <div class="document-preview">
+                            <div class="document-icon">
+                                {% with ext=post.document.name|slice:"-4:"|lower %}
+                                    {% if ext == '.pdf' %}
+                                    <img src="{% static 'home/images/pdf-icon.svg' %}" alt="PDF">
+                                    {% elif ext == '.md' %}
+                                    <img src="{% static 'home/images/markdown-icon.svg' %}" alt="Markdown">
+                                    {% elif ext == 'docx' %}
+                                    <img src="{% static 'home/images/word-icon.svg' %}" alt="Word">
+                                    {% elif ext == 'xlsx' %}
+                                    <img src="{% static 'home/images/excel-icon.svg' %}" alt="Excel">
+                                    {% elif ext == '.tex' %}
+                                    <img src="{% static 'home/images/latex-icon.svg' %}" alt="LaTeX">
+                                    {% elif ext == 'pptx' %}
+                                    <img src="{% static 'home/images/powerpoint-icon.svg' %}" alt="PowerPoint">
+                                    {% else %}
+                                    <img src="{% static 'home/images/document-icon.svg' %}" alt="Document">
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            <div class="document-info">
+                                <span class="document-name">{{ post.document.name|slice:"14:" }}</span>
+                                <span class="document-type">{{ post.document.name|slice:"-4:" }}</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endif %}
+
                 <div class="content collapsed">
                     {{ post.content }}
                 </div>
-                
+
                 <div class="post-actions">
                     <button class="read-more-btn">Read More</button>
                     <button class="like_btn" data-post-id="{{ post.id }}">
@@ -127,7 +164,7 @@
                     <button class="remove-btn" data-post-id="{{ post.id }}">Remove</button>
                     {% endif %}
                 </div>
-                
+
                 <ul class="comment-list">
                     {% for comment in post.comments.all %}
                     <li>
@@ -151,18 +188,18 @@
             </div>
             {% endfor %}
         </div>
-        
+
         {% if page_obj.has_other_pages %}
         <div class="pagination">
             {% if page_obj.has_previous %}
             <a href="?page=1">&laquo; first</a>
             <a href="?page={{ page_obj.previous_page_number }}">previous</a>
             {% endif %}
-            
+
             <span class="current">
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
             </span>
-            
+
             {% if page_obj.has_next %}
             <a href="?page={{ page_obj.next_page_number }}">next</a>
             <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>

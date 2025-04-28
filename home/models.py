@@ -6,6 +6,7 @@ class Post(models.Model):
     content = models.TextField()
     image = models.ImageField(upload_to='posts/images/', null=True, blank=True)
     video = models.FileField(upload_to='posts/videos/', null=True, blank=True)
+    document = models.FileField(upload_to='posts/documents/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

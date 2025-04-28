@@ -178,36 +178,36 @@ body{
 
 header{
   font-weight: 500;
-  font-size: var(--font-size-xlarge);
+  font-size: calc(var(--font-size-large) + 0.2rem);
   text-align: center;
   color: var(--text_color);
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .head{
-  padding: 30px;
+  padding: 15px;
   background-color:var(--header_color);
   transition: background-color var(--transition-time) var(--transition-timing);
-  border-radius: var(--border-radius);
-  margin-top: 60px;
-  width: 90%;
-  max-width: 550px;
+  border-radius: 10px;
+  margin-top: 30px;
+  width: 85%;
+  max-width: 380px;
   margin-left: auto;
   margin-right: auto;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .container{
-  width: 90%;
-  max-width: 550px;
+  width: 85%;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 30px auto;
+  margin: 15px auto;
   background-color:var(--container-color);
-  border-radius: var(--border-radius);
-  padding: 40px;
+  border-radius: 10px;
+  padding: 25px 20px;
   box-shadow:var(--box-shadow);
   transition: all var(--transition-time) var(--transition-timing);
   z-index: 10;
@@ -232,58 +232,58 @@ header{
 .input {
   font-family: "Electrolize", sans-serif;
   width: 100%;
-  max-width: 320px;
-  padding: 0.85rem 1rem;
-  margin: 8px 0;
-  font-size: var(--font-size-medium);
-  border: 2px solid #e0e0e0;
-  border-radius: var(--border-radius);
-  box-shadow: var(--input-shadow);
+  max-width: 280px;
+  padding: 0.6rem 0.8rem;
+  margin: 3px 0;
+  font-size: calc(var(--font-size-small) - 0.05rem);
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   outline: none;
   transition: all var(--transition-time) var(--transition-timing);
 }
 
 .input:focus {
   border-color: var(--main_button);
-  box-shadow: 0 0 0 3px rgba(100, 91, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(100, 91, 255, 0.12);
 }
 
 .input-wrapper {
   width: 100%;
-  max-width: 320px;
+  max-width: 280px;
   position: relative;
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 
 .username-wrapper {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .password-wrapper {
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 
 .input-wrapper .input {
   width: 100%;
   transition: all var(--transition-time) var(--transition-timing);
-  border: 2px solid #e0e0e0;
+  border: 1px solid #e0e0e0;
 }
 
 .password-wrapper .input {
-  padding-right: 40px; /* Make room for potential password toggle icon */
+  padding-right: 30px; /* Make room for potential password toggle icon */
 }
 
 .input-wrapper .input:focus {
   border-color: var(--main_button);
-  box-shadow: 0 0 0 3px rgba(100, 91, 255, 0.2);
+  box-shadow: 0 0 0 2px rgba(100, 91, 255, 0.12);
 }
 
 .show-password-label {
   display: flex;
   align-items: center;
-  font-size: var(--font-size-small);
+  font-size: calc(var(--font-size-small) - 0.1rem);
   color: #555;
-  margin-top: 8px;
+  margin-top: 5px;
   cursor: pointer;
   font-weight: 500;
   transition: color var(--transition-time) var(--transition-timing);
@@ -294,16 +294,16 @@ header{
 }
 
 .show-password-checkbox {
-  margin-right: 8px;
-  width: 16px;
-  height: 16px;
+  margin-right: 6px;
+  width: 14px;
+  height: 14px;
   accent-color: var(--main_button);
   cursor: pointer;
   transition: all var(--transition-time) var(--transition-timing);
 }
 
 .show-password-checkbox:checked {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 /* forgot password */
@@ -372,29 +372,29 @@ button {
   --primary-color: #645bff;
   --secondary-color: #fff;
   --hover-color: #4b44c9;
-  --arrow-width: 10px;
-  --arrow-stroke: 2px;
+  --arrow-width: 6px;
+  --arrow-stroke: 1.5px;
   box-sizing: border-box;
   border: 0;
-  border-radius: var(--border-radius);
+  border-radius: 6px;
   color: var(--secondary-color);
-  padding: 0 1.5rem;
-  height: 3.2em;
-  line-height: 3.2em;
+  padding: 0 1rem;
+  height: 2.5em;
+  line-height: 2.5em;
   background: var(--primary-color);
   display: flex;
   justify-content: center;
   align-items: center;
   transition: all var(--transition-time) var(--transition-timing);
-  gap: 0.8em;
+  gap: 0.5em;
   font-weight: 600;
-  font-size: var(--font-size-medium);
+  font-size: calc(var(--font-size-small) - 0.05rem);
   cursor: pointer;
-  margin: 25px auto 15px;
+  margin: 15px auto 10px;
   width: 100%;
-  max-width: 320px;
+  max-width: 280px;
   text-align: center;
-  box-shadow: 0 4px 10px rgba(100, 91, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(100, 91, 255, 0.2);
 }
 
 button .arrow-wrapper {
@@ -404,7 +404,7 @@ button .arrow-wrapper {
 }
 
 button .arrow {
-  margin-top: 2px;
+  margin-top: 1px;
   width: var(--arrow-width);
   background: var(--secondary-color);
   height: var(--arrow-stroke);
@@ -419,10 +419,10 @@ button .arrow::before {
   border: solid var(--secondary-color);
   border-width: 0 var(--arrow-stroke) var(--arrow-stroke) 0;
   display: inline-block;
-  top: -3px;
-  right: 3px;
+  top: -2.5px;
+  right: 2px;
   transition: all var(--transition-time) var(--transition-timing);
-  padding: 3px;
+  padding: 2.5px;
   transform: rotate(-45deg);
 }
 
@@ -447,8 +447,8 @@ button:hover .arrow:before {
 
 .SignIn {
   color: #333;
-  font-size: var(--font-size-large);
-  margin-bottom: 25px;
+  font-size: var(--font-size-medium);
+  margin-bottom: 15px;
   text-align: center;
   font-weight: 600;
   width: 100%;
@@ -484,80 +484,115 @@ button:hover .arrow:before {
 /* responsiveness */
 @media screen and (max-width: 768px) {
   .container, .head {
-    width: 90%;
-    max-width: 500px;
+    width: 85%;
+    max-width: 400px;
   }
 
   .head {
-    padding: 25px 20px;
-  }
-
-  .container {
-    padding: 30px 25px;
-  }
-
-  header {
-    font-size: calc(var(--font-size-xlarge) - 0.2rem);
-  }
-
-  .content {
-    font-size: 2.5em;
-  }
-
-  .input {
-    max-width: 100%;
-  }
-
-  button {
-    max-width: 100%;
-  }
-}
-
-@media screen and (max-width: 480px) {
-  .head {
-    margin-top: 40px;
     padding: 20px 15px;
+    margin-top: 30px;
   }
 
   .container {
-    margin: 25px auto;
     padding: 25px 20px;
+    margin: 15px auto;
   }
 
   header {
-    font-size: calc(var(--font-size-large) + 0.1rem);
-    line-height: 1.4;
+    font-size: calc(var(--font-size-large) + 0.2rem);
   }
 
   .SignIn {
     font-size: var(--font-size-medium);
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .container, .head {
+    width: 92%;
+    max-width: 300px;
   }
 
-  .input {
-    padding: 0.75rem 0.9rem;
-    font-size: var(--font-size-small);
-    margin: 5px 0;
+  .head {
+    padding: 12px 10px;
+    margin-top: 20px;
   }
 
-  .remember {
+  .container {
+    padding: 15px 12px;
+    margin: 10px auto;
+  }
+
+  header {
+    font-size: var(--font-size-medium);
+  }
+
+  .input, .input-wrapper {
+    max-width: 100%;
+    padding: 0.55rem 0.7rem;
     font-size: calc(var(--font-size-small) - 0.1rem);
+    margin: 2px 0;
   }
 
   button {
-    height: 2.8em;
-    font-size: var(--font-size-small);
-    padding: 0 1rem;
+    max-width: 100%;
+    height: 2.3em;
+    line-height: 2.3em;
+    font-size: calc(var(--font-size-small) - 0.1rem);
+    margin: 12px auto 8px;
   }
 
-  .content {
-    font-size: 1.8em;
+  .show-password-label {
+    font-size: calc(var(--font-size-small) - 0.15rem);
+    margin-top: 3px;
+  }
+
+  .show-password-checkbox {
+    width: 12px;
+    height: 12px;
+  }
+
+  .SignIn {
+    font-size: var(--font-size-small);
+    margin-bottom: 10px;
+  }
+
+  .toggle {
+    height: 35px;
+    width: 35px;
+    top: 12px;
+    left: 12px;
+  }
+
+  .toggle img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .remember-container {
+    margin: 3px 0;
+  }
+
+  .remember {
+    font-size: calc(var(--font-size-small) - 0.15rem);
+  }
+
+  .forgot-password-container {
+    margin-bottom: 5px;
   }
 
   .container a {
-    font-size: calc(var(--font-size-small) - 0.1rem);
+    font-size: calc(var(--font-size-small) - 0.15rem);
+    margin: 3px 0;
   }
+}
 
+.content {
+  font-size: 2.5em;
+}
+
+@media screen and (max-width: 480px) {
   .toggle {
     height: 40px;
     width: 40px;

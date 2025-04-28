@@ -5,7 +5,6 @@ from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from .models import Post, Like, Comment
 from .forms import PostForm, CommentForm
-import json
 
 @login_required
 def home_view(request):
@@ -38,21 +37,61 @@ def home_view(request):
 @require_POST
 def create_post(request):
     """API endpoint for creating a new post."""
-    form = PostForm(request.POST, request.FILES)
-    if form.is_valid():
-        post = form.save(commit=False)
-        post.user = request.user
-        post.save()
+    try:
+        # Use a transaction to ensure all database operations are atomic
+        from django.db import transaction
+
+        with transaction.atomic():
+            form = PostForm(request.POST, request.FILES)
+            if form.is_valid():
+                # Create post but don't save to database yet
+                post = form.save(commit=False)
+                post.user = request.user
+
+                # Save the post to the database
+                post.save()
+
+                # Save the form to create any related objects
+                form.save_m2m()
+
+                # Return success response with post details
+                return JsonResponse({
+                    'status': 'success',
+                    'post_id': post.id,
+                    'user': {
+                        'username': request.user.username,
+                        'first_name': request.user.first_name,
+                        'last_name': request.user.last_name
+                    },
+                    'content': post.content,
+                    'has_image': bool(post.image),
+                    'has_video': bool(post.video),
+                    'has_document': bool(post.document),
+                    'image_url': post.image.url if post.image else None,
+                    'video_url': post.video.url if post.video else None,
+                    'document_url': post.document.url if post.document else None,
+                    'document_name': post.document.name if post.document else None,
+                    'created_at': post.created_at.strftime('%Y-%m-%d %H:%M'),
+                    'message': 'Post created successfully!'
+                })
+            else:
+                # Return form validation errors
+                return JsonResponse({
+                    'status': 'error',
+                    'errors': form.errors,
+                    'message': 'Failed to create post due to validation errors.'
+                }, status=400)
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating post: {str(e)}")
+
+        # Return a generic error message
         return JsonResponse({
-            'status': 'success',
-            'post_id': post.id,
-            'message': 'Post created successfully!'
-        })
-    return JsonResponse({
-        'status': 'error',
-        'errors': form.errors,
-        'message': 'Failed to create post.'
-    }, status=400)
+            'status': 'error',
+            'message': 'An unexpected error occurred while creating your post. Please try again.'
+        }, status=500)
 
 @login_required
 @require_POST
