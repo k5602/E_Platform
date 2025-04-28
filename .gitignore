@@ -116,3 +116,6 @@ $RECYCLE.BIN/
 .directory
 .Trash-*
 .nfs*
+authentication/__init__.py
+authentication/migrations/__init__.py
+authentication/migrations/0001_initial.py

@@ -1,0 +1,401 @@
+:root {
+  --header_color: #645bff;
+  --main_color: #fff;
+  --main_button: #645bff;
+  --container-color: #d8d8d8;
+  --text_color: #ffffff;
+  --box-shadow: 20px 20px 15px grey;
+  --transition-time: 0.5s;
+  --transition-timing: ease;
+  --wave-color-1: #7471ff;
+  --wave-color-2: #5956d6;
+  --wave-color-3: #4f4bc7;
+}
+
+.darkmode {
+  --header_color: #201f45;
+  --main_color: #130c2a;
+  --main_button: #645bff;
+  --container-color: #201f45;
+  --text_color: #ffffff;
+  --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --labelcolor: #000;
+  --wave-color-1: #2e2b6e;
+  --wave-color-2: #242159;
+  --wave-color-3: #1b1942;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  transition: background-color var(--transition-time) var(--transition-timing),
+              color var(--transition-time) var(--transition-timing),
+              border-color var(--transition-time) var(--transition-timing),
+              box-shadow var(--transition-time) var(--transition-timing),
+              opacity var(--transition-time) var(--transition-timing);
+}
+
+body {
+  font-family: "Electrolize", sans-serif;
+  background-color: var(--main_color);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Animated Background */
+section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+section .wave {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #4973ff;
+  box-shadow: inset 0 0 50px rgba(255, 255, 255, 0.5);
+  transition: all var(--transition-time) var(--transition-timing);
+}
+
+section .wave span {
+  content: "";
+  position: absolute;
+  width: 325vh;
+  height: 325vh;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -75%);
+  background: #fff;
+}
+
+section .wave span:nth-child(1) {
+  border-radius: 45%;
+  background: rgba(255, 255, 255, 1);
+  animation: animate 5s linear infinite;
+}
+
+section .wave span:nth-child(2) {
+  border-radius: 40%;
+  background: rgba(255, 255, 255, 0.5);
+  animation: animate 10s linear infinite;
+}
+
+section .wave span:nth-child(3) {
+  border-radius: 42.5%;
+  background: rgba(255, 255, 255, 0.5);
+  animation: animate 15s linear infinite;
+}
+
+/* Dark mode animated background */
+.darkmode section .wave {
+  background: #4973ff;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+.darkmode section .wave span {
+  background: #000;
+}
+
+.darkmode section .wave span:nth-child(1) {
+  border-radius: 45%;
+  background: rgba(20, 20, 20, 1);
+  animation: animate 5s linear infinite;
+}
+
+.darkmode section .wave span:nth-child(2) {
+  border-radius: 40%;
+  background: rgba(20, 20, 20, 0.5);
+  animation: animate 10s linear infinite;
+}
+
+.darkmode section .wave span:nth-child(3) {
+  border-radius: 42.5%;
+  background: rgba(20, 20, 20, 0.5);
+  animation: animate 15s linear infinite;
+}
+
+@keyframes animate {
+  0% {
+    transform: translate(-50%, -75%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -75%) rotate(360deg);
+  }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.head {
+  padding: 30px;
+  background-color: transparent;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+header {
+  font-weight: 500;
+  font-size: 28px;
+  text-align: center;
+  color: var(--text_color);
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.toggle {
+  height: 50px;
+  width: 50px;
+  display: flex;
+  justify-content: center;
+  padding: 5px;
+  align-items: center;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  border-radius: 50%;
+  background-color: #717171;
+  transition: background-color 0.3s ease;
+  z-index: 100;
+}
+
+.toggle img {
+  width: 30px;
+  height: 30px;
+}
+
+.toggle img:last-child {
+  display: none;
+  position: absolute;
+  opacity: 0;
+}
+
+.darkmode .toggle img:first-child {
+  display: none;
+  opacity: 0;
+}
+
+.darkmode .toggle img:last-child {
+  display: block;
+  opacity: 1;
+}
+
+.container {
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 20px auto 70px;
+  background-color: var(--container-color);
+  border-radius: 15px;
+  padding: 30px 20px;
+  box-shadow: var(--box-shadow);
+  backdrop-filter: blur(5px);
+}
+
+.SignIn {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 26px;
+  text-align: center;
+}
+
+.darkmode .SignIn {
+  color: var(--text_color);
+}
+
+.container form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+}
+
+.name-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.password-wrapper {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.input {
+  font-family: "Electrolize", sans-serif;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  font-size: 16px;
+  border: 1.5px solid #000;
+  border-radius: 8px;
+  box-shadow: 2.5px 3px 0 #000;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.input:focus {
+  box-shadow: 4px 5px 0 #000;
+}
+
+select.input {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+.show-password-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  margin: 5px 0 15px;
+  color: #515151;
+  cursor: pointer;
+}
+
+.show-password-checkbox {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+button {
+  --primary-color: #645bff;
+  --secondary-color: #fff;
+  --hover-color: #111;
+  --arrow-width: 10px;
+  --arrow-stroke: 2px;
+  border: 0;
+  border-radius: 25px;
+  color: var(--secondary-color);
+  padding: 12px 20px;
+  background: var(--primary-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  margin: 15px 0;
+  align-self: center;
+  min-width: 150px;
+}
+
+button .arrow-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+button .arrow {
+  margin-top: 2px;
+  width: var(--arrow-width);
+  background: var(--primary-color);
+  height: var(--arrow-stroke);
+  position: relative;
+  transition: 0.15s;
+}
+
+button .arrow::before {
+  content: "";
+  box-sizing: border-box;
+  position: absolute;
+  border: solid var(--secondary-color);
+  border-width: 0 var(--arrow-stroke) var(--arrow-stroke) 0;
+  display: inline-block;
+  top: -3px;
+  right: 3px;
+  transition: 0.2s;
+  padding: 3px;
+  transform: rotate(-45deg);
+}
+
+button:hover {
+  background-color: var(--hover-color);
+}
+
+button:hover .arrow {
+  background: var(--secondary-color);
+}
+
+button:hover .arrow:before {
+  right: 0;
+}
+
+a {
+  text-decoration: none;
+  color: var(--main_button);
+  margin-top: 15px;
+  text-align: center;
+  font-weight: 500;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .container {
+    width: 95%;
+    padding: 25px 15px;
+  }
+
+  header {
+    font-size: 24px;
+  }
+
+  .SignIn {
+    font-size: 22px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .name-wrapper {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .toggle {
+    top: 10px;
+    right: 10px;
+  }
+
+  .head {
+    padding: 20px 10px;
+  }
+
+  header {
+    font-size: 20px;
+  }
+
+  .input {
+    padding: 10px;
+    font-size: 14px;
+    margin: 5px 0;
+  }
+
+  button {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+}

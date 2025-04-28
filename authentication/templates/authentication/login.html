@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'authentication/css/login_S.css' %}">
+{% endblock %}
+
+{% block content %}
+<section>
+    <div class="wave">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <button class="toggle" id="toggle">
+        <img src="{% static 'authentication/images/lightoff.svg' %}" alt="lightoff">
+        <img src="{% static 'authentication/images/lighton.svg' %}" alt="lighton">
+    </button>
+    <div class="content">
+        <div class="head">
+            <header>Welcome to the Faculty of AI, <strong>KFS university</strong></header>
+        </div>
+        <div class="container">
+            <form id="loginForm" method="post">
+                {% csrf_token %}
+                <h1 class="SignIn">Sign in now!</h1>
+
+                {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="input-wrapper username-wrapper">
+                    {{ form.username }}
+                </div>
+                <div class="input-wrapper password-wrapper">
+                    {{ form.password }}
+                    <label class="show-password-label">
+                        <input type="checkbox" class="show-password-checkbox" tabindex="0"> Show Password
+                    </label>
+                </div>
+                <div class="forgot-password-container">
+                    <a href="#">Forgot your password?</a>
+                </div>
+                <div class="remember-container">
+                    {{ form.remember_me }}
+                    <label for="remember-checkbox" class="remember">Remember Password</label>
+                </div>
+                <button type="submit" class="submit-btn">
+                    Sign in
+                    <div class="arrow-wrapper">
+                        <div class="arrow"></div>
+                    </div>
+                </button>
+                <a href="{% url 'signup' %}">Don't have an account? Sign up</a>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'authentication/js/login.js' %}"></script>
+<script src="{% static 'authentication/js/darkmode.js' %}"></script>
+{% endblock %}

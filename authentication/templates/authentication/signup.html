@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign up - KFS University{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'authentication/css/signup.css' %}">
+{% endblock %}
+
+{% block content %}
+<section>
+    <div class="wave">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <button class="toggle" id="toggle">
+        <img src="{% static 'authentication/images/lightoff.svg' %}" alt="Turn light off">
+        <img src="{% static 'authentication/images/lighton.svg' %}" alt="Turn light on">
+    </button>
+    <div class="content">
+        <div class="head">
+            <header>Welcome to the Faculty of AI, <strong>KFS university</strong></header>
+        </div>
+        <div class="container">
+            <h1 class="SignIn">Join us now!</h1>
+
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        {{ error }}<br>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form id="signup-form" method="post" autocomplete="off">
+                {% csrf_token %}
+                <div class="name-wrapper">
+                    {{ form.first_name }}
+                    {{ form.last_name }}
+                </div>
+                {{ form.username }}
+                {{ form.user_type }}
+                <div class="access-code-admin" style="display: none;">
+                    {{ form.admin_access_code }}
+                </div>
+                <div class="access-code-instructor" style="display: none;">
+                    {{ form.instructor_access_code }}
+                </div>
+                <div class="password-wrapper">
+                    {{ form.password1 }}
+                    <label class="show-password-label">
+                        <input type="checkbox" class="show-password-checkbox" tabindex="0"> Show Password
+                    </label>
+                </div>
+                <div class="password-wrapper">
+                    {{ form.password2 }}
+                    <label class="show-password-label">
+                        <input type="checkbox" class="show-password-checkbox" tabindex="0"> Show Password
+                    </label>
+                </div>
+                {{ form.birthdate }}
+                <button type="submit">
+                    Sign up
+                    <div class="arrow-wrapper">
+                        <div class="arrow"></div>
+                    </div>
+                </button>
+                <a href="{% url 'login' %}">Already have an account?</a>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'authentication/js/signup.js' %}"></script>
+<script src="{% static 'authentication/js/darkmode.js' %}"></script>
+<script src="{% static 'authentication/js/hide_access.js' %}"></script>
+{% endblock %}
