@@ -143,3 +143,4 @@ login_html-css-js/signup.html
 login_html-css-js/signup.js
 home/migrations/__init__.py
 home/migrations/0001_initial.py
+create_test_users.py
