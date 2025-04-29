@@ -121,6 +121,7 @@ class AppointmentAdmin(admin.ModelAdmin):
     date_hierarchy = 'appointment_date'
     ordering = ('-appointment_date', '-appointment_time')
     list_editable = ('status',)
+    raw_id_fields = ('user', 'instructor')
     
     fieldsets = (
         ('Appointment Details', {
