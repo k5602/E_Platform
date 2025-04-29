@@ -6,11 +6,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/toast.css">
     {% block extra_css %}{% endblock %}
     <title>{% block title %}KFS University{% endblock %}</title>
 </head>
 <body>
+    <!-- Toast container will be created by JavaScript -->
+    <div id="toast-container" class="toast-container"></div>
+
     {% block content %}{% endblock %}
+
+    <!-- Common scripts -->
+    <script src="/static/js/toast.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

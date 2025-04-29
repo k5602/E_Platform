@@ -42,4 +42,75 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Password strength evaluation
+    const passwordInput = document.getElementById('id_password1');
+    const strengthMeter = document.getElementById('password-strength-meter');
+    const feedbackElement = document.getElementById('password-feedback');
+
+    if (passwordInput && strengthMeter && feedbackElement) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strength = evaluatePasswordStrength(password);
+
+            // Update the meter value
+            strengthMeter.value = strength.score;
+
+            // Update feedback text and class
+            feedbackElement.textContent = strength.feedback;
+            feedbackElement.className = strength.className;
+        });
+    }
+
+    /**
+     * Evaluates password strength based on various criteria
+     * @param {string} password - The password to evaluate
+     * @returns {Object} - Object containing score, feedback, and className
+     */
+    function evaluatePasswordStrength(password) {
+        let score = 0;
+        let feedback = '';
+        let className = '';
+
+        // Check if password is empty
+        if (!password) {
+            return { score: 0, feedback: '', className: '' };
+        }
+
+        // Check length
+        if (password.length >= 8) score += 1;
+        if (password.length >= 12) score += 1;
+
+        // Check for uppercase letters
+        if (/[A-Z]/.test(password)) score += 1;
+
+        // Check for lowercase letters
+        if (/[a-z]/.test(password)) score += 1;
+
+        // Check for numbers
+        if (/[0-9]/.test(password)) score += 1;
+
+        // Check for special characters
+        if (/[^A-Za-z0-9]/.test(password)) score += 1;
+
+        // Provide feedback based on score
+        if (score <= 1) {
+            feedback = 'Very weak password. Try making it longer with numbers and special characters.';
+            className = 'text-danger';
+        } else if (score <= 3) {
+            feedback = 'Weak password. Add uppercase letters and special characters.';
+            className = 'text-danger';
+        } else if (score <= 4) {
+            feedback = 'Moderate password. Consider making it longer.';
+            className = 'text-warning';
+        } else if (score === 5) {
+            feedback = 'Strong password!';
+            className = 'text-success';
+        } else {
+            feedback = 'Very strong password!';
+            className = 'text-success';
+        }
+
+        return { score, feedback, className };
+    }
 });

@@ -20,7 +20,7 @@
 <div class="page-container">
     <header class="main-header">
         <div class="logo-placeholder">ID</div>
-        <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu">
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu" aria-expanded="false" aria-controls="side-nav">
             <span></span>
             <span></span>
             <span></span>
@@ -80,24 +80,29 @@
         </nav>
 
         <div class="addpost-outer">
+            <!-- Test button for toast notifications -->
+            <button type="button" id="test-toast-btn" style="margin-bottom: 10px; background-color: var(--main_button); color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                Test Toast Notifications
+            </button>
+
             <form id="add-post-form" class="addpost-container" method="post" action="{% url 'home:create_post' %}" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="addpost-inputs">
                     {{ form.content }}
-                    <label for="add-img" class="icon-label" title="Add Image">
+                    <label for="add-img" class="icon-label" title="Add Image" aria-label="Add Image to your post">
                         <img src="{% static 'home/images/image.svg' %}" alt="img">
                         {{ form.image }}
                     </label>
-                    <label for="add-video" class="icon-label" title="Add Video">
+                    <label for="add-video" class="icon-label" title="Add Video" aria-label="Add Video to your post">
                         <img src="{% static 'home/images/video.svg' %}" alt="video">
                         {{ form.video }}
                     </label>
-                    <label for="add-document" class="icon-label" title="Add Document (PDF, Markdown, Word, Excel, LaTeX, PowerPoint)">
+                    <label for="add-document" class="icon-label" title="Add Document (PDF, Markdown, Word, Excel, LaTeX, PowerPoint)" aria-label="Add Document to your post">
                         <img src="{% static 'home/images/document.svg' %}" alt="document">
                         {{ form.document }}
                     </label>
                 </div>
-                <button type="submit" class="add-btn">Add Post</button>
+                <button type="submit" class="add-btn" aria-label="Submit your post">Add Post</button>
             </form>
         </div>
 
@@ -154,14 +159,14 @@
                 </div>
 
                 <div class="post-actions">
-                    <button class="read-more-btn">Read More</button>
-                    <button class="like_btn" data-post-id="{{ post.id }}">
+                    <button class="read-more-btn" aria-label="Read more of this post">Read More</button>
+                    <button class="like_btn" data-post-id="{{ post.id }}" aria-label="Like this post. Current likes: {{ post.likes.count }}">
                         <img src="{% static 'home/images/like.svg' %}" alt="like">
                         <span class="like-count">{{ post.likes.count }}</span>
                     </button>
-                    <button class="Comment" data-post-id="{{ post.id }}">Comment</button>
+                    <button class="Comment" data-post-id="{{ post.id }}" aria-label="Comment on this post">Comment</button>
                     {% if post.user == user %}
-                    <button class="remove-btn" data-post-id="{{ post.id }}">Remove</button>
+                    <button class="remove-btn" data-post-id="{{ post.id }}" aria-label="Remove this post">Remove</button>
                     {% endif %}
                 </div>
 
@@ -174,7 +179,7 @@
                         </span>
                         {{ comment.content }}
                         {% if comment.user == user %}
-                        <button class="remove-comment-btn" data-comment-id="{{ comment.id }}">X</button>
+                        <button class="remove-comment-btn" data-comment-id="{{ comment.id }}" aria-label="Delete this comment">X</button>
                         {% endif %}
                     </li>
                     {% endfor %}
@@ -220,4 +225,5 @@
 {% block extra_js %}
 <script src="{% static 'home/js/home.js' %}"></script>
 <script src="{% static 'home/js/darkmode.js' %}"></script>
+<script src="{% static 'home/js/accessibility.js' %}"></script>
 {% endblock %}

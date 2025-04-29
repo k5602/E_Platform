@@ -1,20 +1,20 @@
 /* --- Variables --- */
 :root {
-   --header_color: #645bff;
+   --header_color: #5349cc; /* Darker header color for better contrast */
   --main_color: #f8f9fa;
-  --main_button: #645bff;
+  --main_button: #5349cc; /* Darker button color for better contrast */
   --container_color: #ffffff;
-  --text_color: #212529;
+  --text_color: #121212; /* Darker text for better contrast */
   --box_shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --label_color: #495057;
-  --accent_color: #5349cc;
+  --label_color: #333333; /* Darker label color for better contrast */
+  --accent_color: #4a41b8; /* Darker accent color for better contrast */
   --transition-time: 0.3s;
   --transition-timing: ease-in-out;
   --wave-color-1: rgba(116, 113, 255, 0.6);
   --wave-color-2: rgba(89, 86, 214, 0.5);
   --wave-color-3: rgba(79, 75, 199, 0.4);
-  --like-color: #e44d87;
-  --like-active-color: #d81b60;
+  --like-color: #d81b60; /* Darker like color for better contrast */
+  --like-active-color: #b71752; /* Darker active like color for better contrast */
   --toggle-color: #000000;
 }
 
@@ -22,19 +22,18 @@
 .darkmode {
   --header_color: #1e1f26;
   --main_color: #121212;
-  --main_button: #7066ff;
+  --main_button: #8a80ff; /* Brighter button for better contrast on dark background */
   --container_color: #1e1f26;
-  --text_color: #e0e0e0;
+  --text_color: #f0f0f0; /* Brighter text for better contrast on dark background */
   --box_shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  --label_color: #adb5bd;
-  --accent_color: #8a80ff;
+  --label_color: #d0d0d0; /* Brighter label color for better contrast */
+  --accent_color: #9a90ff; /* Brighter accent color for better contrast */
   --wave-color-1: rgba(46, 43, 110, 0.5);
   --wave-color-2: rgba(36, 33, 89, 0.4);
   --wave-color-3: rgba(27, 25, 66, 0.3);
-  --like-color: #ec80aa;
-  --like-active-color: #e44d87;
+  --like-color: #ff90b8; /* Brighter like color for better contrast */
+  --like-active-color: #ff6090; /* Brighter active like color for better contrast */
   --toggle-color: #ffffff;
-
 }
 
 .electrolize-regular {
@@ -52,6 +51,27 @@
               box-shadow var(--transition-time) var(--transition-timing),
               opacity var(--transition-time) var(--transition-timing),
               transform var(--transition-time) var(--transition-timing);
+}
+
+/* Accessibility: Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--main_button);
+  color: white;
+  padding: 8px 15px;
+  z-index: 9999;
+  transition: top 0.3s ease;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-to-content:focus {
+  top: 0;
+  outline: 2px solid white;
+  outline-offset: 2px;
 }
 
 body {

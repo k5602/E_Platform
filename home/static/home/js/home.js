@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize delete functionality
     initializeDeleteButtons();
+
+    // Initialize toast test button
+    initializeToastTest();
 });
 
 // Read More functionality
@@ -346,7 +349,11 @@ function initializeFilePreview() {
                             handleDocumentPreview(file);
                         }
                     } else {
+                        if (typeof window.showToast === 'function') {
+                        window.showToast('Unsupported file type. Please upload an image, video, or document (PDF, MD, DOCX, XLSX, TEX, PPTX).', 'error');
+                    } else {
                         showError('Unsupported file type. Please upload an image, video, or document (PDF, MD, DOCX, XLSX, TEX, PPTX).');
+                    }
                     }
                 }
             }
@@ -443,7 +450,11 @@ function initializeFilePreview() {
                 if (supportedDocTypes.includes(fileExt)) {
                     handleDocumentPreview(file);
                 } else {
-                    showError('Unsupported document type. Please upload PDF, MD, DOCX, XLSX, TEX, or PPTX files.');
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('Unsupported document type. Please upload PDF, MD, DOCX, XLSX, TEX, or PPTX files.', 'error');
+                    } else {
+                        showError('Unsupported document type. Please upload PDF, MD, DOCX, XLSX, TEX, or PPTX files.');
+                    }
                     this.value = '';
                 }
             } else {
@@ -964,46 +975,15 @@ function initializePostCreation() {
             }, 1000);
         }
 
-        // Function to show toast notification
+        // Function to show toast notification using the global toast system
         function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <div class="toast-icon"></div>
-                <div class="toast-message">${message}</div>
-                <button class="toast-close">&times;</button>
-            `;
-
-            // Add to container
-            toastContainer.appendChild(toast);
-
-            // Add animation
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-
-            // Add close button functionality
-            const closeBtn = toast.querySelector('.toast-close');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    toast.classList.remove('show');
-                    setTimeout(() => {
-                        toast.remove();
-                    }, 300);
-                });
+            // Use the global toast function if available
+            if (typeof window.showToast === 'function') {
+                window.showToast(message, type);
+            } else {
+                // Fallback to console if toast system is not available
+                console.log(`${type.toUpperCase()}: ${message}`);
             }
-
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.classList.remove('show');
-                    setTimeout(() => {
-                        if (toast.parentNode) {
-                            toast.remove();
-                        }
-                    }, 300);
-                }
-            }, 5000);
         }
     }
 }
@@ -1196,8 +1176,16 @@ function initializeDeleteButtons() {
                 .then(data => {
                     if (data.status === 'success') {
                         post.remove();
+                        // Show success toast
+                        if (typeof window.showToast === 'function') {
+                            window.showToast('Post deleted successfully', 'success');
+                        }
                     } else {
-                        alert('Error: ' + data.message);
+                        if (typeof window.showToast === 'function') {
+                            window.showToast('Error: ' + data.message, 'error');
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
                     }
                 })
                 .catch(error => {
@@ -1234,8 +1222,16 @@ function deleteComment(commentId, commentElement) {
         .then(data => {
             if (data.status === 'success') {
                 commentElement.remove();
+                // Show success toast
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Comment deleted successfully', 'success');
+                }
             } else {
-                alert('Error: ' + data.message);
+                if (typeof window.showToast === 'function') {
+                    window.showToast('Error: ' + data.message, 'error');
+                } else {
+                    alert('Error: ' + data.message);
+                }
             }
         })
         .catch(error => {
@@ -1258,4 +1254,35 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+// Function to initialize toast test button
+function initializeToastTest() {
+    const testToastBtn = document.getElementById('test-toast-btn');
+    if (testToastBtn) {
+        testToastBtn.addEventListener('click', function() {
+            console.log('Test toast button clicked');
+
+            // Test if window.showToast exists
+            if (typeof window.showToast === 'function') {
+                // Show different types of toasts
+                window.showToast('This is an info toast notification', 'info');
+
+                setTimeout(() => {
+                    window.showToast('This is a success toast notification', 'success');
+                }, 1000);
+
+                setTimeout(() => {
+                    window.showToast('This is a warning toast notification', 'warning');
+                }, 2000);
+
+                setTimeout(() => {
+                    window.showToast('This is an error toast notification', 'error');
+                }, 3000);
+            } else {
+                console.error('window.showToast function is not available');
+                alert('Toast notification system is not available. Check the console for details.');
+            }
+        });
+    }
 }
