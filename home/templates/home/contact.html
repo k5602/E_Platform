@@ -29,64 +29,65 @@
                 <h2>Send a Message</h2>
                 <form class="contact-form" method="post" action="{% url 'home:contact' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="contact_form" value="1">
                     
                     <div class="form-group">
-                        <label for="{{ form.name.id_for_label }}">Name</label>
-                        {{ form.name }}
-                        {% if form.name.errors %}
+                        <label for="{{ contact_form.name.id_for_label }}">Name</label>
+                        {{ contact_form.name }}
+                        {% if contact_form.name.errors %}
                             <ul class="errorlist">
-                                {% for error in form.name.errors %}
+                                {% for error in contact_form.name.errors %}
                                     <li>{{ error }}</li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
-                        {% if form.name.help_text %}
-                            <small>{{ form.name.help_text }}</small>
+                        {% if contact_form.name.help_text %}
+                            <small>{{ contact_form.name.help_text }}</small>
                         {% endif %}
                     </div>
                     
                     <div class="form-group">
-                        <label for="{{ form.email.id_for_label }}">Email</label>
-                        {{ form.email }}
-                        {% if form.email.errors %}
+                        <label for="{{ contact_form.email.id_for_label }}">Email</label>
+                        {{ contact_form.email }}
+                        {% if contact_form.email.errors %}
                             <ul class="errorlist">
-                                {% for error in form.email.errors %}
+                                {% for error in contact_form.email.errors %}
                                     <li>{{ error }}</li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
-                        {% if form.email.help_text %}
-                            <small>{{ form.email.help_text }}</small>
+                        {% if contact_form.email.help_text %}
+                            <small>{{ contact_form.email.help_text }}</small>
                         {% endif %}
                     </div>
                     
                     <div class="form-group">
-                        <label for="{{ form.subject.id_for_label }}">Subject</label>
-                        {{ form.subject }}
-                        {% if form.subject.errors %}
+                        <label for="{{ contact_form.subject.id_for_label }}">Subject</label>
+                        {{ contact_form.subject }}
+                        {% if contact_form.subject.errors %}
                             <ul class="errorlist">
-                                {% for error in form.subject.errors %}
+                                {% for error in contact_form.subject.errors %}
                                     <li>{{ error }}</li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
-                        {% if form.subject.help_text %}
-                            <small>{{ form.subject.help_text }}</small>
+                        {% if contact_form.subject.help_text %}
+                            <small>{{ contact_form.subject.help_text }}</small>
                         {% endif %}
                     </div>
                     
                     <div class="form-group">
-                        <label for="{{ form.message.id_for_label }}">Message</label>
-                        {{ form.message }}
-                        {% if form.message.errors %}
+                        <label for="{{ contact_form.message.id_for_label }}">Message</label>
+                        {{ contact_form.message }}
+                        {% if contact_form.message.errors %}
                             <ul class="errorlist">
-                                {% for error in form.message.errors %}
+                                {% for error in contact_form.message.errors %}
                                     <li>{{ error }}</li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
-                        {% if form.message.help_text %}
-                            <small>{{ form.message.help_text }}</small>
+                        {% if contact_form.message.help_text %}
+                            <small>{{ contact_form.message.help_text }}</small>
                         {% endif %}
                     </div>
                     
@@ -122,14 +123,241 @@
             </div>
         </div>
     </div>
+
+    <!-- Appointment Section -->
+    <section class="appointment-section">
+        <div class="appointment-header">
+            <h2>Book an Appointment</h2>
+            <p>Schedule a meeting with our instructors for academic guidance, project discussions, or other inquiries</p>
+        </div>
+        
+        <div class="appointment-form-container">
+            <form class="appointment-form" method="post" action="{% url 'home:contact' %}">
+                {% csrf_token %}
+                <input type="hidden" name="appointment_form" value="1">
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ appointment_form.name.id_for_label }}">Full Name</label>
+                            {{ appointment_form.name }}
+                            {% if appointment_form.name.errors %}
+                                <ul class="errorlist">
+                                    {% for error in appointment_form.name.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ appointment_form.email.id_for_label }}">Email Address</label>
+                            {{ appointment_form.email }}
+                            {% if appointment_form.email.errors %}
+                                <ul class="errorlist">
+                                    {% for error in appointment_form.email.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ appointment_form.phone.id_for_label }}">Phone Number (Optional)</label>
+                            {{ appointment_form.phone }}
+                            {% if appointment_form.phone.errors %}
+                                <ul class="errorlist">
+                                    {% for error in appointment_form.phone.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ appointment_form.appointment_type.id_for_label }}">Appointment Type</label>
+                            {{ appointment_form.appointment_type }}
+                            {% if appointment_form.appointment_type.errors %}
+                                <ul class="errorlist">
+                                    {% for error in appointment_form.appointment_type.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ appointment_form.appointment_date.id_for_label }}">Appointment Date</label>
+                            {{ appointment_form.appointment_date }}
+                            {% if appointment_form.appointment_date.help_text %}
+                                <small class="help-text">{{ appointment_form.appointment_date.help_text }}</small>
+                            {% endif %}
+                            {% if appointment_form.appointment_date.errors %}
+                                <ul class="errorlist">
+                                    {% for error in appointment_form.appointment_date.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <div class="form-group">
+                            <label for="{{ appointment_form.appointment_time.id_for_label }}">Appointment Time</label>
+                            {{ appointment_form.appointment_time }}
+                            {% if appointment_form.appointment_time.help_text %}
+                                <small class="help-text">{{ appointment_form.appointment_time.help_text }}</small>
+                            {% endif %}
+                            {% if appointment_form.appointment_time.errors %}
+                                <ul class="errorlist">
+                                    {% for error in appointment_form.appointment_time.errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ appointment_form.message.id_for_label }}">Additional Information</label>
+                    {{ appointment_form.message }}
+                    {% if appointment_form.message.errors %}
+                        <ul class="errorlist">
+                            {% for error in appointment_form.message.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                
+                <button type="submit" class="submit-btn">Book Appointment</button>
+            </form>
+        </div>
+        
+        {% if instructors %}
+        <div class="instructor-selection">
+            <h3>Available Instructors</h3>
+            <div class="instructor-cards">
+                {% for instructor in instructors %}
+                <div class="instructor-card-sm">
+                    <img src="{% static 'home/images/student.jpeg' %}" alt="{{ instructor.first_name }} {{ instructor.last_name }}">
+                    <div class="instructor-info">
+                        <h3>{{ instructor.first_name }} {{ instructor.last_name }}</h3>
+                        <p>{{ instructor.email }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="faq-header">
+            <h2>Frequently Asked Questions</h2>
+            <p>Find answers to common questions about our courses, platform, and services</p>
+        </div>
+        
+        {% if categories %}
+        <div class="faq-filters">
+            <button class="faq-filter-btn active" data-category="all">All</button>
+            {% for category in categories %}
+                {% if category %}
+                <button class="faq-filter-btn" data-category="{{ category }}">{{ category }}</button>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="faq-items">
+            {% if faqs %}
+                {% for faq in faqs %}
+                <div class="faq-item" data-category="{{ faq.category }}">
+                    <div class="faq-question">{{ faq.question }}</div>
+                    <div class="faq-answer">{{ faq.answer|linebreaks }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="no-faqs">No FAQs available at the moment. Please check back later.</p>
+            {% endif %}
+        </div>
+    </section>
 </main>
 {% endblock %}
 
 {% block page_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Any contact page specific JavaScript can go here
-        console.log('Contact page loaded');
+        // FAQ Accordion functionality
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question');
+            question.addEventListener('click', () => {
+                // Close all other items
+                faqItems.forEach(otherItem => {
+                    if (otherItem !== item && otherItem.classList.contains('active')) {
+                        otherItem.classList.remove('active');
+                    }
+                });
+                // Toggle the clicked item
+                item.classList.toggle('active');
+            });
+        });
+
+        // FAQ Category filtering
+        const filterButtons = document.querySelectorAll('.faq-filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active button
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Filter the FAQ items
+                const category = button.getAttribute('data-category');
+                faqItems.forEach(item => {
+                    if (category === 'all' || item.getAttribute('data-category') === category) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // Appointment date change handler
+        const appointmentDate = document.getElementById('{{ appointment_form.appointment_date.id_for_label }}');
+        if (appointmentDate) {
+            appointmentDate.addEventListener('change', function() {
+                console.log('Date selected:', this.value);
+                // Here you could add AJAX functionality to check availability
+            });
+        }
+        
+        // Instructor selection
+        const instructorCards = document.querySelectorAll('.instructor-card-sm');
+        instructorCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Toggle selection
+                instructorCards.forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                // You could add a hidden input to store selected instructor
+                // const instructorId = this.getAttribute('data-instructor-id');
+                // document.getElementById('selected_instructor').value = instructorId;
+            });
+        });
     });
 </script>
 {% endblock %}

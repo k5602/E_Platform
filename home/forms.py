@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
-from .models import Post, Comment, Contact
+from .models import Post, Comment, Contact, Appointment
+import datetime
 
 class PostForm(forms.ModelForm):
     content = forms.CharField(
@@ -175,3 +176,81 @@ class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
         fields = ['name', 'email', 'subject', 'message']
+
+class AppointmentForm(forms.ModelForm):
+    """Form for scheduling appointments with instructors."""
+    
+    appointment_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date', 
+            'class': 'form-control',
+            'min': datetime.date.today().strftime('%Y-%m-%d')
+        }),
+        help_text="Select a date for your appointment"
+    )
+    
+    appointment_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'type': 'time',
+            'class': 'form-control',
+            'min': '09:00',
+            'max': '17:00'
+        }),
+        help_text="Select a time between 9:00 AM and 5:00 PM"
+    )
+    
+    class Meta:
+        model = Appointment
+        fields = ['name', 'email', 'phone', 'appointment_date', 'appointment_time', 'appointment_type', 'message']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your full name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Your email address'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Your phone number (optional)'}),
+            'appointment_type': forms.Select(attrs={'class': 'form-control'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Describe the purpose of your appointment', 'rows': 4}),
+        }
+    
+    def clean_appointment_date(self):
+        """Validate that appointment date is not in the past or on weekends."""
+        date = self.cleaned_data.get('appointment_date')
+        
+        # Check if date is in the past
+        if date < datetime.date.today():
+            raise forms.ValidationError("Appointment date cannot be in the past.")
+        
+        # Check if date is on a weekend
+        if date.weekday() >= 5:  # 5: Saturday, 6: Sunday
+            raise forms.ValidationError("Appointments are not available on weekends.")
+            
+        return date
+    
+    def clean_appointment_time(self):
+        """Validate that appointment time is during working hours."""
+        time = self.cleaned_data.get('appointment_time')
+        
+        # Define working hours (9 AM to 5 PM)
+        start_time = datetime.time(9, 0)
+        end_time = datetime.time(17, 0)
+        
+        if time < start_time or time > end_time:
+            raise forms.ValidationError("Appointments are only available between 9:00 AM and 5:00 PM.")
+            
+        return time
+    
+    def clean(self):
+        """Validate the appointment date and time combination."""
+        cleaned_data = super().clean()
+        date = cleaned_data.get('appointment_date')
+        time = cleaned_data.get('appointment_time')
+        
+        # Skip further validation if either field had errors
+        if not date or not time:
+            return cleaned_data
+            
+        # Check if appointment date is today and time is in the past
+        if date == datetime.date.today():
+            current_time = datetime.datetime.now().time()
+            if time < current_time:
+                self.add_error('appointment_time', "Appointment time cannot be in the past.")
+                
+        return cleaned_data

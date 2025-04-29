@@ -147,3 +147,7 @@ create_test_users.py
 Assets/Contact/contact_s.css
 Assets/Contact/contact.html
 .gitignore
+home/migrations/0007_rename_recipient_notification_user_and_more.py
+home/migrations/0006_notification.py
+.gitignore
+home/migrations/0008_delete_notification.py

@@ -4,8 +4,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 from django.contrib import messages
-from .models import Post, Like, Comment, Contact
-from .forms import PostForm, CommentForm, ContactForm
+from .models import Post, Like, Comment, Contact, FAQ, Appointment
+from .forms import PostForm, CommentForm, ContactForm, AppointmentForm
+from django.db import transaction
+from authentication.models import CustomUser
 
 @login_required
 def home_view(request):
@@ -40,8 +42,6 @@ def create_post(request):
     """API endpoint for creating a new post."""
     try:
         # Use a transaction to ensure all database operations are atomic
-        from django.db import transaction
-
         with transaction.atomic():
             form = PostForm(request.POST, request.FILES)
             if form.is_valid():
@@ -209,17 +209,57 @@ def get_post_likes(request, post_id):
 
 def contact_view(request):
     """View for the contact page."""
-    if request.method == 'POST':
-        form = ContactForm(request.POST)
-        if form.is_valid():
-            form.save()
+    contact_form_submitted = False
+    appointment_form_submitted = False
+    
+    # Handle contact form submission
+    if request.method == 'POST' and 'contact_form' in request.POST:
+        contact_form = ContactForm(request.POST)
+        appointment_form = AppointmentForm()  # Empty form for GET request
+        if contact_form.is_valid():
+            contact_form.save()
             messages.success(request, "Thank you! Your message has been sent successfully.")
-            return redirect('home:contact')
+            contact_form_submitted = True
+            contact_form = ContactForm()  # Reset the form
+    # Handle appointment form submission
+    elif request.method == 'POST' and 'appointment_form' in request.POST:
+        appointment_form = AppointmentForm(request.POST)
+        contact_form = ContactForm()  # Empty form for GET request
+        if appointment_form.is_valid():
+            appointment = appointment_form.save(commit=False)
+            
+            # If user is logged in, associate the appointment with them
+            if request.user.is_authenticated:
+                appointment.user = request.user
+                
+            # Find the first instructor
+            instructors = CustomUser.objects.filter(is_staff=True).first()
+            if instructors:
+                appointment.instructor = instructors
+                
+            appointment.save()
+            messages.success(request, "Thank you! Your appointment request has been submitted. We'll confirm it shortly.")
+            appointment_form_submitted = True
+            appointment_form = AppointmentForm()  # Reset the form
     else:
-        form = ContactForm()
+        contact_form = ContactForm()
+        appointment_form = AppointmentForm()
 
+    # Get active FAQs and their unique categories
+    faqs = FAQ.objects.filter(is_active=True).order_by('order', 'question')
+    categories = faqs.values_list('category', flat=True).distinct()
+    
+    # Get available instructors for appointment booking
+    instructors = CustomUser.objects.filter(is_staff=True)
+    
     context = {
-        'form': form,
-        'active_page': 'contact'
+        'contact_form': contact_form,
+        'appointment_form': appointment_form,
+        'contact_form_submitted': contact_form_submitted,
+        'appointment_form_submitted': appointment_form_submitted,
+        'active_page': 'contact',
+        'faqs': faqs,
+        'categories': categories,
+        'instructors': instructors
     }
     return render(request, 'home/contact.html', context)
