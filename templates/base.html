@@ -10,7 +10,7 @@
     {% block extra_css %}{% endblock %}
     <title>{% block title %}KFS University{% endblock %}</title>
 </head>
-<body>
+<body {% if user.is_authenticated %}data-user-id="{{ user.id }}"{% endif %}>
     <!-- Toast container will be created by JavaScript -->
     <div id="toast-container" class="toast-container"></div>
 

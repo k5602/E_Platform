@@ -219,3 +219,48 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.notification_type} notification for {self.recipient.username} from {self.sender.username}"
+
+    def save(self, *args, **kwargs):
+        """Override save method to send WebSocket notification."""
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+
+        # Send WebSocket notification if this is a new notification
+        if is_new:
+            self.send_notification()
+
+    def send_notification(self):
+        """Send notification via WebSocket."""
+        try:
+            # Import here to avoid circular imports
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            import json
+
+            # Get the channel layer
+            channel_layer = get_channel_layer()
+
+            # Prepare notification data
+            notification_data = {
+                'id': self.id,
+                'recipient': self.recipient.username,
+                'sender': self.sender.username,
+                'notification_type': self.notification_type,
+                'text': self.text,
+                'is_read': self.is_read,
+                'created_at': self.created_at.isoformat(),
+                'post_id': self.post.id if self.post else None,
+                'comment_id': self.comment.id if self.comment else None,
+            }
+
+            # Send notification to the recipient's group
+            async_to_sync(channel_layer.group_send)(
+                f'notifications_{self.recipient.id}',
+                {
+                    'type': 'notification_message',
+                    'notification': notification_data
+                }
+            )
+        except Exception as e:
+            # Log the error but don't prevent the notification from being saved
+            print(f"Error sending WebSocket notification: {str(e)}")

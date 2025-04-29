@@ -16,6 +16,13 @@ class CustomUser(AbstractUser):
         default='student',
     )
     birthdate = models.DateField(_('Birth Date'), null=True, blank=True)
+    profile_picture = models.ImageField(
+        _('Profile Picture'),
+        upload_to='profile_pictures/',
+        null=True,
+        blank=True,
+        help_text=_('Profile picture for the user')
+    )
 
     class Meta:
         verbose_name = _('user')
