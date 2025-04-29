@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize toast test button
     initializeToastTest();
+
+    // Initialize real-time polling for comments and likes
+    initializeRealtimePolling();
 });
 
 // Read More functionality
@@ -1285,4 +1288,74 @@ function initializeToastTest() {
             }
         });
     }
+}
+
+// Real-time Polling for Comments and Likes
+function initializeRealtimePolling() {
+    const POLLING_INTERVAL_MS = 5000; // Configurable interval (5 seconds)
+    let lastComments = {};
+    let lastLikes = {};
+
+    function fetchAndUpdate(postId, postElement) {
+        // Fetch comments
+        fetch(`/home/post/${postId}/comments/`, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const comments = data.comments;
+                    // Compare with lastComments
+                    if (!lastComments[postId] || JSON.stringify(lastComments[postId]) !== JSON.stringify(comments)) {
+                        updateCommentsUI(postElement, comments);
+                        if (lastComments[postId]) {
+                            showToast('New comments available!', 'info');
+                        }
+                        lastComments[postId] = comments;
+                    }
+                }
+            });
+        // Fetch likes
+        fetch(`/home/post/${postId}/likes/`, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const likeCount = data.like_count;
+                    if (lastLikes[postId] !== likeCount) {
+                        updateLikesUI(postElement, likeCount);
+                        if (lastLikes[postId] !== undefined) {
+                            showToast('New likes on this post!', 'success');
+                        }
+                        lastLikes[postId] = likeCount;
+                    }
+                }
+            });
+    }
+
+    function updateCommentsUI(postElement, comments) {
+        const commentList = postElement.querySelector('.comment-list');
+        if (!commentList) return;
+        commentList.innerHTML = '';
+        comments.forEach(c => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="commenter-info"><img src="/static/home/images/student.jpeg" alt="${c.user}"><span>${c.user}</span></span> ${c.content}`;
+            commentList.appendChild(li);
+        });
+    }
+
+    function updateLikesUI(postElement, likeCount) {
+        const likeCountSpan = postElement.querySelector('.like-count');
+        if (likeCountSpan) {
+            likeCountSpan.textContent = likeCount;
+        }
+    }
+
+    function pollAllPosts() {
+        document.querySelectorAll('.post').forEach(post => {
+            const postId = post.querySelector('.like_btn')?.dataset.postId;
+            if (postId) {
+                fetchAndUpdate(postId, post);
+            }
+        });
+    }
+
+    setInterval(pollAllPosts, POLLING_INTERVAL_MS);
 }

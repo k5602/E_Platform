@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 from .models import Post, Like, Comment
 from .forms import PostForm, CommentForm
@@ -181,3 +181,27 @@ def delete_comment(request, comment_id):
         'status': 'success',
         'message': 'Comment deleted successfully!'
     })
+
+@require_GET
+def get_post_comments(request, post_id):
+    """API endpoint to fetch the latest comments for a post."""
+    post = get_object_or_404(Post, id=post_id)
+    comments = post.comments.select_related('user').order_by('-created_at')
+    comments_data = [
+        {
+            'id': c.id,
+            'user': c.user.username,
+            'content': c.content,
+            'created_at': c.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for c in comments
+    ]
+    return JsonResponse({'status': 'success', 'comments': comments_data})
+
+@require_GET
+def get_post_likes(request, post_id):
+    """API endpoint to fetch the latest likes for a post."""
+    post = get_object_or_404(Post, id=post_id)
+    likes = post.likes.select_related('user').order_by('-created_at')
+    like_users = [like.user.username for like in likes]
+    return JsonResponse({'status': 'success', 'like_count': likes.count(), 'users': like_users})
