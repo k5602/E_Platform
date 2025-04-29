@@ -1050,8 +1050,8 @@ function initializeComments() {
 
                 const commentInput = document.createElement('input');
                 commentInput.type = 'text';
-                commentInput.className = 'comment-input';
-                commentInput.placeholder = 'Write a comment...';
+                commentInput.className = 'comment-input mentionable';
+                commentInput.placeholder = 'Write a comment... (use @ to mention users)';
 
                 const submitBtn = document.createElement('button');
                 submitBtn.className = 'submit-comment-btn';
@@ -1132,7 +1132,14 @@ function submitComment(postId, content, post) {
                 commenterInfo.appendChild(commenterName);
 
                 const commentText = document.createElement('span');
-                commentText.textContent = data.content;
+                commentText.className = 'format-mentions';
+
+                // Use formatted_content if available, otherwise use regular content
+                if (data.formatted_content) {
+                    commentText.innerHTML = data.formatted_content;
+                } else {
+                    commentText.textContent = data.content;
+                }
 
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'remove-comment-btn';
@@ -1336,7 +1343,9 @@ function initializeRealtimePolling() {
         commentList.innerHTML = '';
         comments.forEach(c => {
             const li = document.createElement('li');
-            li.innerHTML = `<span class="commenter-info"><img src="/static/home/images/student.jpeg" alt="${c.user}"><span>${c.user}</span></span> ${c.content}`;
+            // Use formatted_content if available, otherwise use regular content
+            const contentHtml = c.formatted_content || c.content;
+            li.innerHTML = `<span class="commenter-info"><img src="/static/home/images/student.jpeg" alt="${c.user}"><span>${c.user}</span></span> <span class="format-mentions">${contentHtml}</span>`;
             commentList.appendChild(li);
         });
     }

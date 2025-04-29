@@ -151,3 +151,6 @@ home/migrations/0007_rename_recipient_notification_user_and_more.py
 home/migrations/0006_notification.py
 .gitignore
 home/migrations/0008_delete_notification.py
+home/management/__init__.py
+home/migrations/0009_notification.py
+home/management/commands/__init__.py

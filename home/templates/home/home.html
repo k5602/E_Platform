@@ -18,7 +18,7 @@
     <form id="add-post-form" class="addpost-container" method="post" action="{% url 'home:create_post' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="addpost-inputs">
-            {{ form.content }}
+            <textarea name="content" class="add-post mentionable" placeholder="What's on your mind?" required id="id_content"></textarea>
             <label for="add-img" class="icon-label" title="Add Image" aria-label="Add Image to your post">
                 <img src="{% static 'home/images/image.svg' %}" alt="img">
                 {{ form.image }}
@@ -84,7 +84,7 @@
         </div>
         {% endif %}
 
-        <div class="content collapsed">
+        <div class="content collapsed format-mentions">
             {{ post.content }}
         </div>
 
@@ -107,7 +107,7 @@
                     <img src="{% static 'home/images/student.jpeg' %}" alt="{{ comment.user.username }}">
                     <span>{{ comment.user.username }}</span>
                 </span>
-                {{ comment.content }}
+                <span class="format-mentions">{{ comment.content }}</span>
                 {% if comment.user == user %}
                 <button class="remove-comment-btn" data-comment-id="{{ comment.id }}" aria-label="Delete this comment">X</button>
                 {% endif %}

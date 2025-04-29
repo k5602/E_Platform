@@ -1,0 +1,268 @@
+/* Notifications Page Styles */
+.notifications-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.notifications-header h1 {
+    font-size: 1.8rem;
+    color: var(--text_color);
+    margin: 0;
+}
+
+.mark-all-read-btn {
+    background-color: var(--main_button);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.mark-all-read-btn:hover {
+    background-color: var(--main_button_hover);
+}
+
+.notifications-list {
+    background-color: var(--container_color);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border_color);
+    transition: background-color 0.2s;
+    position: relative;
+    font-size: 0.9rem;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background-color: var(--hover_color);
+}
+
+.notification-item.unread {
+    background-color: var(--unread_bg);
+}
+
+.notification-item.unread:hover {
+    background-color: var(--unread_bg_hover);
+}
+
+.notification-icon {
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--icon_bg);
+    flex-shrink: 0;
+}
+
+.notification-icon svg {
+    width: 16px;
+    height: 16px;
+    color: var(--icon_color);
+}
+
+/* Notification type specific colors */
+.notification-item.mention .notification-icon {
+    background-color: rgba(79, 70, 229, 0.1);
+}
+
+.notification-item.mention .notification-icon svg {
+    color: #4f46e5;
+}
+
+.notification-item.comment .notification-icon {
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.notification-item.comment .notification-icon svg {
+    color: #10b981;
+}
+
+.notification-item.like .notification-icon {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.notification-item.like .notification-icon svg {
+    color: #ef4444;
+}
+
+.notification-content {
+    flex-grow: 1;
+}
+
+.notification-text {
+    margin: 0 0 4px 0;
+    color: var(--text_color);
+    font-size: 0.95rem;
+}
+
+.notification-preview {
+    margin: 0 0 8px 0;
+    color: var(--label_color);
+    font-size: 0.85rem;
+    background-color: var(--preview_bg);
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 3px solid var(--preview_border);
+}
+
+.notification-time {
+    margin: 0;
+    color: var(--secondary_text);
+    font-size: 0.8rem;
+}
+
+.mark-read-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--label_color);
+    opacity: 0.6;
+    transition: opacity 0.2s, background-color 0.2s;
+    margin-left: 4px;
+    position: absolute;
+    right: 8px;
+    top: 8px;
+}
+
+.mark-read-btn:hover {
+    opacity: 1;
+    background-color: var(--hover_color);
+}
+
+.mark-read-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--label_color);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--main_button);
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.no-notifications {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--label_color);
+    text-align: center;
+}
+
+.no-notifications-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Dark mode specific adjustments */
+.darkmode .notification-item.unread {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.darkmode .notification-item.unread:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.darkmode .spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: var(--main_button);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .notifications-container {
+        padding: 10px;
+    }
+
+    .notifications-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .notification-item {
+        padding: 12px;
+    }
+
+    .notification-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .notification-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* CSS Variables - will inherit from global theme */
+:root {
+    --unread_bg: rgba(0, 0, 0, 0.03);
+    --unread_bg_hover: rgba(0, 0, 0, 0.05);
+    --icon_bg: rgba(0, 0, 0, 0.05);
+    --icon_color: #666;
+    --preview_bg: rgba(0, 0, 0, 0.02);
+    --preview_border: #ddd;
+}
+
+.darkmode {
+    --unread_bg: rgba(255, 255, 255, 0.05);
+    --unread_bg_hover: rgba(255, 255, 255, 0.08);
+    --icon_bg: rgba(255, 255, 255, 0.1);
+    --icon_color: #ccc;
+    --preview_bg: rgba(255, 255, 255, 0.05);
+    --preview_border: #444;
+}

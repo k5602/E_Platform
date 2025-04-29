@@ -1,0 +1,307 @@
+/* Mention System Styles */
+
+/* Mention dropdown */
+.mention-dropdown {
+    position: absolute;
+    background-color: var(--container_color);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 9999;
+    width: 280px;
+    border: 1px solid var(--border_color);
+    margin-top: 5px;
+}
+
+.mention-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.mention-dropdown-item:hover,
+.mention-dropdown-item.active {
+    background-color: var(--hover_color);
+}
+
+.mention-dropdown-item-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--avatar_bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.mention-dropdown-item-info {
+    flex-grow: 1;
+}
+
+.mention-dropdown-item-name {
+    font-size: 0.9rem;
+    color: var(--text_color);
+    margin: 0 0 2px 0;
+}
+
+.mention-dropdown-item-username {
+    font-size: 0.8rem;
+    color: var(--secondary_text);
+    margin: 0;
+}
+
+.mention-dropdown-item-type {
+    font-size: 0.7rem;
+    color: var(--label_color);
+    background-color: var(--tag_bg);
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 8px;
+}
+
+/* Mention styling in content */
+.mention {
+    color: var(--mention_color);
+    background-color: var(--mention_bg);
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.mention:hover {
+    background-color: var(--mention_bg_hover);
+    text-decoration: none;
+}
+
+/* Notification bell in navigation */
+.notification-bell {
+    position: relative;
+    margin-left: 16px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.notification-bell:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.darkmode .notification-bell:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.notification-bell svg {
+    width: 24px;
+    height: 24px;
+    color: var(--text_color);
+}
+
+/* Pulsing effect for notification bell with notifications */
+.notification-bell.has-notifications {
+    animation: bell-shake 2s cubic-bezier(.36,.07,.19,.97) infinite;
+    transform-origin: top center;
+}
+
+@keyframes bell-shake {
+    0% { transform: rotate(0); }
+    5% { transform: rotate(10deg); }
+    10% { transform: rotate(-10deg); }
+    15% { transform: rotate(8deg); }
+    20% { transform: rotate(-8deg); }
+    25% { transform: rotate(0); }
+    100% { transform: rotate(0); }
+}
+
+.notification-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--notification_badge);
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    padding: 0 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Notification dropdown in navigation */
+.notification-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--container_color);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    width: 280px;
+    max-height: 350px;
+    overflow-y: auto;
+    z-index: 1000;
+    border: 1px solid var(--border_color);
+    margin-top: 8px;
+    display: none;
+    font-size: 0.85rem;
+}
+
+.notification-dropdown.show {
+    display: block;
+}
+
+.notification-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border_color);
+}
+
+.notification-dropdown-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text_color);
+    margin: 0;
+}
+
+.notification-dropdown-mark-all {
+    background: transparent;
+    border: none;
+    color: var(--main_button);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0;
+}
+
+.notification-dropdown-mark-all:hover {
+    text-decoration: underline;
+}
+
+.notification-dropdown-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.notification-dropdown-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border_color);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.8rem;
+}
+
+.notification-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.notification-dropdown-item:hover {
+    background-color: var(--hover_color);
+}
+
+.notification-dropdown-item.unread {
+    background-color: var(--unread_bg);
+}
+
+.notification-dropdown-item.unread:hover {
+    background-color: var(--unread_bg_hover);
+}
+
+.notification-dropdown-text {
+    margin: 0 0 2px 0;
+    color: var(--text_color);
+    font-size: 0.8rem;
+}
+
+.notification-dropdown-time {
+    margin: 0;
+    color: var(--secondary_text);
+    font-size: 0.7rem;
+}
+
+.notification-dropdown-footer {
+    padding: 12px 16px;
+    text-align: center;
+    border-top: 1px solid var(--border_color);
+}
+
+.notification-dropdown-view-all {
+    color: var(--main_button);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.notification-dropdown-view-all:hover {
+    text-decoration: underline;
+}
+
+.notification-dropdown-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--secondary_text);
+    font-size: 0.9rem;
+}
+
+/* CSS Variables - will inherit from global theme */
+:root {
+    --mention_color: #4f46e5;
+    --mention_bg: rgba(79, 70, 229, 0.1);
+    --mention_bg_hover: rgba(79, 70, 229, 0.2);
+    --notification_badge: #ef4444;
+    --avatar_bg: #4f46e5;
+    --tag_bg: rgba(0, 0, 0, 0.05);
+    --unread_bg: rgba(0, 0, 0, 0.03);
+    --unread_bg_hover: rgba(0, 0, 0, 0.05);
+}
+
+.darkmode {
+    --mention_color: #818cf8;
+    --mention_bg: rgba(129, 140, 248, 0.2);
+    --mention_bg_hover: rgba(129, 140, 248, 0.3);
+    --notification_badge: #ef4444;
+    --avatar_bg: #6366f1;
+    --tag_bg: rgba(255, 255, 255, 0.1);
+    --unread_bg: rgba(255, 255, 255, 0.05);
+    --unread_bg_hover: rgba(255, 255, 255, 0.08);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .notification-dropdown {
+        position: fixed;
+        top: 60px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-height: 80vh;
+    }
+}

@@ -1,0 +1,228 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block title %}Debug Notifications - KFS University{% endblock %}
+
+{% block home_content %}
+<div class="debug-container">
+    <h1>Debug Notifications</h1>
+    
+    <div class="debug-section">
+        <h2>Create Test Notification</h2>
+        <form method="post" action="{% url 'home:create_test_notification' %}" class="debug-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="recipient">Recipient Username:</label>
+                <input type="text" id="recipient" name="recipient" required>
+            </div>
+            <div class="form-group">
+                <label for="notification_type">Notification Type:</label>
+                <select id="notification_type" name="notification_type" required>
+                    <option value="mention">Mention</option>
+                    <option value="comment">Comment</option>
+                    <option value="like">Like</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="text">Notification Text:</label>
+                <input type="text" id="text" name="text" required>
+            </div>
+            <button type="submit">Create Notification</button>
+        </form>
+    </div>
+    
+    <div class="debug-section">
+        <h2>All Notifications</h2>
+        <table class="debug-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Recipient</th>
+                    <th>Sender</th>
+                    <th>Type</th>
+                    <th>Text</th>
+                    <th>Read</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for notification in notifications %}
+                <tr>
+                    <td>{{ notification.id }}</td>
+                    <td>{{ notification.recipient.username }}</td>
+                    <td>{{ notification.sender.username }}</td>
+                    <td>{{ notification.notification_type }}</td>
+                    <td>{{ notification.text }}</td>
+                    <td>{{ notification.is_read }}</td>
+                    <td>{{ notification.created_at }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">No notifications found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Test Mention Extraction</h2>
+        <form id="mention-test-form" class="debug-form">
+            <div class="form-group">
+                <label for="mention-text">Text with @mentions:</label>
+                <textarea id="mention-text" name="mention-text" rows="3" required></textarea>
+            </div>
+            <button type="button" id="extract-mentions-btn">Extract Mentions</button>
+        </form>
+        <div id="mention-results" class="debug-results">Results will appear here...</div>
+    </div>
+</div>
+
+<style>
+    .debug-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: var(--container_color);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .debug-section {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border_color);
+    }
+    
+    .debug-section h2 {
+        margin-top: 0;
+        font-size: 1.5rem;
+        color: var(--text_color);
+    }
+    
+    .debug-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .form-group label {
+        font-weight: bold;
+        color: var(--text_color);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 8px;
+        border: 1px solid var(--border_color);
+        border-radius: 4px;
+        background-color: var(--input_bg);
+        color: var(--text_color);
+    }
+    
+    .debug-form button {
+        padding: 10px;
+        background-color: var(--main_button);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        align-self: flex-start;
+    }
+    
+    .debug-form button:hover {
+        background-color: var(--main_button_hover);
+    }
+    
+    .debug-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    
+    .debug-table th,
+    .debug-table td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid var(--border_color);
+    }
+    
+    .debug-table th {
+        background-color: var(--hover_color);
+        font-weight: bold;
+    }
+    
+    .debug-results {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: var(--code_bg);
+        border-radius: 4px;
+        color: var(--code_color);
+        font-family: monospace;
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const extractMentionsBtn = document.getElementById('extract-mentions-btn');
+    const mentionText = document.getElementById('mention-text');
+    const mentionResults = document.getElementById('mention-results');
+    
+    if (extractMentionsBtn) {
+        extractMentionsBtn.addEventListener('click', function() {
+            const text = mentionText.value;
+            
+            // Simple client-side extraction
+            const pattern = /@([a-zA-Z0-9_]+)/g;
+            const matches = text.match(pattern) || [];
+            
+            mentionResults.textContent = `Found ${matches.length} mentions:\n${matches.join('\n')}`;
+            
+            // Send to server for testing
+            fetch('/home/api/test-extract-mentions/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                mentionResults.textContent += `\n\nServer response:\n${JSON.stringify(data, null, 2)}`;
+            })
+            .catch(error => {
+                mentionResults.textContent += `\n\nError: ${error.message}`;
+            });
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

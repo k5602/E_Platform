@@ -4,10 +4,13 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 from django.contrib import messages
-from .models import Post, Like, Comment, Contact, FAQ, Appointment
+from .models import Post, Like, Comment, Contact, FAQ, Appointment, Notification
 from .forms import PostForm, CommentForm, ContactForm, AppointmentForm
 from django.db import transaction
 from authentication.models import CustomUser
+from .utils import search_users, format_content_with_mentions
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 @login_required
 def home_view(request):
@@ -55,6 +58,10 @@ def create_post(request):
                 # Save the form to create any related objects
                 form.save_m2m()
 
+                # Format content with mentions
+                from home.utils import format_content_with_mentions
+                formatted_content = format_content_with_mentions(post.content)
+
                 # Return success response with post details
                 return JsonResponse({
                     'status': 'success',
@@ -65,6 +72,7 @@ def create_post(request):
                         'last_name': request.user.last_name
                     },
                     'content': post.content,
+                    'formatted_content': formatted_content,
                     'has_image': bool(post.image),
                     'has_video': bool(post.video),
                     'has_document': bool(post.document),
@@ -129,11 +137,16 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
 
+        # Format content with mentions
+        from home.utils import format_content_with_mentions
+        formatted_content = format_content_with_mentions(comment.content)
+
         return JsonResponse({
             'status': 'success',
             'comment_id': comment.id,
             'user': comment.user.username,
             'content': comment.content,
+            'formatted_content': formatted_content,
             'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M')
         })
 
@@ -188,11 +201,16 @@ def get_post_comments(request, post_id):
     """API endpoint to fetch the latest comments for a post."""
     post = get_object_or_404(Post, id=post_id)
     comments = post.comments.select_related('user').order_by('-created_at')
+
+    # Import format_content_with_mentions
+    from home.utils import format_content_with_mentions
+
     comments_data = [
         {
             'id': c.id,
             'user': c.user.username,
             'content': c.content,
+            'formatted_content': format_content_with_mentions(c.content),
             'created_at': c.created_at.strftime('%Y-%m-%d %H:%M')
         }
         for c in comments
@@ -211,7 +229,7 @@ def contact_view(request):
     """View for the contact page."""
     contact_form_submitted = False
     appointment_form_submitted = False
-    
+
     # Handle contact form submission
     if request.method == 'POST' and 'contact_form' in request.POST:
         contact_form = ContactForm(request.POST)
@@ -227,16 +245,16 @@ def contact_view(request):
         contact_form = ContactForm()  # Empty form for GET request
         if appointment_form.is_valid():
             appointment = appointment_form.save(commit=False)
-            
+
             # If user is logged in, associate the appointment with them
             if request.user.is_authenticated:
                 appointment.user = request.user
-                
+
             # Find the first instructor
             instructors = CustomUser.objects.filter(is_staff=True).first()
             if instructors:
                 appointment.instructor = instructors
-                
+
             appointment.save()
             messages.success(request, "Thank you! Your appointment request has been submitted. We'll confirm it shortly.")
             appointment_form_submitted = True
@@ -248,10 +266,10 @@ def contact_view(request):
     # Get active FAQs and their unique categories
     faqs = FAQ.objects.filter(is_active=True).order_by('order', 'question')
     categories = faqs.values_list('category', flat=True).distinct()
-    
+
     # Get available instructors for appointment booking
     instructors = CustomUser.objects.filter(is_staff=True)
-    
+
     context = {
         'contact_form': contact_form,
         'appointment_form': appointment_form,
@@ -263,3 +281,212 @@ def contact_view(request):
         'instructors': instructors
     }
     return render(request, 'home/contact.html', context)
+
+
+# Notification and Mention System Views
+
+@login_required
+@require_GET
+def get_notifications(request):
+    """API endpoint to fetch user notifications."""
+    notifications = Notification.objects.filter(recipient=request.user).select_related(
+        'sender', 'post', 'comment'
+    ).order_by('-created_at')[:20]  # Limit to 20 most recent
+
+    notifications_data = []
+    for notification in notifications:
+        data = {
+            'id': notification.id,
+            'type': notification.notification_type,
+            'text': notification.text,
+            'sender': {
+                'username': notification.sender.username,
+                'first_name': notification.sender.first_name,
+                'last_name': notification.sender.last_name,
+            },
+            'is_read': notification.is_read,
+            'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M'),
+            'time_ago': get_time_ago(notification.created_at)
+        }
+
+        # Add post info if available
+        if notification.post:
+            data['post'] = {
+                'id': notification.post.id,
+                'content_preview': notification.post.content[:50] + '...' if len(notification.post.content) > 50 else notification.post.content
+            }
+
+        # Add comment info if available
+        if notification.comment:
+            data['comment'] = {
+                'id': notification.comment.id,
+                'content_preview': notification.comment.content[:50] + '...' if len(notification.comment.content) > 50 else notification.comment.content
+            }
+
+        notifications_data.append(data)
+
+    return JsonResponse({
+        'status': 'success',
+        'notifications': notifications_data,
+        'unread_count': Notification.objects.filter(recipient=request.user, is_read=False).count()
+    })
+
+@login_required
+@require_GET
+def get_unread_notification_count(request):
+    """API endpoint to get the count of unread notifications."""
+    count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+    return JsonResponse({
+        'status': 'success',
+        'unread_count': count
+    })
+
+@login_required
+@require_POST
+def mark_notification_read(request, notification_id=None):
+    """API endpoint to mark notifications as read."""
+    if notification_id:
+        # Mark a specific notification as read
+        notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
+        notification.is_read = True
+        notification.save()
+        message = 'Notification marked as read'
+    else:
+        # Mark all notifications as read
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        message = 'All notifications marked as read'
+
+    return JsonResponse({
+        'status': 'success',
+        'message': message,
+        'unread_count': Notification.objects.filter(recipient=request.user, is_read=False).count()
+    })
+
+@login_required
+@require_GET
+def search_users_view(request):
+    """API endpoint to search for users by username, first name, or last name."""
+    query = request.GET.get('q', '').strip()
+    # Allow empty queries - will return a limited set of users
+
+    users = search_users(query, exclude_user=request.user)
+
+    users_data = [
+        {
+            'id': user.id,
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': f"{user.first_name} {user.last_name}".strip(),
+            'user_type': user.user_type
+        }
+        for user in users
+    ]
+
+    return JsonResponse({
+        'status': 'success',
+        'users': users_data
+    })
+
+@login_required
+def notifications_view(request):
+    """View for the notifications page."""
+    return render(request, 'home/notifications.html', {
+        'active_page': 'notifications'
+    })
+
+@login_required
+def debug_mentions_view(request):
+    """Debug view for testing the mention system."""
+    return render(request, 'home/debug_mentions.html', {
+        'active_page': 'debug'
+    })
+
+@login_required
+def debug_notifications_view(request):
+    """Debug view for testing the notification system."""
+    notifications = Notification.objects.all().select_related('recipient', 'sender').order_by('-created_at')[:50]
+    return render(request, 'home/debug_notifications.html', {
+        'active_page': 'debug',
+        'notifications': notifications
+    })
+
+@login_required
+@require_POST
+def create_test_notification(request):
+    """Create a test notification."""
+    recipient_username = request.POST.get('recipient')
+    notification_type = request.POST.get('notification_type')
+    text = request.POST.get('text')
+
+    try:
+        recipient = CustomUser.objects.get(username=recipient_username)
+
+        notification = Notification.objects.create(
+            recipient=recipient,
+            sender=request.user,
+            notification_type=notification_type,
+            text=text
+        )
+
+        messages.success(request, f'Notification created successfully with ID: {notification.id}')
+    except CustomUser.DoesNotExist:
+        messages.error(request, f'User with username {recipient_username} does not exist')
+    except Exception as e:
+        messages.error(request, f'Error creating notification: {str(e)}')
+
+    return redirect('home:debug_notifications')
+
+@login_required
+@require_POST
+def test_extract_mentions(request):
+    """Test the extract_mentions function."""
+    import json
+    data = json.loads(request.body)
+    text = data.get('text', '')
+
+    from home.utils import extract_mentions
+    mentioned_users = extract_mentions(text)
+
+    return JsonResponse({
+        'status': 'success',
+        'mentioned_users': [
+            {
+                'id': user.id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+            for user in mentioned_users
+        ]
+    })
+
+# Helper function to format time ago
+def get_time_ago(timestamp):
+    """Return a human-readable string representing how long ago the timestamp was."""
+    from django.utils import timezone
+    from datetime import timedelta
+
+    now = timezone.now()
+    diff = now - timestamp
+
+    if diff < timedelta(minutes=1):
+        return 'just now'
+    elif diff < timedelta(hours=1):
+        minutes = diff.seconds // 60
+        return f'{minutes} minute{"s" if minutes != 1 else ""} ago'
+    elif diff < timedelta(days=1):
+        hours = diff.seconds // 3600
+        return f'{hours} hour{"s" if hours != 1 else ""} ago'
+    elif diff < timedelta(days=7):
+        days = diff.days
+        return f'{days} day{"s" if days != 1 else ""} ago'
+    elif diff < timedelta(days=30):
+        weeks = diff.days // 7
+        return f'{weeks} week{"s" if weeks != 1 else ""} ago'
+    elif diff < timedelta(days=365):
+        months = diff.days // 30
+        return f'{months} month{"s" if months != 1 else ""} ago'
+    else:
+        years = diff.days // 365
+        return f'{years} year{"s" if years != 1 else ""} ago'

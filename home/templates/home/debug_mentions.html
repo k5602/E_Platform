@@ -1,0 +1,167 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block title %}Debug Mentions - KFS University{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'home/css/mentions.css' %}">
+<style>
+    .debug-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: var(--container_color);
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .debug-section {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border_color);
+    }
+    
+    .debug-section h2 {
+        margin-top: 0;
+        font-size: 1.5rem;
+        color: var(--text_color);
+    }
+    
+    .debug-form {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .debug-form input {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid var(--border_color);
+        border-radius: 4px;
+        background-color: var(--input_bg);
+        color: var(--text_color);
+    }
+    
+    .debug-form button {
+        padding: 10px 20px;
+        background-color: var(--main_button);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .debug-form button:hover {
+        background-color: var(--main_button_hover);
+    }
+    
+    .debug-results {
+        background-color: var(--code_bg);
+        padding: 15px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        color: var(--code_color);
+    }
+    
+    .debug-textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 10px;
+        border: 1px solid var(--border_color);
+        border-radius: 4px;
+        background-color: var(--input_bg);
+        color: var(--text_color);
+        font-family: inherit;
+        resize: vertical;
+        margin-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block home_content %}
+<div class="debug-container">
+    <h1>Debug Mention System</h1>
+    
+    <div class="debug-section">
+        <h2>Test User Search API</h2>
+        <div class="debug-form">
+            <input type="text" id="search-query" placeholder="Enter search query">
+            <button id="search-btn">Search</button>
+        </div>
+        <div class="debug-results" id="search-results">Results will appear here...</div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Test Mention Detection</h2>
+        <textarea id="mention-text" class="debug-textarea mentionable" placeholder="Type @ to mention someone..."></textarea>
+        <div class="debug-results" id="mention-results">Type in the textarea above to test mentions...</div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Test Mention Formatting</h2>
+        <div class="debug-form">
+            <input type="text" id="format-input" placeholder="Enter text with @mentions">
+            <button id="format-btn">Format</button>
+        </div>
+        <div class="debug-results" id="format-results">Results will appear here...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Test User Search API
+    const searchBtn = document.getElementById('search-btn');
+    const searchQuery = document.getElementById('search-query');
+    const searchResults = document.getElementById('search-results');
+    
+    searchBtn.addEventListener('click', function() {
+        const query = searchQuery.value;
+        searchResults.textContent = 'Searching...';
+        
+        fetch(`/home/api/users/search/?q=${encodeURIComponent(query)}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            searchResults.textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            searchResults.textContent = `Error: ${error.message}`;
+        });
+    });
+    
+    // Test Mention Detection
+    const mentionText = document.getElementById('mention-text');
+    const mentionResults = document.getElementById('mention-results');
+    
+    mentionText.addEventListener('input', function() {
+        mentionResults.textContent = `Current text: "${this.value}"
+Caret position: ${this.selectionStart}
+Last @ position: ${this.value.substring(0, this.selectionStart).lastIndexOf('@')}`;
+    });
+    
+    // Test Mention Formatting
+    const formatBtn = document.getElementById('format-btn');
+    const formatInput = document.getElementById('format-input');
+    const formatResults = document.getElementById('format-results');
+    
+    formatBtn.addEventListener('click', function() {
+        const text = formatInput.value;
+        formatResults.textContent = 'Formatting...';
+        
+        // Simple client-side formatting
+        const formattedText = text.replace(/@(\w+)/g, '<a href="#" class="mention">@$1</a>');
+        formatResults.innerHTML = `
+Original: ${text}
+Formatted: ${formattedText}
+`;
+    });
+});
+</script>
+{% endblock %}
