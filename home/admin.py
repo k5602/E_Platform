@@ -4,18 +4,32 @@ from .models import Post, Like, Comment, Contact, FAQ, Appointment
 class CommentInline(admin.TabularInline):
     model = Comment
     extra = 0
+    fields = ('user', 'content', 'created_at')
+    readonly_fields = ('created_at',)
+    raw_id_fields = ('user',)
 
 class LikeInline(admin.TabularInline):
     model = Like
     extra = 0
+    fields = ('user', 'created_at')
+    readonly_fields = ('created_at',)
+    raw_id_fields = ('user',)
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'content_preview', 'has_image', 'has_video', 'created_at')
-    list_filter = ('created_at', 'user')
-    search_fields = ('content', 'user__username')
+    list_display = ('id', 'user', 'content_preview', 'has_image', 'has_video', 'has_document', 'comment_count', 'like_count', 'created_at')
+    list_filter = (
+        'created_at', 
+        'user',
+        ('image', admin.EmptyFieldListFilter),
+        ('video', admin.EmptyFieldListFilter),
+        ('document', admin.EmptyFieldListFilter)
+    )
+    search_fields = ('content', 'user__username', 'user__email')
     date_hierarchy = 'created_at'
     inlines = [CommentInline, LikeInline]
+    list_per_page = 20
+    raw_id_fields = ('user',)
 
     def content_preview(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
@@ -24,26 +38,55 @@ class PostAdmin(admin.ModelAdmin):
     def has_image(self, obj):
         return bool(obj.image)
     has_image.boolean = True
+    has_image.short_description = 'Image'
 
     def has_video(self, obj):
         return bool(obj.video)
     has_video.boolean = True
+    has_video.short_description = 'Video'
+
+    def has_document(self, obj):
+        return bool(obj.document)
+    has_document.boolean = True
+    has_document.short_description = 'Doc'
+
+    def comment_count(self, obj):
+        return obj.comments.count()
+    comment_count.short_description = 'Comments'
+
+    def like_count(self, obj):
+        return obj.likes.count()
+    like_count.short_description = 'Likes'
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'post', 'content_preview', 'created_at')
+    list_display = ('id', 'user', 'post_preview', 'content_preview', 'created_at')
     list_filter = ('created_at', 'user')
-    search_fields = ('content', 'user__username')
+    search_fields = ('content', 'user__username', 'user__email', 'post__content')
+    date_hierarchy = 'created_at'
+    raw_id_fields = ('user', 'post')
+    list_per_page = 25
 
     def content_preview(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content
     content_preview.short_description = 'Content'
 
+    def post_preview(self, obj):
+        return obj.post.content[:30] + '...' if len(obj.post.content) > 30 else obj.post.content
+    post_preview.short_description = 'Post'
+
 @admin.register(Like)
 class LikeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'post', 'created_at')
+    list_display = ('id', 'user', 'post_preview', 'created_at')
     list_filter = ('created_at', 'user')
-    search_fields = ('user__username',)
+    search_fields = ('user__username', 'user__email', 'post__content')
+    date_hierarchy = 'created_at'
+    raw_id_fields = ('user', 'post')
+    list_per_page = 25
+
+    def post_preview(self, obj):
+        return obj.post.content[:50] + '...' if len(obj.post.content) > 50 else obj.post.content
+    post_preview.short_description = 'Post'
 
 # Register Contact model
 @admin.register(Contact)
