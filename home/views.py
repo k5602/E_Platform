@@ -3,8 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
-from .models import Post, Like, Comment
-from .forms import PostForm, CommentForm
+from django.contrib import messages
+from .models import Post, Like, Comment, Contact
+from .forms import PostForm, CommentForm, ContactForm
 
 @login_required
 def home_view(request):
@@ -205,3 +206,20 @@ def get_post_likes(request, post_id):
     likes = post.likes.select_related('user').order_by('-created_at')
     like_users = [like.user.username for like in likes]
     return JsonResponse({'status': 'success', 'like_count': likes.count(), 'users': like_users})
+
+def contact_view(request):
+    """View for the contact page."""
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Thank you! Your message has been sent successfully.")
+            return redirect('home:contact')
+    else:
+        form = ContactForm()
+
+    context = {
+        'form': form,
+        'active_page': 'contact'
+    }
+    return render(request, 'home/contact.html', context)

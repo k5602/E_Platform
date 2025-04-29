@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="animated-background">
+    <div class="wave">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</section>
+
+<div class="page-container">
+    <header class="main-header">
+        <div class="logo-placeholder">ID</div>
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu" aria-expanded="false" aria-controls="side-nav">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+
+    <div class="side_nav" id="side-nav">
+        <div class="user">
+            <img src="{% static 'home/images/student.jpeg' %}" alt="std_img" class="user-img">
+            <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+            <p>{{ user.username }}</p>
+        </div>
+        <ul class="main-menu">
+            <li>
+                <a href="{% url 'home:home' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828765.png" alt="dashboard">
+                    <p>Dashboard</p>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="profile">
+                    <p>Profile</p>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <img src="https://cdn-icons-png.flaticon.com/512/6941/6941697.png" alt="quiz">
+                    <p>Quiz</p>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="Subjects">
+                    <p>Subjects</p>
+                </a>
+            </li>
+        </ul>
+        <ul class="logout-menu">
+            <li>
+                <a href="{% url 'logout' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828479.png" alt="logout">
+                    <p>Logout</p>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content-area">
+        <nav class="main_nav">
+            <a href="{% url 'home:home' %}" {% if active_page == 'home' %}class="active"{% endif %}>Home</a>
+            <a href="#" {% if active_page == 'subjects' %}class="active"{% endif %}>Subjects</a>
+            <a href="#" {% if active_page == 'quiz' %}class="active"{% endif %}>Quiz</a>
+            <a href="#" {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
+            <a href="{% url 'home:contact' %}" {% if active_page == 'contact' %}class="active"{% endif %}>Contact</a>
+            <div class="animation {% if active_page == 'home' %}start-home{% elif active_page == 'subjects' %}start-subjects{% elif active_page == 'quiz' %}start-quiz{% elif active_page == 'profile' %}start-profile{% elif active_page == 'contact' %}start-contact{% else %}start-home{% endif %}"></div>
+        </nav>
+
+        {% block home_content %}{% endblock %}
+    </div>
+
+    <button class="toggle" id="toggle">
+        <img src="{% static 'authentication/images/lightoff.svg' %}" alt="lightoff">
+        <img src="{% static 'authentication/images/lighton.svg' %}" alt="lighton">
+    </button>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'home/js/darkmode.js' %}"></script>
+<script src="{% static 'home/js/accessibility.js' %}"></script>
+{% block page_js %}{% endblock %}
+{% endblock %}

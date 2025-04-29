@@ -1,6 +1,6 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
-from .models import Post, Comment
+from .models import Post, Comment, Contact
 
 class PostForm(forms.ModelForm):
     content = forms.CharField(
@@ -116,3 +116,62 @@ class CommentForm(forms.ModelForm):
                 'placeholder': 'Write a comment...'
             })
         }
+
+class ContactForm(forms.ModelForm):
+    name = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Your Name',
+            'required': True,
+        }),
+        max_length=100,
+        help_text='Enter your full name',
+        error_messages={
+            'required': 'Please enter your name.',
+            'max_length': 'Name cannot exceed 100 characters.'
+        }
+    )
+    
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Your Email',
+            'required': True,
+        }),
+        help_text='Enter your email address',
+        error_messages={
+            'required': 'Please enter your email address.',
+            'invalid': 'Please enter a valid email address.'
+        }
+    )
+    
+    subject = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Subject',
+            'required': True,
+        }),
+        max_length=200,
+        help_text='Subject of your message',
+        error_messages={
+            'required': 'Please enter a subject.',
+            'max_length': 'Subject cannot exceed 200 characters.'
+        }
+    )
+    
+    message = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'placeholder': 'Your Message',
+            'rows': 6,
+            'required': True,
+        }),
+        help_text='Enter your message',
+        error_messages={
+            'required': 'Please enter your message.'
+        }
+    )
+    
+    class Meta:
+        model = Contact
+        fields = ['name', 'email', 'subject', 'message']

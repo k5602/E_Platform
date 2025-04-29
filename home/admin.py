@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post, Like, Comment
+from .models import Post, Like, Comment, Contact
 
 class CommentInline(admin.TabularInline):
     model = Comment
@@ -44,3 +44,13 @@ class LikeAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'post', 'created_at')
     list_filter = ('created_at', 'user')
     search_fields = ('user__username',)
+
+# Register Contact model
+@admin.register(Contact)
+class ContactAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('name', 'email', 'subject', 'message')
+    readonly_fields = ('created_at',)
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
