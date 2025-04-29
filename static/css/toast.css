@@ -1,3 +1,8 @@
+/* Hide notification dropdown */
+#notification-dropdown {
+  display: none !important;
+}
+
 /* Toast notification styles */
 .toast-container {
   position: fixed;
@@ -131,13 +136,13 @@
     left: 10px;
     align-items: center;
   }
-  
+
   .toast {
     width: 100%;
     max-width: 100%;
     transform: translateY(100px);
   }
-  
+
   .toast.show {
     transform: translateY(0);
   }

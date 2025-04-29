@@ -17,12 +17,14 @@
 
 <div class="page-container">
     <header class="main-header">
-        <div class="logo-placeholder">ID</div>
-        <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu" aria-expanded="false" aria-controls="side-nav">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
+        <div class="logo-placeholder">KFS</div>
+        <div class="header-actions">
+            <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle Menu" aria-expanded="false" aria-controls="side-nav">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
     </header>
 
     <div class="side_nav" id="side-nav">
@@ -74,13 +76,15 @@
             <a href="#" {% if active_page == 'quiz' %}class="active"{% endif %}>Quiz</a>
             <a href="#" {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
             <a href="{% url 'home:contact' %}" {% if active_page == 'contact' %}class="active"{% endif %}>Contact</a>
-            <div class="animation {% if active_page == 'home' %}start-home{% elif active_page == 'subjects' %}start-subjects{% elif active_page == 'quiz' %}start-quiz{% elif active_page == 'profile' %}start-profile{% elif active_page == 'contact' %}start-contact{% else %}start-home{% endif %}"></div>
 
             <!-- Notification Bell -->
             <div class="notification-bell" id="notification-bell" aria-label="Notifications">
                 <img src="{% static 'home/images/bell.svg' %}" alt="Notifications">
                 <span class="notification-badge" id="notification-badge"></span>
             </div>
+
+            <!-- Include Notification Panel -->
+            {% include 'home/notification_panel.html' %}
         </nav>
 
         {% block home_content %}{% endblock %}
@@ -99,8 +103,9 @@
 <script src="{% static 'home/js/toast.js' %}"></script>
 <script src="{% static 'home/js/darkmode.js' %}"></script>
 <script src="{% static 'home/js/accessibility.js' %}"></script>
-<script src="{% static 'home/js/notification-bell.js' %}"></script>
 <script src="{% static 'home/js/mentions.js' %}"></script>
 <script src="{% static 'home/js/websocket-notifications.js' %}"></script>
+<script src="{% static 'home/js/notification-bell.js' %}"></script>
+<script src="{% static 'home/js/notification-panel.js' %}"></script>
 {% block page_js %}{% endblock %}
 {% endblock %}

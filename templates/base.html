@@ -18,6 +18,15 @@
 
     <!-- Common scripts -->
     <script src="/static/js/toast.js"></script>
+    <script>
+        // Remove notification dropdown element if it exists
+        document.addEventListener('DOMContentLoaded', function() {
+            const notificationDropdown = document.getElementById('notification-dropdown');
+            if (notificationDropdown) {
+                notificationDropdown.remove();
+            }
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -339,19 +339,18 @@ body {
 
 /* --- Navigation Bar --- */
 .main_nav {
-  margin: 30px auto;
+  margin: 0;
   position: relative;
-  width: 580px;
-  max-width: 100%;
+  width: 100%;
   height: 50px;
   background-color: var(--header_color);
-  border-radius: 8px;
   font-size: 0;
   box-shadow: var(--box_shadow);
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  overflow: visible; /* Allow notification dropdown */
+  border-radius: 0;
 }
 
 .main_nav a {
@@ -366,30 +365,31 @@ body {
   text-align: center;
   color: white;
   cursor: pointer;
-  padding: 0 15px;
-  flex-grow: 1;
-  transition: color 0.3s ease;
-}
-
-.main_nav .animation {
-  position: absolute;
-  height: 100%;
-  top: 0;
-  z-index: 0;
-  transition: all 0.5s ease 0s;
-  border-radius: 8px;
-  background-color: var(--accent_color);
-  opacity: 0;
+  padding: 0 20px;
+  transition: background-color 0.3s ease;
 }
 
 .main_nav a:hover {
   background-color: rgba(0, 0, 0, 0.2);
-  color: var(--main_color);
 }
 
 .main_nav a.active {
-  color: var(--main_color);
+  background-color: rgba(0, 0, 0, 0.2);
   font-weight: bold;
+}
+
+/* Notification bell in the nav */
+.main_nav .notification-bell {
+  position: relative;
+  margin-left: auto;
+  margin-right: 20px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
 }
 
 /* --- Toggle Button --- */
@@ -1336,13 +1336,32 @@ button {
   /* Improve navigation for mobile */
   .main_nav {
     width: 100%;
-    overflow-x: auto;
     margin: 20px auto;
+    height: 45px;
+  }
+
+  .main_nav .nav-links {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    scrollbar-width: none; /* Hide scrollbar on Firefox */
+    -ms-overflow-style: none; /* Hide scrollbar on IE/Edge */
+  }
+
+  /* Hide scrollbar on Chrome/Safari */
+  .main_nav .nav-links::-webkit-scrollbar {
+    display: none;
   }
 
   .main_nav a {
     padding: 0 10px;
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 45px;
+    white-space: nowrap;
+  }
+
+  /* Adjust animation width for mobile */
+  .main_nav .animation {
+    width: 25%;
   }
 
   /* Reposition toggle button */
@@ -1363,50 +1382,76 @@ button {
     display: flex !important; /* Show only on mobile */
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
+    padding: 10px 15px;
     background-color: var(--header_color);
     position: fixed; /* Changed to fixed to ensure it's always visible */
     top: 0;
     left: 0; /* Ensure it starts from the left edge */
     right: 0; /* Ensure it extends to the right edge */
     z-index: 1001; /* Higher z-index to ensure it's above other elements */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     width: 100%;
+    height: 60px; /* Fixed height for consistency */
+  }
+
+  /* Add a container for header actions */
+  .header-actions {
+    display: flex;
+    align-items: center;
   }
 
   .logo-placeholder {
     color: white;
     font-weight: bold;
     font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    height: 40px;
   }
 
   /* Hamburger button styles - improved for better visibility */
   .hamburger-btn {
     display: block !important; /* Show on mobile */
-    background: rgba(0, 0, 0, 0.2); /* Slight background for better visibility */
+    background: transparent; /* Remove background for cleaner look */
     border: none;
     cursor: pointer;
-    padding: 12px; /* Larger padding */
+    padding: 10px; /* Adjusted padding */
     z-index: 1002; /* Higher than sidebar */
     position: relative;
-    margin-right: 5px; /* Add some margin */
     border-radius: 5px; /* Rounded corners */
+    width: 44px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 
   .hamburger-btn span {
     display: block;
-    width: 30px;
-    height: 3px;
-    margin: 6px 0;
+    width: 24px;
+    height: 2px;
+    margin: 3px 0;
     background-color: white;
     transition: all 0.3s ease;
-    border-radius: 3px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* Darker shadow for better visibility */
+    border-radius: 2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); /* Subtle shadow */
   }
 
+  /* Active state for hamburger button */
   .hamburger-btn.active span:nth-child(1) {
-    transform: rotate(45deg) translate(6px, 6px);
+    transform: translateY(8px) rotate(45deg);
   }
+
+  .hamburger-btn.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger-btn.active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  /* Remove duplicate animation */
 
   .hamburger-btn.active span:nth-child(2) {
     opacity: 0;

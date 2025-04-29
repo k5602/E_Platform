@@ -1,0 +1,16 @@
+{% load static %}
+<!-- Notification Panel Template -->
+<div class="notification-panel" id="notification-panel">
+    <button id="mark-all-read-btn" class="mark-all-read-btn">Mark all as read</button>
+
+    <div class="notification-panel-body" id="notification-panel-body">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading notifications...</p>
+        </div>
+    </div>
+
+    <div class="notification-panel-footer">
+        <a href="{% url 'home:notifications' %}" class="view-all-link">VIEW ALL NOTIFICATIONS</a>
+    </div>
+</div>
