@@ -108,6 +108,46 @@ E_Platform/
 └── README.md                # Project documentation
 ```
 
+## Setup & Development
+
+1. Clone this repository to your device.
+2. Ensure Python 3.10+ and pip are installed.
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Set up PostgreSQL and create a database/user.
+5. Configure your database settings in `E_Platform/settings.py`.
+6. Run migrations:
+   ```bash
+   python manage.py migrate
+   ```
+7. (Optional) Create a superuser:
+   ```bash
+   python manage.py createsuperuser
+   ```
+8. Collect static files:
+   ```bash
+   python manage.py collectstatic
+   ```
+9. Run the development server:
+   ```bash
+   python manage.py runserver
+   ```
+10. Access the app at http://localhost:8000
+
+## Testing
+- Run all tests:
+  ```bash
+  python manage.py test
+  ```
+- Ensure `media/` and `static/` folders are writable.
+- For file uploads, check that `media/` is properly configured in settings.
+
+## Notes
+- For production, configure environment variables and secure static/media file serving.
+- Add any extra dependencies you use to `requirements.txt`.
+
 ## Development
 
 ### Running Tests
