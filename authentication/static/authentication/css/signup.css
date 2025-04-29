@@ -433,10 +433,11 @@ button:hover .arrow:before {
 }
 
 /* responsiveness */
-@media screen and (max-width: 768px) {
+/* Tablet and smaller desktops */
+@media screen and (max-width: 1024px) {
   .container, .head {
-    width: 85%;
-    max-width: 400px;
+    width: 80%;
+    max-width: 450px;
   }
 
   .head {
@@ -459,14 +460,50 @@ button:hover .arrow:before {
   }
 
   .name-wrapper {
-    gap: 10px;
+    gap: 12px;
   }
 }
 
+/* Medium screens */
+@media screen and (max-width: 768px) {
+  .container, .head {
+    width: 85%;
+    max-width: 400px;
+  }
+
+  .head {
+    padding: 20px 15px;
+    margin-top: 30px;
+  }
+
+  .container {
+    padding: 25px 20px;
+    margin: 15px auto;
+  }
+
+  header {
+    font-size: calc(var(--font-size-large));
+  }
+
+  .SignIn {
+    font-size: var(--font-size-medium);
+    margin-bottom: 15px;
+  }
+
+  .name-wrapper {
+    gap: 10px;
+  }
+
+  .content {
+    font-size: 2.5em;
+  }
+}
+
+/* Small screens */
 @media screen and (max-width: 480px) {
   .container, .head {
     width: 92%;
-    max-width: 300px;
+    max-width: 350px;
   }
 
   .head {
@@ -526,6 +563,74 @@ button:hover .arrow:before {
   .SignIn {
     font-size: var(--font-size-small);
     margin-bottom: 10px;
+  }
+}
+
+/* Very small screens */
+@media screen and (max-width: 360px) {
+  .container, .head {
+    width: 95%;
+    max-width: 320px;
+  }
+
+  .head {
+    padding: 10px 8px;
+    margin-top: 15px;
+  }
+
+  .container {
+    padding: 12px 10px;
+    margin: 8px auto;
+  }
+
+  header {
+    font-size: var(--font-size-small);
+  }
+
+  .content {
+    font-size: 2em;
+  }
+
+  .container form {
+    gap: 15px;
+  }
+}
+
+/* High-resolution laptops and desktops */
+@media screen and (min-width: 1440px) {
+  .container, .head {
+    max-width: 500px;
+  }
+
+  .head {
+    padding: 25px 20px;
+  }
+
+  .container {
+    padding: 30px 25px;
+  }
+
+  header {
+    font-size: calc(var(--font-size-large) + 0.4rem);
+  }
+
+  .input {
+    padding: 0.7rem 1rem;
+    font-size: var(--font-size-small);
+  }
+
+  button {
+    height: 2.8em;
+    line-height: 2.8em;
+    font-size: var(--font-size-small);
+  }
+
+  .SignIn {
+    font-size: calc(var(--font-size-medium) + 0.2rem);
+  }
+
+  .name-wrapper {
+    gap: 15px;
   }
 }
 

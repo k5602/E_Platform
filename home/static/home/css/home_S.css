@@ -147,7 +147,7 @@ body {
   left: 0;
   padding: 20px 10px;
   background-color: var(--header_color);
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
   overflow-x: hidden;
   z-index: 100;
   display: flex;
@@ -155,8 +155,30 @@ body {
   box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
 }
 
+/* Hide sidebar on mobile */
+@media (max-width: 768px) {
+  .side_nav {
+    display: none !important;
+    transform: translateX(-100%);
+    width: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 .side_nav:hover {
   width: 250px;
+}
+
+/* Animation for sidebar */
+.side_nav.animated {
+  animation: sidebarPulse 0.3s ease;
+}
+
+@keyframes sidebarPulse {
+  0% { box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2); }
+  50% { box-shadow: 5px 0 20px rgba(0, 0, 0, 0.4); }
+  100% { box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2); }
 }
 
 .user {
@@ -271,6 +293,28 @@ body {
   overflow-y: auto;
   margin-left: 80px;
   width: calc(100% - 80px);
+}
+
+/* Hide header and hamburger by default (on desktop) */
+.main-header {
+  display: none !important; /* Force hide on desktop */
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Hide hamburger button on desktop */
+.hamburger-btn {
+  display: none !important;
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Full width content on mobile */
+@media (max-width: 768px) {
+  .main-content-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
 }
 
 /* --- Navigation Bar --- */
@@ -565,6 +609,7 @@ button {
   overflow: hidden;
   box-shadow: var(--box_shadow);
   transition: transform 0.3s ease;
+  width: 100%;
 }
 
 .document-container:hover {
@@ -580,6 +625,7 @@ button {
   text-decoration: none;
   color: var(--text_color);
   display: block;
+  width: 100%;
 }
 
 .document-preview {
@@ -589,6 +635,7 @@ button {
   background-color: var(--container_color);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 8px;
+  width: 100%;
 }
 
 .darkmode .document-preview {
@@ -611,18 +658,48 @@ button {
 .document-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .document-name {
   font-weight: bold;
   margin-bottom: 5px;
   word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .document-type {
   font-size: 0.8rem;
   color: var(--label_color);
   text-transform: uppercase;
+}
+
+@media (max-width: 480px) {
+  .document-container {
+    margin: 10px 0;
+  }
+
+  .document-preview {
+    padding: 10px;
+  }
+
+  .document-icon {
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+  }
+
+  .document-name {
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+  }
+
+  .document-type {
+    font-size: 0.7rem;
+  }
 }
 
 .document-preview-container {
@@ -1075,21 +1152,119 @@ button {
   display: block;
 }
 
-/* Mobile styles */
-@media (max-width: 768px) {
-  .side_nav {
-    transform: translateX(-100%);
-    width: 250px;
+/* High-resolution laptops and desktops */
+@media (min-width: 1440px) {
+  body {
+    font-size: 14px;
   }
 
-  .side_nav.active {
-    transform: translateX(0);
+  .side_nav {
+    width: 90px;
   }
 
   .side_nav:hover {
-    width: 250px;
+    width: 280px;
   }
 
+  .main-content-area {
+    margin-left: 90px;
+    width: calc(100% - 90px);
+    padding: 30px;
+  }
+
+  .addpost-outer, .posts-container {
+    max-width: 800px;
+  }
+
+  .addpost-container {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .add-post {
+    font-size: 1.05rem;
+    min-height: 60px;
+  }
+
+  .icon-label {
+    width: 38px;
+    height: 38px;
+  }
+
+  .icon-label img {
+    width: 24px;
+    height: 24px;
+  }
+
+  .post {
+    padding: 20px;
+    margin-bottom: 25px;
+  }
+
+  .post-img, .post-video {
+    max-height: 500px;
+  }
+
+  .file-preview {
+    max-width: 220px;
+    max-height: 150px;
+  }
+
+  .document-preview-container {
+    max-width: 220px;
+    max-height: 150px;
+  }
+
+  .document-icon {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* Tablet styles */
+@media (max-width: 1024px) {
+  .addpost-outer, .posts-container {
+    max-width: 650px;
+  }
+
+  .main_nav {
+    width: 500px;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  /* Hide sidebar completely on mobile by default */
+  .side_nav {
+    display: none !important;
+    width: 0;
+    opacity: 0;
+    visibility: hidden;
+    position: fixed;
+    top: 0;
+    left: -280px; /* Start offscreen */
+    height: 100vh;
+    width: 280px;
+    z-index: 1000;
+    box-shadow: none;
+    transition: all 0.3s ease;
+  }
+
+  /* Only show sidebar when active */
+  .side_nav.active {
+    display: flex !important;
+    opacity: 1;
+    visibility: visible;
+    left: 0;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  }
+
+  /* No hover effect on mobile - always show full width */
+  .side_nav:hover {
+    width: 280px;
+  }
+
+  /* Always show text in mobile sidebar */
   .side_nav .user h2,
   .side_nav .user p,
   .side_nav .main-menu li p,
@@ -1097,14 +1272,52 @@ button {
     opacity: 1;
   }
 
-  .main-content-area {
-    margin-left: 0;
-    width: 100%;
+  /* Improve user section in sidebar */
+  .user {
+    padding: 20px 15px;
+    margin-bottom: 25px;
   }
 
+  .user-img {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 15px;
+  }
+
+  .user h2 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+
+  /* Improve menu items for touch */
+  .main-menu li a, .logout-menu li a {
+    padding: 14px 15px;
+    margin: 6px 0;
+  }
+
+  .main-menu li img, .logout-menu li img {
+    width: 26px;
+    height: 26px;
+    margin-right: 20px;
+  }
+
+  .main-menu li p, .logout-menu li p {
+    font-size: 1rem;
+  }
+
+  /* Adjust main content to take full width */
+  .main-content-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 15px;
+    padding-top: 70px; /* Add padding to account for fixed header */
+  }
+
+  /* Improve navigation for mobile */
   .main_nav {
     width: 100%;
     overflow-x: auto;
+    margin: 20px auto;
   }
 
   .main_nav a {
@@ -1112,19 +1325,33 @@ button {
     font-size: 14px;
   }
 
+  /* Reposition toggle button */
   .toggle {
     left: 20px;
+    bottom: 20px;
+    z-index: 999;
   }
 
+  /* When sidebar is active, move toggle button */
+  .side_nav.active ~ .toggle {
+    left: 230px;
+    transition: left 0.3s ease;
+  }
+
+  /* Header styles for mobile */
   .main-header {
-    display: flex;
+    display: flex !important; /* Show only on mobile */
     justify-content: space-between;
     align-items: center;
     padding: 15px;
     background-color: var(--header_color);
-    position: sticky;
+    position: fixed; /* Changed to fixed to ensure it's always visible */
     top: 0;
-    z-index: 10;
+    left: 0; /* Ensure it starts from the left edge */
+    right: 0; /* Ensure it extends to the right edge */
+    z-index: 1001; /* Higher z-index to ensure it's above other elements */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
   }
 
   .logo-placeholder {
@@ -1133,26 +1360,32 @@ button {
     font-size: 1.5rem;
   }
 
+  /* Hamburger button styles - improved for better visibility */
   .hamburger-btn {
-    display: block;
-    background: transparent;
+    display: block !important; /* Show on mobile */
+    background: rgba(0, 0, 0, 0.2); /* Slight background for better visibility */
     border: none;
     cursor: pointer;
-    padding: 10px;
-    z-index: 102;
+    padding: 12px; /* Larger padding */
+    z-index: 1002; /* Higher than sidebar */
+    position: relative;
+    margin-right: 5px; /* Add some margin */
+    border-radius: 5px; /* Rounded corners */
   }
 
   .hamburger-btn span {
     display: block;
-    width: 25px;
+    width: 30px;
     height: 3px;
-    margin: 5px 0;
+    margin: 6px 0;
     background-color: white;
     transition: all 0.3s ease;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* Darker shadow for better visibility */
   }
 
   .hamburger-btn.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
+    transform: rotate(45deg) translate(6px, 6px);
   }
 
   .hamburger-btn.active span:nth-child(2) {
@@ -1161,6 +1394,119 @@ button {
 
   .hamburger-btn.active span:nth-child(3) {
     transform: rotate(-45deg) translate(7px, -7px);
+  }
+
+  /* Improve content spacing */
+  .addpost-outer, .posts-container {
+    padding: 0 10px;
+  }
+
+  /* Adjust preview sizes */
+  .file-preview {
+    max-width: 150px;
+    max-height: 100px;
+  }
+
+  .document-preview-container {
+    max-width: 150px;
+    max-height: 100px;
+  }
+
+  /* Improve sidebar overlay */
+  .sidebar-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+}
+
+/* Small mobile styles */
+@media (max-width: 480px) {
+  .main_nav {
+    height: 40px;
+  }
+
+  .main_nav a {
+    line-height: 40px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  .addpost-container {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .add-post {
+    min-height: 40px;
+    font-size: 0.9rem;
+  }
+
+  .icon-label {
+    width: 28px;
+    height: 28px;
+  }
+
+  .icon-label img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .add-btn {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+
+  .post {
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+
+  .post-img, .post-video {
+    max-height: 250px;
+  }
+
+  .file-preview {
+    max-width: 120px;
+    max-height: 80px;
+  }
+
+  .document-preview-container {
+    max-width: 120px;
+    max-height: 80px;
+  }
+
+  .document-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+  }
+
+  .document-name {
+    font-size: 0.8rem;
+  }
+
+  .document-type {
+    font-size: 0.7rem;
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .pagination a, .pagination .current {
+    padding: 6px 10px;
+    font-size: 0.85rem;
   }
 }
 
