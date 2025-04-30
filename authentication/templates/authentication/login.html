@@ -37,6 +37,23 @@
                 </div>
                 {% endif %}
 
+                {% if form.errors %}
+                <div class="form-errors">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                        <div class="alert alert-danger">
+                            {{ field.label }}: {{ error }}
+                        </div>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <div class="input-wrapper username-wrapper">
                     {{ form.username }}
                 </div>

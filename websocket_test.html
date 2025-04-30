@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test with Enhanced Error Handling</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #disconnect {
+            background-color: #f44336;
+        }
+        #disconnect:hover {
+            background-color: #d32f2f;
+        }
+        #send {
+            background-color: #2196F3;
+        }
+        #send:hover {
+            background-color: #0b7dda;
+        }
+        #log {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            background-color: #fff;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .status-connected { background-color: #4CAF50; }
+        .status-connecting { background-color: #ff9800; animation: blink 1.5s infinite; }
+        .status-disconnected { background-color: #f44336; }
+
+        @keyframes blink {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .test-button {
+            background-color: #673AB7;
+            flex: 1;
+            text-align: center;
+        }
+
+        .test-button:hover {
+            background-color: #5E35B1;
+        }
+
+        .notification-count {
+            background-color: #f44336;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test with Enhanced Error Handling</h1>
+
+    <div class="container">
+        <h2>Connection Settings</h2>
+        <div class="control-group">
+            <label for="user-id">User ID:</label>
+            <input type="text" id="user-id" value="2">
+            <span id="connection-status" class="status-indicator status-disconnected"></span>
+        </div>
+        <div class="control-group">
+            <button id="connect">Connect</button>
+            <button id="disconnect" disabled>Disconnect</button>
+            <span id="unread-count" class="notification-count" style="display: none;">0</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Send Message</h2>
+        <div class="control-group">
+            <label for="message-type">Message Type:</label>
+            <select id="message-type">
+                <option value="mark_read">Mark Read</option>
+                <option value="mark_all_read">Mark All Read</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label for="notification-id">Notification ID:</label>
+            <input type="text" id="notification-id" placeholder="Required for mark_read">
+        </div>
+        <button id="send" disabled>Send Message</button>
+
+        <div class="test-buttons">
+            <button id="test-reconnect" class="test-button" disabled>Test Reconnection</button>
+            <button id="test-error" class="test-button" disabled>Test Error Handling</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Log</h2>
+        <div id="log"></div>
+        <button id="clear-log">Clear Log</button>
+    </div>
+
+    <script>
+        // WebSocket Manager Class
+        class WebSocketManager {
+            constructor(userId) {
+                this.userId = userId;
+                this.socket = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.baseReconnectDelay = 1000; // Start with 1 second
+                this.reconnectTimer = null;
+                this.isConnecting = false;
+                this.connectionStatus = 'disconnected'; // disconnected, connecting, connected, reconnecting, failed
+
+                // Create WebSocket URL
+                const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                const host = window.location.host || 'localhost:8000';
+                this.wsUrl = `${protocol}${host}/ws/notifications/${userId}/`;
+
+                // Event callbacks
+                this.onOpen = null;
+                this.onMessage = null;
+                this.onClose = null;
+                this.onError = null;
+                this.onStatusChange = null;
+
+                // Bind methods to this instance
+                this.connect = this.connect.bind(this);
+                this.disconnect = this.disconnect.bind(this);
+                this.reconnect = this.reconnect.bind(this);
+                this.sendMessage = this.sendMessage.bind(this);
+                this.clearReconnectTimer = this.clearReconnectTimer.bind(this);
+
+                // Log initialization
+                this._log(`WebSocket manager initialized for user ${userId}`);
+            }
+
+            connect() {
+                if (this.isConnecting || this.connectionStatus === 'connected') {
+                    this._log('WebSocket connection already in progress or established');
+                    return;
+                }
+
+                try {
+                    this.isConnecting = true;
+                    this._setConnectionStatus('connecting');
+
+                    this._log(`Connecting to WebSocket at: ${this.wsUrl}`);
+
+                    // Create new WebSocket connection
+                    this.socket = new WebSocket(this.wsUrl);
+
+                    // Set up event listeners
+                    this.socket.addEventListener('open', this._handleOpen.bind(this));
+                    this.socket.addEventListener('message', this._handleMessage.bind(this));
+                    this.socket.addEventListener('close', this._handleClose.bind(this));
+                    this.socket.addEventListener('error', this._handleError.bind(this));
+
+                } catch (error) {
+                    this._log(`Error initializing WebSocket: ${error.message}`, 'error');
+                    this.isConnecting = false;
+                    this._setConnectionStatus('failed');
+                }
+            }
+
+            disconnect() {
+                if (this.socket) {
+                    this._log('Manually disconnecting WebSocket');
+                    this.socket.close(1000, 'User initiated disconnect');
+                    this.socket = null;
+                }
+
+                this.clearReconnectTimer();
+                this._setConnectionStatus('disconnected');
+            }
+
+            reconnect() {
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    this._log(`Maximum reconnection attempts (${this.maxReconnectAttempts}) reached`, 'error');
+                    this._setConnectionStatus('failed');
+                    return;
+                }
+
+                // Calculate delay with exponential backoff and some randomness
+                const delay = Math.min(
+                    30000, // Max 30 seconds
+                    this.baseReconnectDelay * Math.pow(1.5, this.reconnectAttempts) * (1 + Math.random() * 0.1)
+                );
+
+                this.reconnectAttempts++;
+                this._setConnectionStatus('reconnecting');
+
+                this._log(`Reconnecting in ${Math.round(delay / 1000)} seconds (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`, 'warning');
+
+                this.clearReconnectTimer();
+                this.reconnectTimer = setTimeout(() => {
+                    this.connect();
+                }, delay);
+            }
+
+            clearReconnectTimer() {
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                    this.reconnectTimer = null;
+                }
+            }
+
+            sendMessage(message) {
+                if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                    this._log('Cannot send message: WebSocket is not connected', 'error');
+                    return false;
+                }
+
+                try {
+                    this.socket.send(JSON.stringify(message));
+                    this._log(`Sent message: ${JSON.stringify(message)}`, 'info');
+                    return true;
+                } catch (error) {
+                    this._log(`Error sending WebSocket message: ${error.message}`, 'error');
+                    return false;
+                }
+            }
+
+            // Force close the socket to test reconnection
+            forceDisconnect() {
+                if (this.socket) {
+                    this._log('Forcing WebSocket disconnection to test reconnection', 'warning');
+                    this.socket.close(4000, 'Forced disconnect for testing');
+                }
+            }
+
+            // Send an invalid message to test error handling
+            sendInvalidMessage() {
+                if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+                    this._log('Cannot send invalid message: WebSocket is not connected', 'error');
+                    return false;
+                }
+
+                try {
+                    this._log('Sending invalid message to test error handling', 'warning');
+                    this.socket.send('This is not valid JSON');
+                    return true;
+                } catch (error) {
+                    this._log(`Error sending invalid WebSocket message: ${error.message}`, 'error');
+                    return false;
+                }
+            }
+
+            // Private methods
+            _handleOpen(event) {
+                this._log('WebSocket connection established', 'success');
+                this.isConnecting = false;
+                this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+                this._setConnectionStatus('connected');
+
+                if (this.onOpen) {
+                    this.onOpen(event);
+                }
+            }
+
+            _handleMessage(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    this._log(`Received: ${JSON.stringify(data)}`, 'info');
+
+                    if (this.onMessage) {
+                        this.onMessage(data);
+                    }
+                } catch (error) {
+                    this._log(`Error parsing WebSocket message: ${error.message}`, 'error');
+                }
+            }
+
+            _handleClose(event) {
+                this.isConnecting = false;
+                this._log(`WebSocket connection closed with code: ${event.code}, reason: ${event.reason}`, event.code === 1000 ? 'info' : 'error');
+
+                if (this.onClose) {
+                    this.onClose(event);
+                }
+
+                // Only try to reconnect if not a normal closure
+                if (event.code !== 1000) {
+                    this.reconnect();
+                } else {
+                    this._setConnectionStatus('disconnected');
+                }
+            }
+
+            _handleError(event) {
+                this._log('WebSocket error', 'error');
+                this.isConnecting = false;
+
+                if (this.onError) {
+                    this.onError(event);
+                }
+
+                // WebSocket errors are followed by a close event, so we'll handle reconnection there
+            }
+
+            _setConnectionStatus(status) {
+                this.connectionStatus = status;
+
+                if (this.onStatusChange) {
+                    this.onStatusChange(status);
+                }
+            }
+
+            _log(message, type = 'info') {
+                console.log(`[WebSocketManager] ${message}`);
+            }
+        }
+
+        // UI Controller
+        document.addEventListener('DOMContentLoaded', function() {
+            const connectBtn = document.getElementById('connect');
+            const disconnectBtn = document.getElementById('disconnect');
+            const sendBtn = document.getElementById('send');
+            const userIdInput = document.getElementById('user-id');
+            const messageTypeSelect = document.getElementById('message-type');
+            const notificationIdInput = document.getElementById('notification-id');
+            const connectionStatus = document.getElementById('connection-status');
+            const unreadCount = document.getElementById('unread-count');
+            const testReconnectBtn = document.getElementById('test-reconnect');
+            const testErrorBtn = document.getElementById('test-error');
+            const clearLogBtn = document.getElementById('clear-log');
+
+            let wsManager = null;
+
+            // Log function
+            function log(message, type = 'info') {
+                const logElement = document.getElementById('log');
+                const entry = document.createElement('div');
+                entry.className = type;
+                entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+                logElement.appendChild(entry);
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+
+            // Update UI based on connection status
+            function updateConnectionUI(status) {
+                connectionStatus.className = `status-indicator status-${status}`;
+
+                switch (status) {
+                    case 'connected':
+                        connectBtn.disabled = true;
+                        disconnectBtn.disabled = false;
+                        sendBtn.disabled = false;
+                        testReconnectBtn.disabled = false;
+                        testErrorBtn.disabled = false;
+                        break;
+                    case 'connecting':
+                    case 'reconnecting':
+                        connectBtn.disabled = true;
+                        disconnectBtn.disabled = false;
+                        sendBtn.disabled = true;
+                        testReconnectBtn.disabled = true;
+                        testErrorBtn.disabled = true;
+                        break;
+                    case 'disconnected':
+                    case 'failed':
+                        connectBtn.disabled = false;
+                        disconnectBtn.disabled = true;
+                        sendBtn.disabled = true;
+                        testReconnectBtn.disabled = true;
+                        testErrorBtn.disabled = true;
+                        break;
+                }
+            }
+
+            // Update notification count
+            function updateNotificationCount(count) {
+                if (count > 0) {
+                    unreadCount.textContent = count;
+                    unreadCount.style.display = 'inline-flex';
+                } else {
+                    unreadCount.style.display = 'none';
+                }
+            }
+
+            // Connect button click handler
+            connectBtn.addEventListener('click', function() {
+                const userId = userIdInput.value.trim();
+                if (!userId) {
+                    log('Please enter a user ID', 'error');
+                    return;
+                }
+
+                // Create new WebSocket manager
+                wsManager = new WebSocketManager(userId);
+
+                // Set up event handlers
+                wsManager.onOpen = function(event) {
+                    log('Connection established', 'success');
+                };
+
+                wsManager.onMessage = function(data) {
+                    log(`Received: ${JSON.stringify(data)}`, 'info');
+
+                    // Update notification count if received
+                    if (data.type === 'unread_count' && data.count !== undefined) {
+                        updateNotificationCount(data.count);
+                    }
+                };
+
+                wsManager.onClose = function(event) {
+                    log(`Connection closed with code: ${event.code}`, event.code === 1000 ? 'info' : 'error');
+                };
+
+                wsManager.onError = function(event) {
+                    log('WebSocket error', 'error');
+                };
+
+                wsManager.onStatusChange = function(status) {
+                    log(`Connection status changed to: ${status}`, status === 'connected' ? 'success' : (status === 'disconnected' ? 'info' : 'warning'));
+                    updateConnectionUI(status);
+                };
+
+                // Connect
+                wsManager.connect();
+            });
+
+            // Disconnect button click handler
+            disconnectBtn.addEventListener('click', function() {
+                if (wsManager) {
+                    wsManager.disconnect();
+                    wsManager = null;
+                }
+            });
+
+            // Send button click handler
+            sendBtn.addEventListener('click', function() {
+                if (!wsManager) {
+                    log('WebSocket manager not initialized', 'error');
+                    return;
+                }
+
+                const messageType = messageTypeSelect.value;
+                const notificationId = notificationIdInput.value.trim();
+
+                let message = { type: messageType };
+                if (messageType === 'mark_read') {
+                    if (!notificationId) {
+                        log('Notification ID is required for mark_read', 'error');
+                        return;
+                    }
+                    message.notification_id = notificationId;
+                }
+
+                log(`Sending: ${JSON.stringify(message)}`);
+                wsManager.sendMessage(message);
+            });
+
+            // Test reconnection button click handler
+            testReconnectBtn.addEventListener('click', function() {
+                if (wsManager) {
+                    wsManager.forceDisconnect();
+                }
+            });
+
+            // Test error handling button click handler
+            testErrorBtn.addEventListener('click', function() {
+                if (wsManager) {
+                    wsManager.sendInvalidMessage();
+                }
+            });
+
+            // Clear log button click handler
+            clearLogBtn.addEventListener('click', function() {
+                const logElement = document.getElementById('log');
+                logElement.innerHTML = '';
+            });
+
+            // Initialize UI
+            updateConnectionUI('disconnected');
+            log('WebSocket test page loaded', 'info');
+        });
+    </script>
+</body>
+</html>

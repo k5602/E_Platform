@@ -196,7 +196,7 @@ header{
   margin-right: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
- 
+
 .container{
   width: 85%;
   max-width: 380px;
@@ -226,6 +226,50 @@ header{
   gap: 20px;
   width: 100%;
   align-items: center;
+}
+
+/* Error messages styling */
+.alert {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.alert-error, .alert-danger {
+  background-color: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #d32f2f;
+}
+
+.alert-success {
+  background-color: rgba(0, 255, 0, 0.1);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  color: #388e3c;
+}
+
+.alert-info {
+  background-color: rgba(0, 0, 255, 0.1);
+  border: 1px solid rgba(0, 0, 255, 0.3);
+  color: #1976d2;
+}
+
+.messages, .form-errors {
+  width: 100%;
+}
+
+.field-error {
+  font-size: 12px;
+  margin-top: 5px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.input-error {
+  border-color: #d32f2f !important;
+  box-shadow: 0 0 0 2px rgba(211, 47, 47, 0.12) !important;
 }
 
 /* username, password */

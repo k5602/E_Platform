@@ -306,10 +306,62 @@
     font-weight: bold;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     transform: scale(0.95);
+    transition: transform 0.2s ease;
 }
 
 .notification-badge.hidden {
     display: none;
+}
+
+/* Pulse animation for new notifications */
+.notification-badge.pulse {
+    animation: badge-pulse 1s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes badge-pulse {
+    0% {
+        transform: scale(0.95);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(0.95);
+    }
+}
+
+/* Connection status indicator */
+.connection-status {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease;
+}
+
+.connection-status.connected {
+    background-color: #4CAF50;
+}
+
+.connection-status.connecting,
+.connection-status.reconnecting {
+    background-color: #FFC107;
+    animation: blink 1.5s infinite;
+}
+
+.connection-status.disconnected,
+.connection-status.failed {
+    background-color: #F44336;
+}
+
+@keyframes blink {
+    0% { opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { opacity: 0.4; }
 }
 
 /* Notification Panel */

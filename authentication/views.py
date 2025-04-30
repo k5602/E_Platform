@@ -33,7 +33,13 @@ def login_view(request):
             else:
                 messages.error(request, 'Invalid username or password')
         else:
-            messages.error(request, 'Invalid form submission')
+            # Display specific form errors instead of a generic message
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, f"{error}")
+                    else:
+                        messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = CustomAuthenticationForm()
 

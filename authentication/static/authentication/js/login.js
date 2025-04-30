@@ -12,12 +12,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
 
-        if (!username || !password) {
+        // Clear any previous error messages
+        const existingErrors = document.querySelectorAll('.field-error');
+        existingErrors.forEach(error => error.remove());
+
+        let hasErrors = false;
+
+        if (!username) {
             e.preventDefault();
-            alert('Please fill in all fields');
+            hasErrors = true;
+            displayFieldError(usernameInput, 'Username is required');
+        }
+
+        if (!password) {
+            e.preventDefault();
+            hasErrors = true;
+            displayFieldError(passwordInput, 'Password is required');
+        }
+
+        if (hasErrors) {
             return false;
         }
     });
+
+    // Function to display field-specific errors
+    function displayFieldError(field, message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error alert alert-danger';
+        errorDiv.textContent = message;
+
+        // Insert error after the field
+        field.parentNode.insertBefore(errorDiv, field.nextSibling);
+
+        // Add error class to the input
+        field.classList.add('input-error');
+
+        // Remove error when field is focused
+        field.addEventListener('focus', function() {
+            const error = this.parentNode.querySelector('.field-error');
+            if (error) {
+                error.remove();
+            }
+            this.classList.remove('input-error');
+        }, { once: true });
+    }
 
     // Show/hide password logic
     const showPasswordCheckbox = document.querySelector('.show-password-checkbox');

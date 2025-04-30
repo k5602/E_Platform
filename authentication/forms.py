@@ -5,15 +5,47 @@ from .models import CustomUser
 
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'input', 'placeholder': 'Username'})
+        widget=forms.TextInput(attrs={'class': 'input', 'placeholder': 'Username'}),
+        error_messages={'required': 'Please enter your username'}
     )
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'input', 'placeholder': 'Password'})
+        widget=forms.PasswordInput(attrs={'class': 'input', 'placeholder': 'Password'}),
+        error_messages={'required': 'Please enter your password'}
     )
     remember_me = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={'id': 'remember-checkbox', 'class': 'remember-checkbox'})
     )
+
+    error_messages = {
+        'invalid_login': 'Please enter a correct username and password. Note that both fields may be case-sensitive.',
+        'inactive': 'This account is inactive. Please contact the administrator.',
+    }
+
+    def clean(self):
+        """
+        Override the default clean method to provide more specific error messages.
+        """
+        try:
+            return super().clean()
+        except forms.ValidationError as e:
+            # Add more specific error messages
+            if 'Please enter a correct username and password' in str(e):
+                # Check if username exists but password is wrong
+                username = self.cleaned_data.get('username')
+                if username and self.user_cache is None:
+                    try:
+                        from authentication.models import CustomUser
+                        user = CustomUser.objects.get(username=username)
+                        # User exists but password is wrong
+                        self.add_error('password', 'The password you entered is incorrect')
+                        return self.cleaned_data
+                    except CustomUser.DoesNotExist:
+                        # Username doesn't exist
+                        self.add_error('username', 'This username does not exist')
+                        return self.cleaned_data
+            # Re-raise the original error
+            raise
 
 class CustomUserCreationForm(UserCreationForm):
     first_name = forms.CharField(
