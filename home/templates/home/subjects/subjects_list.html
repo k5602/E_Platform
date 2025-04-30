@@ -20,12 +20,6 @@
         </div>
     </div>
 
-    <!-- Loading Spinner -->
-    <div class="loading-spinner hidden">
-        <div class="spinner"></div>
-        <p>Loading subjects...</p>
-    </div>
-
     {% if subjects %}
     <section class="subjects-grid">
         {% for subject in subjects %}
@@ -71,15 +65,6 @@
 {% block page_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Show loading spinner on page load
-    const loadingSpinner = document.querySelector('.loading-spinner');
-    loadingSpinner.classList.remove('hidden');
-
-    // Simulate loading delay
-    setTimeout(() => {
-        loadingSpinner.classList.add('hidden');
-    }, 1000);
-
     // Validate external links
     const externalLinks = document.querySelectorAll('.external-link');
     externalLinks.forEach(link => {
