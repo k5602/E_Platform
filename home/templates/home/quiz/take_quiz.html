@@ -1,0 +1,230 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="quiz-container">
+    <div class="quiz-header">
+        <h1>{{ quiz.title }}</h1>
+        <div class="quiz-meta">
+            <div class="quiz-subject">
+                <i class="material-icons">school</i> {{ quiz.subject.name }}
+            </div>
+            <div class="quiz-timer" id="quiz-timer">
+                <i class="material-icons">timer</i> <span id="timer-display">--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="quiz-instructions">
+        <p><strong>Instructions:</strong> Answer all questions to the best of your ability. Your progress is automatically saved as you go.</p>
+        <p>Time remaining: <span id="timer-countdown">{{ remaining_seconds }}</span> seconds</p>
+    </div>
+
+    <form id="quiz-form" method="post" action="{% url 'home:take_quiz' attempt_id=attempt.id %}">
+        {% csrf_token %}
+        
+        <div class="questions-container">
+            {% for question in questions %}
+            <div class="question-card" id="question-{{ question.id }}">
+                <div class="question-number">Question {{ forloop.counter }}</div>
+                <div class="question-text">
+                    {{ question.text }}
+                    {% if question.marks > 1 %}
+                    <span class="question-marks">{{ question.marks }} marks</span>
+                    {% else %}
+                    <span class="question-marks">{{ question.marks }} mark</span>
+                    {% endif %}
+                </div>
+                
+                {% if question.image %}
+                <div class="question-image">
+                    <img src="{{ question.image.url }}" alt="Question image">
+                </div>
+                {% endif %}
+                
+                <div class="question-answers">
+                    {% if question.question_type == 'mcq' %}
+                    <div class="mcq-options">
+                        {% for answer in question.answers.all %}
+                        <div class="mcq-option">
+                            <input type="radio" 
+                                   name="question_{{ question.id }}" 
+                                   id="answer_{{ answer.id }}" 
+                                   value="{{ answer.id }}"
+                                   {% if user_answers.question.id.selected_answer.id == answer.id %}checked{% endif %}>
+                            <label for="answer_{{ answer.id }}">{{ answer.text }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% elif question.question_type == 'true_false' %}
+                    <div class="true-false-options">
+                        {% for answer in question.answers.all %}
+                        <div class="true-false-option">
+                            <input type="radio" 
+                                   name="question_{{ question.id }}" 
+                                   id="answer_{{ answer.id }}" 
+                                   value="{{ answer.id }}"
+                                   {% if user_answers.question.id.selected_answer.id == answer.id %}checked{% endif %}>
+                            <label for="answer_{{ answer.id }}">{{ answer.text }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% elif question.question_type == 'short_answer' %}
+                    <div class="short-answer">
+                        <textarea name="question_{{ question.id }}" 
+                                  placeholder="Enter your answer here..."
+                                  rows="4">{% if user_answers.question.id.text_answer %}{{ user_answers.question.id.text_answer }}{% endif %}</textarea>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="quiz-navigation">
+            <button type="submit" name="save_progress" class="btn btn-secondary">Save Progress</button>
+            <button type="submit" name="submit_quiz" class="btn btn-primary" id="submit-quiz">Submit Quiz</button>
+        </div>
+    </form>
+    
+    <div id="timeout-warning" class="timeout-warning hidden">
+        <div class="timeout-content">
+            <h3><i class="material-icons">warning</i> Time is running out!</h3>
+            <p>You have less than <span id="warning-time">2</span> minutes remaining.</p>
+            <button id="dismiss-warning" class="btn btn-secondary">Continue</button>
+        </div>
+    </div>
+    
+    <div id="confirm-submit" class="confirm-dialog hidden">
+        <div class="confirm-content">
+            <h3>Submit Quiz?</h3>
+            <p>Are you sure you want to submit your quiz? This action cannot be undone.</p>
+            <div class="confirm-buttons">
+                <button id="cancel-submit" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-submit-btn" class="btn btn-primary">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="quiz-overlay" class="quiz-overlay hidden"></div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Timer functionality
+        let remainingSeconds = {{ remaining_seconds }};
+        const timerDisplay = document.getElementById('timer-display');
+        const timerCountdown = document.getElementById('timer-countdown');
+        const timeoutWarning = document.getElementById('timeout-warning');
+        const quizForm = document.getElementById('quiz-form');
+        const submitBtn = document.getElementById('submit-quiz');
+        const confirmDialog = document.getElementById('confirm-submit');
+        const cancelSubmit = document.getElementById('cancel-submit');
+        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+        const quizOverlay = document.getElementById('quiz-overlay');
+        const dismissWarning = document.getElementById('dismiss-warning');
+        let warningShown = false;
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Update timer display
+        function updateTimer() {
+            if (remainingSeconds <= 0) {
+                // Auto-submit when time is up
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "00:00";
+                timerCountdown.textContent = "0";
+                quizForm.submit();
+                return;
+            }
+            
+            remainingSeconds--;
+            timerDisplay.textContent = formatTime(remainingSeconds);
+            timerCountdown.textContent = remainingSeconds;
+            
+            // Show warning when 2 minutes remaining
+            if (remainingSeconds <= 120 && !warningShown) {
+                timeoutWarning.classList.remove('hidden');
+                quizOverlay.classList.remove('hidden');
+                warningShown = true;
+            }
+        }
+        
+        // Initialize timer
+        timerDisplay.textContent = formatTime(remainingSeconds);
+        const timerInterval = setInterval(updateTimer, 1000);
+        
+        // Dismiss warning
+        dismissWarning.addEventListener('click', function() {
+            timeoutWarning.classList.add('hidden');
+            quizOverlay.classList.add('hidden');
+        });
+        
+        // Handle form submission
+        submitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            confirmDialog.classList.remove('hidden');
+            quizOverlay.classList.remove('hidden');
+        });
+        
+        // Cancel submission
+        cancelSubmit.addEventListener('click', function() {
+            confirmDialog.classList.add('hidden');
+            quizOverlay.classList.add('hidden');
+        });
+        
+        // Confirm submission
+        confirmSubmitBtn.addEventListener('click', function() {
+            // Add hidden input to indicate submit action
+            const submitInput = document.createElement('input');
+            submitInput.type = 'hidden';
+            submitInput.name = 'submit_quiz';
+            submitInput.value = 'true';
+            quizForm.appendChild(submitInput);
+            
+            // Submit the form
+            quizForm.submit();
+        });
+        
+        // Prevent accidental navigation away
+        window.addEventListener('beforeunload', function(e) {
+            const confirmationMessage = 'Your quiz progress will be saved, but you will need to resume later. Are you sure you want to leave?';
+            e.returnValue = confirmationMessage;
+            return confirmationMessage;
+        });
+        
+        // Save progress periodically (every 30 seconds)
+        setInterval(function() {
+            // Create a FormData object
+            const formData = new FormData(quizForm);
+            
+            // Send AJAX request to save progress
+            fetch(quizForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                console.log('Progress saved automatically');
+            }).catch(error => {
+                console.error('Error saving progress:', error);
+            });
+        }, 30000);
+    });
+</script>
+{% endblock %}

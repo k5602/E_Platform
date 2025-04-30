@@ -1,0 +1,126 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="question-form-container">
+    <div class="form-header">
+        <h1>{% if action == 'add' %}Add New Question{% else %}Edit Question{% endif %}</h1>
+        <div class="quiz-info">
+            <span>Quiz: {{ quiz.title }}</span>
+        </div>
+        <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="btn btn-secondary">
+            <i class="material-icons">arrow_back</i> Back to Questions
+        </a>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" class="question-form">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h2>Question Information</h2>
+            
+            <div class="form-group">
+                <label for="{{ question_form.text.id_for_label }}">Question Text</label>
+                {{ question_form.text }}
+                {% if question_form.text.errors %}
+                <div class="form-error">{{ question_form.text.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ question_form.question_type.id_for_label }}">Question Type</label>
+                {{ question_form.question_type }}
+                {% if question_form.question_type.errors %}
+                <div class="form-error">{{ question_form.question_type.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ question_form.marks.id_for_label }}">Marks</label>
+                {{ question_form.marks }}
+                {% if question_form.marks.errors %}
+                <div class="form-error">{{ question_form.marks.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ question_form.image.id_for_label }}">Image (Optional)</label>
+                {{ question_form.image }}
+                {% if question_form.image.errors %}
+                <div class="form-error">{{ question_form.image.errors }}</div>
+                {% endif %}
+                {% if question and question.image %}
+                <div class="current-image">
+                    <p>Current image:</p>
+                    <img src="{{ question.image.url }}" alt="Current question image" class="thumbnail">
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ question_form.explanation.id_for_label }}">Explanation (Optional)</label>
+                {{ question_form.explanation }}
+                {% if question_form.explanation.errors %}
+                <div class="form-error">{{ question_form.explanation.errors }}</div>
+                {% endif %}
+                <div class="form-help">Explanation shown to students after answering the question.</div>
+            </div>
+        </div>
+        
+        <div id="true-false-options" class="form-section" style="display: none;">
+            <h2>True/False Answer</h2>
+            <div class="form-group">
+                <label>Select the correct answer:</label>
+                <div class="radio-options">
+                    {{ question_form.correct_option }}
+                    {% if question_form.correct_option.errors %}
+                    <div class="form-error">{{ question_form.correct_option.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons">save</i> 
+                {% if action == 'add' %}
+                    {% if question and question.question_type != 'true_false' %}
+                    Save and Add Answers
+                    {% else %}
+                    Save Question
+                    {% endif %}
+                {% else %}
+                Save Changes
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionTypeSelect = document.getElementById('{{ question_form.question_type.id_for_label }}');
+        const trueFalseOptions = document.getElementById('true-false-options');
+        
+        // Function to toggle True/False options visibility
+        function toggleTrueFalseOptions() {
+            if (questionTypeSelect.value === 'true_false') {
+                trueFalseOptions.style.display = 'block';
+            } else {
+                trueFalseOptions.style.display = 'none';
+            }
+        }
+        
+        // Initialize and add change event
+        toggleTrueFalseOptions();
+        questionTypeSelect.addEventListener('change', toggleTrueFalseOptions);
+    });
+</script>
+{% endblock %}

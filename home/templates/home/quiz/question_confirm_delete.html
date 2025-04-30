@@ -1,0 +1,63 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="delete-confirmation-container">
+    <div class="confirmation-card">
+        <div class="confirmation-icon">
+            <i class="material-icons">warning</i>
+        </div>
+        
+        <h1>Delete Question</h1>
+        
+        <div class="confirmation-message">
+            <p>Are you sure you want to delete this question?</p>
+            <p>This action cannot be undone and will delete all associated answers and student responses.</p>
+        </div>
+        
+        <div class="question-preview">
+            <h3>Question Preview:</h3>
+            <div class="question-text">{{ question.text }}</div>
+            
+            {% if question.image %}
+            <div class="question-image">
+                <img src="{{ question.image.url }}" alt="Question image">
+            </div>
+            {% endif %}
+            
+            <div class="question-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Type:</span>
+                    <span class="meta-value">{{ question.get_question_type_display }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Marks:</span>
+                    <span class="meta-value">{{ question.marks }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Answer Options:</span>
+                    <span class="meta-value">{{ question.answers.count }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="confirmation-actions">
+            <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="btn btn-secondary">
+                <i class="material-icons">arrow_back</i> Cancel
+            </a>
+            
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="material-icons">delete</i> Delete Question
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

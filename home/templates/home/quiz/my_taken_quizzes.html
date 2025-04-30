@@ -1,0 +1,133 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="my-quizzes-container">
+    <div class="page-header">
+        <h1>My Quiz Attempts</h1>
+        <div class="tab-navigation">
+            <a href="{% url 'home:my_quizzes' %}?tab=taken" class="tab-link active">Taken Quizzes</a>
+            {% if user.is_staff or user.user_type == 'instructor' %}
+            <a href="{% url 'home:my_quizzes' %}?tab=created" class="tab-link">Created Quizzes</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="filters">
+        <form method="get" action="{% url 'home:my_quizzes' %}" class="filter-form">
+            <input type="hidden" name="tab" value="taken">
+            <div class="filter-group">
+                <label for="status">Filter by Status:</label>
+                <select name="status" id="status" class="form-control" onchange="this.form.submit()">
+                    <option value="" {% if not status %}selected{% endif %}>All Attempts</option>
+                    <option value="in_progress" {% if status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="timed_out" {% if status == 'timed_out' %}selected{% endif %}>Timed Out</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <div class="quiz-attempts-list">
+        {% if attempts %}
+            {% for attempt in attempts %}
+            <div class="attempt-card">
+                <div class="attempt-header">
+                    <h2>{{ attempt.quiz.title }}</h2>
+                    <span class="attempt-status {% if attempt.status == 'completed' %}status-completed{% elif attempt.status == 'in_progress' %}status-progress{% else %}status-timeout{% endif %}">
+                        {{ attempt.get_status_display }}
+                    </span>
+                </div>
+                
+                <div class="attempt-details">
+                    <div class="attempt-info">
+                        <div class="info-item">
+                            <i class="material-icons">school</i>
+                            <span>{{ attempt.quiz.subject.name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="material-icons">event</i>
+                            <span>Started: {{ attempt.start_time|date:"M d, Y H:i" }}</span>
+                        </div>
+                        {% if attempt.end_time %}
+                        <div class="info-item">
+                            <i class="material-icons">alarm_on</i>
+                            <span>Completed: {{ attempt.end_time|date:"M d, Y H:i" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if attempt.status != 'in_progress' %}
+                    <div class="attempt-score">
+                        <div class="score-display">
+                            <div class="score-circle {% if attempt.score >= attempt.quiz.total_marks|floatformat:0|mul:0.7 %}high{% elif attempt.score >= attempt.quiz.total_marks|floatformat:0|mul:0.5 %}medium{% else %}low{% endif %}">
+                                {{ attempt.score }}/{{ attempt.quiz.total_marks }}
+                            </div>
+                            <div class="score-percent">
+                                {% if attempt.quiz.total_marks > 0 %}
+                                {{ attempt.score|div:attempt.quiz.total_marks|mul:100|floatformat:1 }}%
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="attempt-progress">
+                        <i class="material-icons">hourglass_bottom</i>
+                        <span>In progress</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="attempt-actions">
+                    {% if attempt.status == 'in_progress' %}
+                    <a href="{% url 'home:take_quiz' attempt_id=attempt.id %}" class="quiz-btn continue">
+                        <i class="material-icons">play_arrow</i> Continue Quiz
+                    </a>
+                    {% else %}
+                    <a href="{% url 'home:quiz_result' attempt_id=attempt.id %}" class="quiz-btn results">
+                        <i class="material-icons">assessment</i> View Results
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'home:quiz_detail' quiz_id=attempt.quiz.id %}" class="quiz-btn details">
+                        <i class="material-icons">info</i> Quiz Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-attempts">
+                <i class="material-icons">sentiment_dissatisfied</i>
+                <p>You haven't taken any quizzes yet.</p>
+                <a href="{% url 'home:quiz_list' %}" class="btn btn-primary">Browse Quizzes</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if attempts.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if attempts.has_previous %}
+                <a href="?tab=taken&page=1{% if status %}&status={{ status }}{% endif %}">&laquo; first</a>
+                <a href="?tab=taken&page={{ attempts.previous_page_number }}{% if status %}&status={{ status }}{% endif %}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ attempts.number }} of {{ attempts.paginator.num_pages }}
+            </span>
+
+            {% if attempts.has_next %}
+                <a href="?tab=taken&page={{ attempts.next_page_number }}{% if status %}&status={{ status }}{% endif %}">next</a>
+                <a href="?tab=taken&page={{ attempts.paginator.num_pages }}{% if status %}&status={{ status }}{% endif %}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

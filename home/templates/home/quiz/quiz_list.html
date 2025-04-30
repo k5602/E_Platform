@@ -1,0 +1,129 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="quiz-container">
+    <div class="quiz-header">
+        <h1 class="quiz-title">Available Quizzes</h1>
+        {% if user.is_staff or user.user_type == 'instructor' %}
+        <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">
+            <i class="material-icons">add</i> Create Quiz
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="quiz-filters">
+        <form method="get" action="{% url 'home:quiz_list' %}" class="filter-form">
+            <div class="filter-group">
+                <label for="subject">Filter by Subject:</label>
+                <select name="subject" id="subject" class="form-control" onchange="this.form.submit()">
+                    <option value="">All Subjects</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"i" %}selected{% endif %}>
+                        {{ subject.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <div class="view-options">
+            <a href="{% url 'home:quiz_list' %}" class="{% if not selected_subject %}active{% endif %}" aria-label="View all quizzes">All</a>
+            <a href="{% url 'home:my_quizzes' %}" aria-label="View my quizzes">My Quizzes</a>
+        </div>
+    </div>
+
+    {% if subject_name %}
+    <div class="subject-filter-badge">
+        Showing quizzes for: <span>{{ subject_name }}</span>
+        <a href="{% url 'home:quiz_list' %}" class="clear-filter" aria-label="Clear subject filter">✕</a>
+    </div>
+    {% endif %}
+
+    <div class="quiz-list">
+        {% if quizzes %}
+            {% for quiz in quizzes %}
+            <div class="quiz-card">
+                <div class="quiz-card-header">
+                    <h3>{{ quiz.title }}</h3>
+                    {% if quiz.status == 'draft' %}
+                    <span class="quiz-status draft">Draft</span>
+                    {% endif %}
+                </div>
+                <div class="quiz-card-body">
+                    <p class="quiz-description">{{ quiz.description|truncatechars:100 }}</p>
+                    <div class="quiz-meta">
+                        <div class="quiz-meta-item">
+                            <i class="material-icons">school</i>
+                            <span>{{ quiz.subject.name }}</span>
+                        </div>
+                        <div class="quiz-meta-item">
+                            <i class="material-icons">timer</i>
+                            <span>{{ quiz.duration }} minutes</span>
+                        </div>
+                        <div class="quiz-meta-item">
+                            <i class="material-icons">help</i>
+                            <span>{{ quiz.get_questions_count }} questions</span>
+                        </div>
+                        <div class="quiz-meta-item">
+                            <i class="material-icons">star</i>
+                            <span>{{ quiz.total_marks }} marks</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="quiz-card-footer">
+                    <a href="{% url 'home:quiz_detail' quiz.id %}" class="quiz-btn view">View Details</a>
+                    {% if user == quiz.creator or user.is_staff %}
+                    <a href="{% url 'home:quiz_edit' quiz.id %}" class="quiz-btn edit">Edit</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-quizzes">
+                <i class="material-icons">sentiment_dissatisfied</i>
+                <p>No quizzes found.</p>
+                {% if subject_name %}
+                <p>Try selecting a different subject or check back later.</p>
+                {% endif %}
+                {% if user.is_staff or user.user_type == 'instructor' %}
+                <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">Create a Quiz</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% if quizzes.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if quizzes.has_previous %}
+                <a href="?page=1{% if selected_subject %}&subject={{ selected_subject }}{% endif %}">&laquo; first</a>
+                <a href="?page={{ quizzes.previous_page_number }}{% if selected_subject %}&subject={{ selected_subject }}{% endif %}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ quizzes.number }} of {{ quizzes.paginator.num_pages }}
+            </span>
+
+            {% if quizzes.has_next %}
+                <a href="?page={{ quizzes.next_page_number }}{% if selected_subject %}&subject={{ selected_subject }}{% endif %}">next</a>
+                <a href="?page={{ quizzes.paginator.num_pages }}{% if selected_subject %}&subject={{ selected_subject }}{% endif %}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any quiz-specific JavaScript here
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="quiz-form-container">
+    <div class="form-header">
+        <h1>{% if action == 'create' %}Create New Quiz{% else %}Edit Quiz{% endif %}</h1>
+        <a href="{% if quiz %}{% url 'home:quiz_detail' quiz_id=quiz.id %}{% else %}{% url 'home:quiz_list' %}{% endif %}" class="btn btn-secondary">
+            <i class="material-icons">arrow_back</i> Back
+        </a>
+    </div>
+
+    <form method="post" class="quiz-form">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h2>Quiz Information</h2>
+            
+            <div class="form-group">
+                <label for="{{ form.title.id_for_label }}">Title</label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                <div class="form-error">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                <div class="form-error">{{ form.description.errors }}</div>
+                {% endif %}
+                <div class="form-help">Provide a clear description of what this quiz covers.</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.subject.id_for_label }}">Subject</label>
+                {{ form.subject }}
+                {% if form.subject.errors %}
+                <div class="form-error">{{ form.subject.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h2>Quiz Settings</h2>
+            
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="{{ form.duration.id_for_label }}">Duration (minutes)</label>
+                    {{ form.duration }}
+                    {% if form.duration.errors %}
+                    <div class="form-error">{{ form.duration.errors }}</div>
+                    {% endif %}
+                    <div class="form-help">{{ form.duration.help_text }}</div>
+                </div>
+                
+                <div class="form-group col-md-6">
+                    <label for="{{ form.visibility.id_for_label }}">Visibility</label>
+                    {{ form.visibility }}
+                    {% if form.visibility.errors %}
+                    <div class="form-error">{{ form.visibility.errors }}</div>
+                    {% endif %}
+                    <div class="form-help">{{ form.visibility.help_text }}</div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="{{ form.status.id_for_label }}">Status</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                    <div class="form-error">{{ form.status.errors }}</div>
+                    {% endif %}
+                    <div class="form-help">{{ form.status.help_text }}</div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group form-check col-md-6">
+                    {{ form.is_randomized }}
+                    <label class="form-check-label" for="{{ form.is_randomized.id_for_label }}">
+                        {{ form.is_randomized.label }}
+                    </label>
+                    {% if form.is_randomized.errors %}
+                    <div class="form-error">{{ form.is_randomized.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group form-check col-md-6">
+                    {{ form.shuffle_answers }}
+                    <label class="form-check-label" for="{{ form.shuffle_answers.id_for_label }}">
+                        {{ form.shuffle_answers.label }}
+                    </label>
+                    {% if form.shuffle_answers.errors %}
+                    <div class="form-error">{{ form.shuffle_answers.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons">save</i> 
+                {% if action == 'create' %}Create Quiz{% else %}Save Changes{% endif %}
+            </button>
+            
+            {% if action == 'edit' %}
+            <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="btn btn-secondary">
+                <i class="material-icons">list</i> Manage Questions
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize any form-specific JavaScript here
+    });
+</script>
+{% endblock %}

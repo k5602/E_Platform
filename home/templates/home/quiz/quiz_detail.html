@@ -1,0 +1,163 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block home_content %}
+<div class="container">
+    <div class="quiz-detail-header">
+        <h1>{{ quiz.title }}</h1>
+        <div class="quiz-badges">
+            <span class="badge" style="background-color: {{ quiz.subject.icon_color }}">{{ quiz.subject.name }}</span>
+            <span class="badge {% if quiz.is_active %}badge-success{% else %}badge-warning{% endif %}">
+                {% if quiz.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="quiz-content">
+        <div class="quiz-info-card">
+            <div class="quiz-details">
+                <div class="details-item">
+                    <i class="material-icons">help</i>
+                    <div>
+                        <strong>Questions</strong>
+                        <span>{{ quiz.get_questions_count }}</span>
+                    </div>
+                </div>
+
+                <div class="details-item">
+                    <i class="material-icons">schedule</i>
+                    <div>
+                        <strong>Time Limit</strong>
+                        <span>{{ quiz.time_limit }} minutes</span>
+                    </div>
+                </div>
+
+                <div class="details-item">
+                    <i class="material-icons">star</i>
+                    <div>
+                        <strong>Passing Score</strong>
+                        <span>{{ quiz.passing_score }}</span>
+                    </div>
+                </div>
+
+                <div class="details-item">
+                    <i class="material-icons">school</i>
+                    <div>
+                        <strong>Subject</strong>
+                        <span>{{ quiz.subject.name }}</span>
+                    </div>
+                </div>
+
+                <div class="details-item">
+                    <i class="material-icons">date_range</i>
+                    <div>
+                        <strong>Created</strong>
+                        <span>{{ quiz.created_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quiz-description">
+                <h3>Description</h3>
+                <p>{{ quiz.description|linebreaks|default:"No description provided." }}</p>
+            </div>
+
+            <div class="quiz-features">
+                <h3>Features</h3>
+                <ul class="feature-list">
+                    {% if quiz.is_randomized %}
+                    <li><i class="material-icons">shuffle</i> Questions will be presented in random order</li>
+                    {% endif %}
+                    {% if quiz.shuffle_answers %}
+                    <li><i class="material-icons">swap_horiz</i> Answer options will be shuffled</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            {% if user_attempts %}
+            <div class="previous-attempts">
+                <h3>Your Previous Attempts</h3>
+                <div class="attempt-list">
+                    {% for attempt in user_attempts %}
+                    <div class="attempt-item">
+                        <div class="attempt-info">
+                            <span class="attempt-date">{{ attempt.start_time|date:"M d, Y H:i" }}</span>
+                            <span class="attempt-status badge {% if attempt.status == 'completed' %}badge-success{% elif attempt.status == 'in_progress' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ attempt.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="attempt-score">
+                            {% if attempt.status != 'in_progress' %}
+                            <span>Score: {{ attempt.score }}/{{ quiz.total_marks }} ({{ attempt.score|floatformat:0|default:0 }}%)</span>
+                            {% endif %}
+                        </div>
+                        <div class="attempt-actions">
+                            {% if attempt.status == 'in_progress' %}
+                            <a href="{% url 'home:take_quiz' attempt_id=attempt.id %}" class="btn btn-warning">Continue Attempt</a>
+                            {% else %}
+                            <a href="{% url 'home:quiz_result' attempt_id=attempt.id %}" class="btn btn-info">View Results</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="quiz-actions">
+                {% if quiz.is_active %}
+                {% if user_attempts and user_attempts.0.status == 'in_progress' %}
+                <a href="{% url 'home:take_quiz' attempt_id=user_attempts.0.id %}" class="btn btn-primary btn-lg">
+                    <i class="material-icons">play_arrow</i> Continue Quiz
+                </a>
+                {% else %}
+                <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="btn btn-primary btn-lg">
+                    <i class="material-icons">play_arrow</i> Start Quiz
+                </a>
+                {% endif %}
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="material-icons">warning</i>
+                    This quiz is currently inactive and not available for taking.
+                </div>
+                {% endif %}
+                </div>
+
+                <!-- Instructor/admin actions -->
+                <div class="admin-actions">
+                    <h3>Manage Quiz</h3>
+                    {% if user.is_staff or user == quiz.subject.instructor %}
+                    <div class="admin-buttons">
+                        <a href="{% url 'home:edit_quiz' quiz_id=quiz.id %}" class="btn btn-outline-primary">
+                            <i class="material-icons">edit</i> Edit Quiz
+                        </a>
+                        <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="btn btn-outline-info">
+                            <i class="material-icons">format_list_bulleted</i> Manage Questions
+                        </a>
+                        <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="btn btn-outline-success">
+                            <i class="material-icons">analytics</i> View Analytics
+                        </a>
+                        <a href="{% url 'home:delete_quiz' quiz_id=quiz.id %}" class="btn btn-outline-danger">
+                            <i class="material-icons">delete</i> Delete Quiz
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="material-icons">info</i>
+                        Only staff members or the subject instructor can manage this quiz.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Any quiz detail specific JavaScript here
+    });
+</script>
+{% endblock %}

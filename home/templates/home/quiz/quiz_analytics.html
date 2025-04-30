@@ -1,0 +1,229 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="analytics-container">
+    <div class="analytics-header">
+        <h1>Quiz Analytics: {{ quiz.title }}</h1>
+        <div class="quiz-info">
+            <div class="info-item">
+                <i class="material-icons">school</i>
+                <span>{{ quiz.subject.name }}</span>
+            </div>
+            <div class="info-item">
+                <i class="material-icons">people</i>
+                <span>{{ total_attempts }} attempts</span>
+            </div>
+        </div>
+        <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="btn btn-secondary">
+            <i class="material-icons">arrow_back</i> Back to Quiz
+        </a>
+    </div>
+
+    <div class="analytics-summary">
+        <div class="analytics-card">
+            <h2>Performance Summary</h2>
+            
+            <div class="performance-overview">
+                <div class="performance-metric">
+                    <div class="metric-value">{{ average_percentage|floatformat:1 }}%</div>
+                    <div class="metric-label">Average Score</div>
+                </div>
+                
+                <div class="performance-metric">
+                    <div class="metric-value">{{ average_score|floatformat:1 }}</div>
+                    <div class="metric-label">Avg. Points (out of {{ quiz.total_marks }})</div>
+                </div>
+                
+                <div class="performance-metric">
+                    <div class="metric-value">{{ total_attempts }}</div>
+                    <div class="metric-label">Total Attempts</div>
+                </div>
+            </div>
+            
+            {% if total_attempts > 0 %}
+            <div class="chart-container">
+                <canvas id="scoreDistributionChart"></canvas>
+            </div>
+            {% else %}
+            <div class="no-data">
+                <p>No attempts have been made on this quiz yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="question-analytics">
+        <h2>Question Analysis</h2>
+        
+        {% if total_attempts > 0 %}
+        <div class="question-stats-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Marks</th>
+                        <th>Correct Answers</th>
+                        <th>Success Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in question_stats %}
+                    <tr>
+                        <td class="question-text">{{ stat.question.text|truncatechars:70 }}</td>
+                        <td>{{ stat.question.get_question_type_display }}</td>
+                        <td>{{ stat.question.marks }}</td>
+                        <td>{{ stat.correct_count }}/{{ total_attempts }}</td>
+                        <td>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: {{ stat.percent_correct }}%"></div>
+                                <span class="progress-text">{{ stat.percent_correct|floatformat:1 }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="questionSuccessChart"></canvas>
+        </div>
+        {% else %}
+        <div class="no-data">
+            <p>No attempts have been made on this quiz yet.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="analytics-actions">
+        <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="btn btn-primary">
+            <i class="material-icons">edit</i> Edit Questions
+        </a>
+        <a href="{% url 'home:quiz_edit' quiz_id=quiz.id %}" class="btn btn-secondary">
+            <i class="material-icons">settings</i> Quiz Settings
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if total_attempts > 0 %}
+        // Set up data for question success rates chart
+        const questionLabels = [
+            {% for stat in question_stats %}
+            "Q{{ forloop.counter }}",
+            {% endfor %}
+        ];
+        
+        const successRates = [
+            {% for stat in question_stats %}
+            {{ stat.percent_correct|floatformat:1 }},
+            {% endfor %}
+        ];
+        
+        // Create question success rate chart
+        const questionCtx = document.getElementById('questionSuccessChart').getContext('2d');
+        const questionChart = new Chart(questionCtx, {
+            type: 'bar',
+            data: {
+                labels: questionLabels,
+                datasets: [{
+                    label: 'Success Rate (%)',
+                    data: successRates,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Question Success Rates',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + '% correct';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: {
+                            display: true,
+                            text: 'Success Rate (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Questions'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Create score distribution chart (dummy data - this would be replaced with actual data)
+        const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
+        const scoreChart = new Chart(scoreCtx, {
+            type: 'pie',
+            data: {
+                labels: ['90-100%', '80-89%', '70-79%', '60-69%', 'Below 60%'],
+                datasets: [{
+                    data: [20, 25, 20, 15, 20], // Replace with actual data
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.6)',
+                        'rgba(54, 162, 235, 0.6)',
+                        'rgba(255, 206, 86, 0.6)',
+                        'rgba(255, 159, 64, 0.6)',
+                        'rgba(255, 99, 132, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Score Distribution',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

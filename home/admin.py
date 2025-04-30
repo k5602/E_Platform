@@ -3,10 +3,12 @@ from .models import (
     Post, Like, Comment, Contact, FAQ, Appointment,
     Subject, SubjectMaterial, SubjectEnrollment
 )
+from .models_quiz import Quiz, Question, Answer, UserAttempt, UserAnswer
 from .admin_profile import (
     UserProfileAdmin, EducationAdmin, ExperienceAdmin,
     SkillAdmin, ProjectAdmin, CertificationAdmin
 )
+from .admin_quiz import *
 
 class CommentInline(admin.TabularInline):
     model = Comment
@@ -55,7 +57,7 @@ class PostAdmin(admin.ModelAdmin):
     def has_document(self, obj):
         return bool(obj.document)
     has_document.boolean = True
-    has_document.short_description = 'Doc'
+    has_document.short_description = 'Document'
 
     def comment_count(self, obj):
         return obj.comments.count()
@@ -64,6 +66,7 @@ class PostAdmin(admin.ModelAdmin):
     def like_count(self, obj):
         return obj.likes.count()
     like_count.short_description = 'Likes'
+
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
@@ -79,8 +82,9 @@ class CommentAdmin(admin.ModelAdmin):
     content_preview.short_description = 'Content'
 
     def post_preview(self, obj):
-        return obj.post.content[:30] + '...' if len(obj.post.content) > 30 else obj.post.content
+        return obj.post.content[:50] + '...' if len(obj.post.content) > 50 else obj.post.content
     post_preview.short_description = 'Post'
+
 
 @admin.register(Like)
 class LikeAdmin(admin.ModelAdmin):
@@ -95,6 +99,7 @@ class LikeAdmin(admin.ModelAdmin):
         return obj.post.content[:50] + '...' if len(obj.post.content) > 50 else obj.post.content
     post_preview.short_description = 'Post'
 
+
 # Register Contact model
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
@@ -104,6 +109,7 @@ class ContactAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at',)
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
+
 
 # Register FAQ model
 @admin.register(FAQ)
@@ -119,6 +125,7 @@ class FAQAdmin(admin.ModelAdmin):
         ('Status', {'fields': ('is_active',)}),
     )
 
+
 # Register Appointment model
 @admin.register(Appointment)
 class AppointmentAdmin(admin.ModelAdmin):
@@ -129,7 +136,6 @@ class AppointmentAdmin(admin.ModelAdmin):
     ordering = ('-appointment_date', '-appointment_time')
     list_editable = ('status',)
     raw_id_fields = ('user', 'instructor')
-
     fieldsets = (
         ('Appointment Details', {
             'fields': ('name', 'email', 'phone', 'appointment_date', 'appointment_time', 'appointment_type')
@@ -142,13 +148,17 @@ class AppointmentAdmin(admin.ModelAdmin):
         }),
     )
 
+    # Customize the queryset based on user role
     def get_queryset(self, request):
-        """Customize the queryset based on user role."""
         qs = super().get_queryset(request)
+        # If superuser, show all appointments
         if request.user.is_superuser:
             return qs
-        # If user is an instructor, only show their appointments
-        return qs.filter(instructor=request.user)
+        # If instructor, show only appointments related to that instructor
+        if hasattr(request.user, 'user_type') and request.user.user_type == 'instructor':
+            return qs.filter(instructor=request.user)
+        # For other staff users, show all
+        return qs
 
 
 # Subject Models Admin
@@ -175,7 +185,6 @@ class SubjectAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     inlines = [SubjectMaterialInline, SubjectEnrollmentInline]
     list_per_page = 20
-
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'code', 'description', 'is_active')
@@ -202,7 +211,6 @@ class SubjectMaterialAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
     list_editable = ('is_active',)
     list_per_page = 25
-
     fieldsets = (
         ('Basic Information', {
             'fields': ('subject', 'title', 'description', 'material_type', 'is_active', 'order', 'content')

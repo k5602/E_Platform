@@ -1,0 +1,204 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="quiz-result-container">
+    <div class="result-header">
+        <h1>Quiz Results: {{ quiz.title }}</h1>
+        <div class="result-meta">
+            <div class="quiz-subject">
+                <i class="material-icons">school</i> {{ quiz.subject.name }}
+            </div>
+            <div class="attempt-date">
+                <i class="material-icons">event</i> {{ attempt.end_time|date:"F d, Y H:i" }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="result-summary">
+        <div class="result-card">
+            <div class="score-circle {% if score_percent >= 70 %}high{% elif score_percent >= 50 %}medium{% else %}low{% endif %}">
+                <div class="score-text">
+                    <span class="score-percent">{{ score_percent|floatformat:1 }}%</span>
+                    <span class="score-points">{{ attempt.score }}/{{ quiz.total_marks }}</span>
+                </div>
+            </div>
+            
+            <div class="result-details">
+                <div class="result-item">
+                    <i class="material-icons">assignment_turned_in</i>
+                    <div>
+                        <strong>Status</strong>
+                        <span>{{ attempt.get_status_display }}</span>
+                    </div>
+                </div>
+                <div class="result-item">
+                    <i class="material-icons">schedule</i>
+                    <div>
+                        <strong>Time Taken</strong>
+                        <span>
+                            {% if attempt.end_time %}
+                                {% with time_taken=attempt.end_time|timeuntil:attempt.start_time %}
+                                    {{ time_taken }}
+                                {% endwith %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="result-actions">
+        <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="btn btn-secondary">
+            <i class="material-icons">arrow_back</i> Back to Quiz
+        </a>
+        <a href="{% url 'home:quiz_list' %}" class="btn btn-primary">
+            <i class="material-icons">list</i> All Quizzes
+        </a>
+        {% if attempt.user == user %}
+        <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="btn btn-success">
+            <i class="material-icons">replay</i> Try Again
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="result-questions-header">
+        <h2>Question Review</h2>
+        <p>Review your answers and see the correct solutions below.</p>
+    </div>
+    
+    <div class="result-questions">
+        {% for question in questions %}
+            {% with user_answer=user_answers.question.id %}
+            <div class="review-question">
+                <div class="question-header">
+                    <h3>Question {{ forloop.counter }}</h3>
+                    <div class="question-marks">
+                        {% if user_answer and user_answer.marks_obtained > 0 %}
+                            <span class="correct-answer">
+                                <i class="material-icons">check_circle</i> {{ user_answer.marks_obtained }}/{{ question.marks }}
+                            </span>
+                        {% else %}
+                            <span class="incorrect-answer">
+                                <i class="material-icons">cancel</i> 0/{{ question.marks }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="question-content">
+                    <p>{{ question.text }}</p>
+                    
+                    {% if question.image %}
+                    <div class="question-image">
+                        <img src="{{ question.image.url }}" alt="Question image">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="answers-review">
+                        {% if question.question_type == 'mcq' or question.question_type == 'true_false' %}
+                            <div class="mcq-review">
+                                {% for answer in question.answers.all %}
+                                <div class="mcq-option 
+                                    {% if answer.is_correct %}correct-option{% endif %}
+                                    {% if user_answer.selected_answer == answer and not answer.is_correct %}incorrect-selection{% endif %}
+                                    {% if user_answer.selected_answer == answer %}user-selected{% endif %}">
+                                    
+                                    <span class="answer-text">{{ answer.text }}</span>
+                                    
+                                    {% if answer.is_correct %}
+                                    <span class="answer-icon correct">
+                                        <i class="material-icons">check_circle</i>
+                                    </span>
+                                    {% elif user_answer.selected_answer == answer %}
+                                    <span class="answer-icon incorrect">
+                                        <i class="material-icons">cancel</i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% elif question.question_type == 'short_answer' %}
+                            <div class="short-answer-review">
+                                <div class="user-answer">
+                                    <h4>Your Answer:</h4>
+                                    <p>{{ user_answer.text_answer|default:"No answer provided" }}</p>
+                                </div>
+                                {% if quiz.creator == user or user.is_staff %}
+                                <div class="grading-controls">
+                                    <h4>Grade Answer:</h4>
+                                    <div class="grade-input">
+                                        <input type="number" min="0" max="{{ question.marks }}" value="{{ user_answer.marks_obtained }}" id="grade-{{ user_answer.id }}" class="form-control">
+                                        <span class="grade-max">/ {{ question.marks }}</span>
+                                        <button class="btn btn-sm btn-primary save-grade" data-answer-id="{{ user_answer.id }}">Save</button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if question.explanation %}
+                    <div class="question-explanation">
+                        <h4>Explanation:</h4>
+                        <p>{{ question.explanation }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle manual grading of short answers
+        const gradeButtons = document.querySelectorAll('.save-grade');
+        
+        gradeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const answerId = this.dataset.answerId;
+                const marksInput = document.getElementById(`grade-${answerId}`);
+                const marks = marksInput.value;
+                
+                // Send AJAX request to update marks
+                fetch(`{% url 'home:mark_short_answer' answer_id=0 %}`.replace('0', answerId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ marks: marks })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Show success message
+                        alert('Grade saved successfully!');
+                        // Update UI if necessary
+                    } else {
+                        // Show error message
+                        alert('Error saving grade: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while saving the grade.');
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

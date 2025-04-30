@@ -2,6 +2,7 @@ from django.urls import path, include
 from . import views
 from .urls_subjects import urlpatterns as subject_urlpatterns
 from .urls_profile import urlpatterns as profile_urlpatterns
+from .urls_quiz import urlpatterns as quiz_urlpatterns
 
 app_name = 'home'
 
@@ -38,3 +39,6 @@ urlpatterns += subject_urlpatterns
 
 # Add profile URL patterns
 urlpatterns += profile_urlpatterns
+
+# Add quiz URL patterns
+urlpatterns += quiz_urlpatterns

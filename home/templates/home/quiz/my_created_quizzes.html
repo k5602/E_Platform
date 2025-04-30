@@ -1,0 +1,133 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="my-quizzes-container">
+    <div class="page-header">
+        <h1>My Created Quizzes</h1>
+        <div class="tab-navigation">
+            <a href="{% url 'home:my_quizzes' %}?tab=taken" class="tab-link">Taken Quizzes</a>
+            <a href="{% url 'home:my_quizzes' %}?tab=created" class="tab-link active">Created Quizzes</a>
+        </div>
+        <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">
+            <i class="material-icons">add</i> Create New Quiz
+        </a>
+    </div>
+
+    <div class="created-quizzes-list">
+        {% if quizzes %}
+            {% for quiz in quizzes %}
+            <div class="quiz-card">
+                <div class="quiz-card-header">
+                    <h2>{{ quiz.title }}</h2>
+                    <div class="quiz-status">
+                        <span class="status-badge {% if quiz.status == 'published' %}published{% else %}draft{% endif %}">
+                            {{ quiz.get_status_display }}
+                        </span>
+                        <span class="visibility-badge {% if quiz.visibility == 'public' %}public{% else %}private{% endif %}">
+                            {{ quiz.get_visibility_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="quiz-card-body">
+                    <p class="quiz-description">{{ quiz.description|truncatechars:150 }}</p>
+                    
+                    <div class="quiz-stats">
+                        <div class="stats-item">
+                            <i class="material-icons">help</i>
+                            <div>
+                                <span class="stats-label">Questions</span>
+                                <span class="stats-value">{{ quiz.get_questions_count }}</span>
+                            </div>
+                        </div>
+                        <div class="stats-item">
+                            <i class="material-icons">person</i>
+                            <div>
+                                <span class="stats-label">Attempts</span>
+                                <span class="stats-value">{{ quiz.attempts.count }}</span>
+                            </div>
+                        </div>
+                        <div class="stats-item">
+                            <i class="material-icons">schedule</i>
+                            <div>
+                                <span class="stats-label">Duration</span>
+                                <span class="stats-value">{{ quiz.duration }} mins</span>
+                            </div>
+                        </div>
+                        <div class="stats-item">
+                            <i class="material-icons">school</i>
+                            <div>
+                                <span class="stats-label">Subject</span>
+                                <span class="stats-value">{{ quiz.subject.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-card-footer">
+                    <div class="quiz-dates">
+                        <div class="date-item">
+                            <i class="material-icons">event</i>
+                            <span>Created: {{ quiz.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        {% if quiz.created_at != quiz.updated_at %}
+                        <div class="date-item">
+                            <i class="material-icons">update</i>
+                            <span>Updated: {{ quiz.updated_at|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="quiz-actions">
+                        <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="quiz-btn view">
+                            <i class="material-icons">visibility</i> View
+                        </a>
+                        <a href="{% url 'home:quiz_edit' quiz_id=quiz.id %}" class="quiz-btn edit">
+                            <i class="material-icons">edit</i> Edit
+                        </a>
+                        <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="quiz-btn questions">
+                            <i class="material-icons">list</i> Questions
+                        </a>
+                        <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="quiz-btn analytics">
+                            <i class="material-icons">bar_chart</i> Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-quizzes">
+                <i class="material-icons">sentiment_dissatisfied</i>
+                <p>You haven't created any quizzes yet.</p>
+                <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">Create Your First Quiz</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if quizzes.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <span class="step-links">
+            {% if quizzes.has_previous %}
+                <a href="?tab=created&page=1">&laquo; first</a>
+                <a href="?tab=created&page={{ quizzes.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ quizzes.number }} of {{ quizzes.paginator.num_pages }}
+            </span>
+
+            {% if quizzes.has_next %}
+                <a href="?tab=created&page={{ quizzes.next_page_number }}">next</a>
+                <a href="?tab=created&page={{ quizzes.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
