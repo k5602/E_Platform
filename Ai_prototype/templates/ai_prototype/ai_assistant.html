@@ -1,0 +1,440 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block title %}AI Assistant - KFS University{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .ai-assistant-container {
+        max-width: 900px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: var(--container_color);
+        border-radius: 10px;
+        box-shadow: var(--box_shadow);
+    }
+
+    .ai-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .ai-icon {
+        width: 50px;
+        height: 50px;
+        margin-right: 15px;
+        background-color: var(--main_button);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ai-icon i {
+        color: white;
+        font-size: 28px;
+    }
+
+    .ai-title h1 {
+        margin: 0;
+        font-size: 24px;
+    }
+
+    .ai-title p {
+        margin: 5px 0 0;
+        color: var(--label_color);
+    }
+
+    .submission-form {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: rgba(var(--main_button_rgb), 0.05);
+        border-radius: 8px;
+        border: 1px solid rgba(var(--main_button_rgb), 0.2);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border_color);
+        border-radius: 5px;
+        background-color: var(--input_background);
+        color: var(--text_color);
+        font-size: 16px;
+    }
+
+    .form-control:focus {
+        border-color: var(--main_button);
+        outline: none;
+    }
+
+    .btn-ai {
+        background-color: var(--main_button);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-ai:hover {
+        background-color: var(--accent_color);
+        transform: translateY(-2px);
+    }
+
+    .feedback-container {
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border_color);
+        display: none;
+    }
+
+    .feedback-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border_color);
+    }
+
+    .feedback-avatar {
+        width: 40px;
+        height: 40px;
+        background-color: var(--main_button);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+    }
+
+    .feedback-avatar i {
+        color: white;
+        font-size: 20px;
+    }
+
+    .feedback-title {
+        flex: 1;
+    }
+
+    .feedback-title h2 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .feedback-title span {
+        font-size: 14px;
+        color: var(--label_color);
+    }
+
+    .feedback-content {
+        font-size: 16px;
+        line-height: 1.6;
+        color: var(--text_color);
+    }
+
+    .loader {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .loader .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(var(--main_button_rgb), 0.1);
+        border-left-color: var(--main_button);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .recent-feedbacks {
+        margin-top: 40px;
+    }
+
+    .tab-container {
+        margin-top: 20px;
+    }
+
+    .tab-buttons {
+        display: flex;
+        margin-bottom: 15px;
+        border-bottom: 1px solid var(--border_color);
+    }
+
+    .tab-button {
+        padding: 10px 20px;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-right: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .tab-button.active {
+        border-bottom-color: var(--main_button);
+        color: var(--main_button);
+    }
+
+    .tab-content > div {
+        display: none;
+    }
+
+    .tab-content > div.active {
+        display: block;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .example-card {
+        margin-bottom: 15px;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border_color);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .example-card:hover {
+        border-color: var(--main_button);
+        background-color: rgba(var(--main_button_rgb), 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block home_content %}
+<div class="ai-assistant-container">
+    <div class="ai-header">
+        <div class="ai-icon">
+            <i class="material-icons">smart_toy</i>
+        </div>
+        <div class="ai-title">
+            <h1>AI Learning Assistant</h1>
+            <p>Get personalized feedback on your assignments, quizzes, and learning journey</p>
+        </div>
+    </div>
+
+    <div class="tab-container">
+        <div class="tab-buttons">
+            <div class="tab-button active" data-tab="submit">Submit for Feedback</div>
+            <div class="tab-button" data-tab="examples">Examples</div>
+            <div class="tab-button" data-tab="about">About</div>
+        </div>
+
+        <div class="tab-content">
+            <div class="tab-pane active" id="tab-submit">
+                <div class="submission-form">
+                    <div class="form-group">
+                        <label for="submission-type">Type of Feedback</label>
+                        <select class="form-control" id="submission-type">
+                            <option value="assignment">Assignment Feedback</option>
+                            <option value="quiz">Quiz Performance Feedback</option>
+                            <option value="general">General Learning Feedback</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="submission-id">Submission ID (optional)</label>
+                        <input type="text" class="form-control" id="submission-id" placeholder="Enter submission ID or leave blank for a generic response">
+                    </div>
+                    <button class="btn-ai" id="generate-feedback-btn">
+                        <i class="material-icons">psychology</i>
+                        Get AI Feedback
+                    </button>
+                </div>
+
+                <div class="loader" id="feedback-loader">
+                    <div class="spinner"></div>
+                    <p>Analyzing your submission...</p>
+                </div>
+
+                <div class="feedback-container" id="feedback-container">
+                    <div class="feedback-header">
+                        <div class="feedback-avatar">
+                            <i class="material-icons">psychology</i>
+                        </div>
+                        <div class="feedback-title">
+                            <h2>AI Feedback</h2>
+                            <span id="feedback-meta">Submission ID: <span id="feedback-submission-id"></span></span>
+                        </div>
+                    </div>
+                    <div class="feedback-content" id="feedback-content"></div>
+                </div>
+            </div>
+
+            <div class="tab-pane" id="tab-examples">
+                <h2>Example Use Cases</h2>
+                <p>Click on any example to see a sample AI feedback:</p>
+
+                <div class="example-card" data-type="assignment" data-id="example-1">
+                    <h3>Assignment Feedback Example</h3>
+                    <p>Get feedback on your programming assignment submission</p>
+                </div>
+
+                <div class="example-card" data-type="quiz" data-id="example-2">
+                    <h3>Quiz Performance Analysis Example</h3>
+                    <p>Analyze your quiz results and get improvement suggestions</p>
+                </div>
+
+                <div class="example-card" data-type="general" data-id="example-3">
+                    <h3>Learning Progress Feedback Example</h3>
+                    <p>Get insights on your overall learning progress</p>
+                </div>
+            </div>
+
+            <div class="tab-pane" id="tab-about">
+                <h2>About the AI Assistant</h2>
+                <p>The AI Learning Assistant is designed to provide personalized feedback on your academic work and learning progress. This tool uses advanced algorithms to analyze your submissions and provide tailored recommendations to help you improve.</p>
+
+                <h3>Features:</h3>
+                <ul>
+                    <li>Assignment feedback with specific improvement suggestions</li>
+                    <li>Quiz performance analysis highlighting strengths and areas for improvement</li>
+                    <li>General learning feedback based on your activity patterns</li>
+                </ul>
+
+                <p><strong>Note:</strong> This is a prototype version of the AI Assistant. The feedback provided is simulated for demonstration purposes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Remove active class from all buttons and tabs
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanes.forEach(tab => tab.classList.remove('active'));
+                
+                // Add active class to current button and tab
+                this.classList.add('active');
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+            });
+        });
+
+        // Generate feedback button
+        const generateBtn = document.getElementById('generate-feedback-btn');
+        const feedbackLoader = document.getElementById('feedback-loader');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const feedbackContent = document.getElementById('feedback-content');
+        const feedbackSubmissionId = document.getElementById('feedback-submission-id');
+
+        generateBtn.addEventListener('click', function() {
+            const submissionId = document.getElementById('submission-id').value.trim();
+            const submissionType = document.getElementById('submission-type').value;
+            
+            // Show loader
+            feedbackContainer.style.display = 'none';
+            feedbackLoader.style.display = 'block';
+            
+            // Make API request
+            fetch('/ai/api/feedback-request/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    submission_id: submissionId || `auto-${Math.floor(Math.random() * 10000)}`,
+                    type: submissionType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update feedback container
+                    feedbackContent.textContent = data.feedback;
+                    feedbackSubmissionId.textContent = data.submission_id;
+                    
+                    // Hide loader and show feedback
+                    feedbackLoader.style.display = 'none';
+                    feedbackContainer.style.display = 'block';
+                } else {
+                    // Show error message
+                    showToast(data.message || 'An error occurred while generating feedback', 'error');
+                    feedbackLoader.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred while generating feedback', 'error');
+                feedbackLoader.style.display = 'none';
+            });
+        });
+
+        // Example cards
+        const exampleCards = document.querySelectorAll('.example-card');
+        
+        exampleCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const submissionType = this.getAttribute('data-type');
+                const submissionId = this.getAttribute('data-id');
+                
+                // Switch to submit tab
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanes.forEach(tab => tab.classList.remove('active'));
+                
+                document.querySelector('.tab-button[data-tab="submit"]').classList.add('active');
+                document.getElementById('tab-submit').classList.add('active');
+                
+                // Set form values
+                document.getElementById('submission-type').value = submissionType;
+                document.getElementById('submission-id').value = submissionId;
+                
+                // Trigger click on generate button
+                generateBtn.click();
+            });
+        });
+
+        // Helper function to get cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

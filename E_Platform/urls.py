@@ -24,11 +24,12 @@ urlpatterns = [
     path('', include('authentication.urls')),
     path('home/', include('home.urls', namespace='home')),
     path('chat/', include('chatting.urls', namespace='chatting')),  # Chat app URLs
+    path('ai/', include('Ai_prototype.urls', namespace='ai_prototype')),  # AI prototype app URLs
 
     # API URLs
     path('api/auth/', include('authentication.api.urls')),
     path('api/', include('home.api.urls')),
-    path('api/chat/', include('chatting.api.urls')),  # Chat API URLs
+    path('api/chat/', include('chatting.api.urls', namespace='chat_api')),  # Chat API URLs
 ]
 
 if settings.DEBUG:

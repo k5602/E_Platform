@@ -41,6 +41,7 @@ def profile_view(request):
 
     context = {
         'profile': profile,
+        'profile_user': request.user,  # Add profile_user to match the template's expectations
         'education': education,
         'experience': experience,
         'skills': skills,
@@ -49,6 +50,7 @@ def profile_view(request):
         'recent_posts': recent_posts,
         'completion_percentage': profile.get_completion_percentage(),
         'active_page': 'profile',
+        'is_own_profile': True,  # This is the user's own profile
     }
 
     return render(request, 'home/profile/profile.html', context)

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'authentication',
     'home',
     'chatting',  # Added chat app
+    'Ai_prototype',  # Added AI prototype app
 ]
 
 MIDDLEWARE = [
@@ -355,6 +356,11 @@ LOGGING = {
         'chatting.consumers': {
             'handlers': ['console', 'file_info', 'file_error'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'Ai_prototype': {
+            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+            'level': 'DEBUG',
             'propagate': False,
         },
     },

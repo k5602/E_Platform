@@ -48,8 +48,8 @@
                 </a>
             </li>
             <li>
-                <a href="#">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="Subjects">
+                <a href="{% url 'ai_prototype:ai_assistant' %}" {% if active_page == 'ai_assistant' %}class="active"{% endif %}>
+                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="AI Assistant">
                     <p>AI Assistant</p>
                 </a>
             </li>
@@ -81,6 +81,7 @@
                 <a href="{% url 'home:home' %}" {% if active_page == 'home' %}class="active"{% endif %}>Home</a>
                 <a href="{% url 'home:subjects_list' %}" {% if active_page == 'subjects' %}class="active"{% endif %}>Subjects</a>
                 <a href="{% url 'home:quiz_list' %}" {% if active_page == 'quiz' %}class="active"{% endif %}>Quiz</a>
+                <a href="{% url 'ai_prototype:ai_assistant' %}" {% if active_page == 'ai_assistant' %}class="active"{% endif %}>AI Assistant</a>
             </div>
 
             <!-- Search Bar -->
