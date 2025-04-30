@@ -1,5 +1,6 @@
 {% extends 'home/base_home.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -20,11 +21,11 @@
             <i class="material-icons">arrow_back</i> Back to Questions
         </a>
     </div>
-    
+
     <form method="post" class="answer-formset">
         {% csrf_token %}
         {{ formset.management_form }}
-        
+
         <div class="formset-instructions">
             <p><strong>Instructions:</strong></p>
             <ul>
@@ -35,13 +36,13 @@
                 <li>To delete an answer, check the "Delete" checkbox.</li>
             </ul>
         </div>
-        
+
         <div id="answer-forms">
             {% for form in formset %}
             <div class="answer-form{% if form.is_correct.value %} correct-answer-form{% endif %}">
                 <div class="form-row">
                     {{ form.id }}
-                    
+
                     <div class="form-group col-md-8">
                         <label for="{{ form.text.id_for_label }}">Answer Text</label>
                         {{ form.text }}
@@ -49,7 +50,7 @@
                         <div class="form-error">{{ form.text.errors }}</div>
                         {% endif %}
                     </div>
-                    
+
                     <div class="form-group col-md-2">
                         <div class="form-check correct-check">
                             {{ form.is_correct }}
@@ -58,7 +59,7 @@
                             </label>
                         </div>
                     </div>
-                    
+
                     <div class="form-group col-md-2">
                         {% if formset.can_delete %}
                         <div class="form-check delete-check">
@@ -70,24 +71,24 @@
                         {% endif %}
                     </div>
                 </div>
-                
+
                 {% if form.non_field_errors %}
                 <div class="form-error">{{ form.non_field_errors }}</div>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
-        
+
         <div class="empty-form" id="empty-form" style="display: none;">
             <div class="answer-form">
                 <div class="form-row">
                     {{ formset.empty_form.id }}
-                    
+
                     <div class="form-group col-md-8">
                         <label for="{{ formset.empty_form.text.id_for_label }}">Answer Text</label>
                         {{ formset.empty_form.text }}
                     </div>
-                    
+
                     <div class="form-group col-md-2">
                         <div class="form-check correct-check">
                             {{ formset.empty_form.is_correct }}
@@ -96,7 +97,7 @@
                             </label>
                         </div>
                     </div>
-                    
+
                     <div class="form-group col-md-2">
                         {% if formset.can_delete %}
                         <div class="form-check delete-check">
@@ -110,18 +111,18 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="formset-actions">
             <button type="button" id="add-answer" class="btn btn-secondary">
                 <i class="material-icons">add</i> Add Another Answer
             </button>
-            
+
             <button type="submit" class="btn btn-primary">
                 <i class="material-icons">save</i> Save Answers
             </button>
         </div>
     </form>
-    
+
     <div class="formset-warning" id="no-correct-warning" style="display: none;">
         <i class="material-icons">warning</i>
         <p>Warning: No correct answer has been selected. Please mark at least one answer as correct.</p>
@@ -137,18 +138,18 @@
         const emptyForm = document.getElementById('empty-form').innerHTML;
         const totalForms = document.getElementById('id_form-TOTAL_FORMS');
         const noCorrectWarning = document.getElementById('no-correct-warning');
-        
+
         // Add a new form when "Add Another Answer" is clicked
         addButton.addEventListener('click', function() {
             const formCount = parseInt(totalForms.value);
             const newForm = emptyForm.replace(/__prefix__/g, formCount);
             answerForms.insertAdjacentHTML('beforeend', newForm);
             totalForms.value = formCount + 1;
-            
+
             // Add event listener to new form's correct checkbox
             addCorrectCheckboxListeners();
         });
-        
+
         // Function to add event listeners to all correct checkboxes
         function addCorrectCheckboxListeners() {
             const correctCheckboxes = document.querySelectorAll('.correct-check input[type="checkbox"]');
@@ -156,40 +157,40 @@
                 checkbox.addEventListener('change', function() {
                     // Highlight the parent form when correct is checked
                     this.closest('.answer-form').classList.toggle('correct-answer-form', this.checked);
-                    
+
                     // Check if at least one correct answer is selected
                     updateWarning();
                 });
             });
         }
-        
+
         // Function to update warning about no correct answers
         function updateWarning() {
             const hasCorrect = [...document.querySelectorAll('.correct-check input[type="checkbox"]')]
                 .some(checkbox => checkbox.checked);
-            
+
             // Show/hide warning based on whether any correct answer is selected
             noCorrectWarning.style.display = hasCorrect ? 'none' : 'block';
         }
-        
+
         // Initialize listeners and warning
         addCorrectCheckboxListeners();
         updateWarning();
-        
+
         // Form submission validation
         const form = document.querySelector('.answer-formset');
         form.addEventListener('submit', function(e) {
             const hasCorrect = [...document.querySelectorAll('.correct-check input[type="checkbox"]:not([name*="DELETE"])')
                 .filter(checkbox => !checkbox.closest('.answer-form').querySelector('.delete-check input[type="checkbox"]')?.checked)]
                 .some(checkbox => checkbox.checked);
-            
+
             if (!hasCorrect) {
                 e.preventDefault();
                 noCorrectWarning.style.display = 'block';
                 window.scrollTo(0, noCorrectWarning.offsetTop - 100);
             }
         });
-        
+
         // Make answers sortable if SortableJS library is available
         if (typeof Sortable !== 'undefined') {
             Sortable.create(answerForms, {

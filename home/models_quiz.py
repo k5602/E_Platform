@@ -34,15 +34,19 @@ class Quiz(models.Model):
         return self.questions.count()
 
     def calculate_total_marks(self):
-        """Calculate and update the total marks based on question count."""
-        # Each question is worth 1 point
-        question_count = self.questions.count()
-        # Update total_marks and passing_score if there are questions
-        if question_count > 0:
-            self.total_marks = question_count
-            self.passing_score = max(int(question_count * 0.6), 1)  # 60% to pass, minimum 1
-            self.save(update_fields=['total_marks', 'passing_score'])
-        return question_count
+        """Calculate and update the total marks based on question marks."""
+        # Sum up the marks for all questions
+        total_marks = self.questions.aggregate(models.Sum('marks'))['marks__sum'] or 0
+
+        # Update total_marks and passing_score
+        self.total_marks = total_marks
+        if total_marks > 0:
+            self.passing_score = max(int(total_marks * 0.6), 1)  # 60% to pass, minimum 1
+        else:
+            self.passing_score = 0
+
+        self.save(update_fields=['total_marks', 'passing_score'])
+        return total_marks
 
     def is_available_to_user(self, user):
         """Check if the quiz is available to the specified user."""
@@ -57,10 +61,19 @@ class Quiz(models.Model):
 class Question(models.Model):
     """Model representing a question in a quiz."""
 
+    QUESTION_TYPES = (
+        ('mcq', 'Multiple Choice'),
+        ('true_false', 'True/False'),
+        ('short_answer', 'Short Answer'),
+    )
+
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField()
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='mcq')
     explanation = models.TextField(blank=True, help_text="Explanation shown after answering")
+    marks = models.PositiveIntegerField(default=1, help_text="Marks for this question")
     order = models.PositiveIntegerField(default=0)
+    image = models.ImageField(upload_to='quiz_questions/', null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
 
@@ -184,8 +197,13 @@ class UserAnswer(models.Model):
 
     def calculate_marks(self):
         """Calculate marks based on answer correctness."""
-        # Since we don't have a question_type field anymore, we'll simply check if the selected answer is correct
-        if self.selected_answer and self.selected_answer.is_correct:
-            self.marks_obtained = 1  # Each question is worth 1 point
-        else:
+        if self.question.question_type in ['mcq', 'true_false']:
+            # For multiple choice and true/false questions
+            if self.selected_answer and self.selected_answer.is_correct:
+                self.marks_obtained = self.question.marks
+            else:
+                self.marks_obtained = 0
+        elif self.question.question_type == 'short_answer':
+            # Short answer questions need manual grading
+            # Initial marks are 0 until graded by instructor
             self.marks_obtained = 0

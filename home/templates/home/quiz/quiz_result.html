@@ -1,5 +1,6 @@
 {% extends 'home/base_home.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -19,7 +20,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="result-summary">
         <div class="result-card">
             <div class="score-circle {% if score_percent >= 70 %}high{% elif score_percent >= 50 %}medium{% else %}low{% endif %}">
@@ -28,7 +29,7 @@
                     <span class="score-points">{{ attempt.score }}/{{ quiz.total_marks }}</span>
                 </div>
             </div>
-            
+
             <div class="result-details">
                 <div class="result-item">
                     <i class="material-icons">assignment_turned_in</i>
@@ -55,7 +56,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="result-actions">
         <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="btn btn-secondary">
             <i class="material-icons">arrow_back</i> Back to Quiz
@@ -69,12 +70,12 @@
         </a>
         {% endif %}
     </div>
-    
+
     <div class="result-questions-header">
         <h2>Question Review</h2>
         <p>Review your answers and see the correct solutions below.</p>
     </div>
-    
+
     <div class="result-questions">
         {% for question in questions %}
             {% with user_answer=user_answers.question.id %}
@@ -93,27 +94,27 @@
                         {% endif %}
                     </div>
                 </div>
-                
+
                 <div class="question-content">
                     <p>{{ question.text }}</p>
-                    
+
                     {% if question.image %}
                     <div class="question-image">
                         <img src="{{ question.image.url }}" alt="Question image">
                     </div>
                     {% endif %}
-                    
+
                     <div class="answers-review">
                         {% if question.question_type == 'mcq' or question.question_type == 'true_false' %}
                             <div class="mcq-review">
                                 {% for answer in question.answers.all %}
-                                <div class="mcq-option 
+                                <div class="mcq-option
                                     {% if answer.is_correct %}correct-option{% endif %}
                                     {% if user_answer.selected_answer == answer and not answer.is_correct %}incorrect-selection{% endif %}
                                     {% if user_answer.selected_answer == answer %}user-selected{% endif %}">
-                                    
+
                                     <span class="answer-text">{{ answer.text }}</span>
-                                    
+
                                     {% if answer.is_correct %}
                                     <span class="answer-icon correct">
                                         <i class="material-icons">check_circle</i>
@@ -145,7 +146,7 @@
                             </div>
                         {% endif %}
                     </div>
-                    
+
                     {% if question.explanation %}
                     <div class="question-explanation">
                         <h4>Explanation:</h4>
@@ -165,13 +166,13 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Handle manual grading of short answers
         const gradeButtons = document.querySelectorAll('.save-grade');
-        
+
         gradeButtons.forEach(button => {
             button.addEventListener('click', function() {
                 const answerId = this.dataset.answerId;
                 const marksInput = document.getElementById(`grade-${answerId}`);
                 const marks = marksInput.value;
-                
+
                 // Send AJAX request to update marks
                 fetch(`{% url 'home:mark_short_answer' answer_id=0 %}`.replace('0', answerId), {
                     method: 'POST',

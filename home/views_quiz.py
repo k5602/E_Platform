@@ -1,3 +1,4 @@
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -5,11 +6,14 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.utils import timezone
-from django.db.models import Count, Avg, Q, F
+from django.db.models import Count, Avg, Q, F, Sum
 from django.forms import modelformset_factory, inlineformset_factory
 from .models_quiz import Quiz, Question, Answer, UserAttempt, UserAnswer
 from .models import Subject, Notification
 from .forms_quiz import QuizForm, QuestionForm, AnswerForm, QuestionFormSet, AnswerFormSet
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 @login_required
 def quiz_list(request):

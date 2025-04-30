@@ -56,7 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'home.middleware.DatabaseErrorMiddleware',  # Custom middleware to handle database errors
+    'home.middleware.GlobalErrorMiddleware',  # Custom middleware to handle various errors
 ]
 
 ROOT_URLCONF = 'E_Platform.urls'
@@ -218,42 +218,133 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Logging configuration
+import os
+# Create logs directory if it doesn't exist
+LOGS_DIR = BASE_DIR / 'logs'
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
         },
         'simple': {
-            'format': '{levelname} {message}',
+            'format': '{levelname} {asctime} {message}',
             'style': '{',
+        },
+        'detailed': {
+            'format': '{levelname} {asctime} {name} {module} {funcName} {lineno} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
         },
     },
     'handlers': {
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+            'formatter': 'simple',
+            'filters': ['require_debug_true'],
         },
-        'file': {
+        'file_error': {
             'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs/django_errors.log',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'django_errors.log',
+            'formatter': 'detailed',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 10,
+        },
+        'file_info': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'django_info.log',
             'formatter': 'verbose',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+        },
+        'file_debug': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'django_debug.log',
+            'formatter': 'detailed',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 3,
+            'filters': ['require_debug_true'],
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'formatter': 'detailed',
+            'filters': ['require_debug_false'],
+        },
+        'security': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'security.log',
+            'formatter': 'detailed',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+        },
+        'db': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGS_DIR / 'db_queries.log',
+            'formatter': 'detailed',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 3,
+            'filters': ['require_debug_true'],
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file_info', 'file_error', 'mail_admins'],
             'level': 'INFO',
             'propagate': True,
         },
-        'home': {
-            'handlers': ['console', 'file'],
+        'django.request': {
+            'handlers': ['file_error', 'mail_admins'],
             'level': 'ERROR',
-            'propagate': True,
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security', 'mail_admins'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['db'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'home': {
+            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'authentication': {
+            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'home.middleware': {
+            'handlers': ['console', 'file_error'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'home.websockets': {
+            'handlers': ['console', 'file_info', 'file_error'],
+            'level': 'INFO',
+            'propagate': False,
         },
     },
 }

@@ -5,7 +5,7 @@ from .models import Subject
 
 class QuizForm(forms.ModelForm):
     """Form for quiz creation and editing."""
-    
+
     class Meta:
         model = Quiz
         fields = ['title', 'description', 'subject', 'time_limit', 'is_active']
@@ -16,13 +16,13 @@ class QuizForm(forms.ModelForm):
             'time_limit': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 240}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Filter subjects to show only active ones
         self.fields['subject'].queryset = Subject.objects.filter(is_active=True)
-        
+
         # Add help text
         self.fields['time_limit'].help_text = "Time limit in minutes"
         self.fields['is_active'].label = "Active"
@@ -31,20 +31,30 @@ class QuizForm(forms.ModelForm):
 
 class QuestionForm(forms.ModelForm):
     """Form for question creation and editing."""
-    
+
+    # For true/false questions
+    correct_option = forms.ChoiceField(
+        choices=[('true', 'True'), ('false', 'False')],
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        required=False
+    )
+
     class Meta:
         model = Question
-        fields = ['text', 'explanation', 'order']
+        fields = ['text', 'question_type', 'marks', 'explanation', 'image', 'order']
         widgets = {
             'text': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Enter question text', 'rows': 3}),
+            'question_type': forms.Select(attrs={'class': 'form-control'}),
+            'marks': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 100}),
             'explanation': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Enter explanation for the answer (optional)', 'rows': 2}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
         }
 
 
 class AnswerForm(forms.ModelForm):
     """Form for answer creation and editing."""
-    
+
     class Meta:
         model = Answer
         fields = ['text', 'is_correct']
@@ -56,17 +66,17 @@ class AnswerForm(forms.ModelForm):
 
 # Formsets for creating multiple answers for a question
 QuestionFormSet = inlineformset_factory(
-    Quiz, 
-    Question, 
-    form=QuestionForm, 
+    Quiz,
+    Question,
+    form=QuestionForm,
     extra=1,
     can_delete=True
 )
 
 AnswerFormSet = inlineformset_factory(
-    Question, 
-    Answer, 
-    form=AnswerForm, 
+    Question,
+    Answer,
+    form=AnswerForm,
     extra=3,
     min_num=2,
     validate_min=True,

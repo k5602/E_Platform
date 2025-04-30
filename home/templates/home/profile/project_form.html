@@ -1,5 +1,6 @@
 {% extends 'home/profile/profile_base.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block profile_content %}
 <div class="form-container">
@@ -10,10 +11,10 @@
             Edit Project
         {% endif %}
     </h1>
-    
+
     <form method="post" class="needs-validation" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        
+
         <div class="form-group">
             <label for="{{ form.title.id_for_label }}" class="form-label">Project Title</label>
             {{ form.title }}
@@ -21,7 +22,7 @@
                 <div class="form-text text-danger">{{ form.title.errors }}</div>
             {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
             {{ form.description }}
@@ -30,7 +31,7 @@
             {% endif %}
             <div class="form-text">Describe what the project is about and your role in it</div>
         </div>
-        
+
         <div class="form-group">
             <label for="{{ form.url.id_for_label }}" class="form-label">Project URL</label>
             {{ form.url }}
@@ -39,7 +40,7 @@
             {% endif %}
             <div class="form-text">Link to the project (e.g., GitHub repository, live demo)</div>
         </div>
-        
+
         <div class="form-group">
             <label for="{{ form.image.id_for_label }}" class="form-label">Project Image</label>
             {{ form.image }}
@@ -47,7 +48,7 @@
                 <div class="form-text text-danger">{{ form.image.errors }}</div>
             {% endif %}
             <div class="form-text">Upload an image that represents your project</div>
-            
+
             {% if project and project.image %}
                 <div class="current-image">
                     <p>Current image:</p>
@@ -55,7 +56,7 @@
                 </div>
             {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label for="{{ form.technologies.id_for_label }}" class="form-label">Technologies Used</label>
             {{ form.technologies }}
@@ -64,7 +65,7 @@
             {% endif %}
             <div class="form-text">List the technologies used, separated by commas (e.g., Python, Django, React)</div>
         </div>
-        
+
         <div class="form-group">
             <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
             {{ form.start_date }}
@@ -72,7 +73,7 @@
                 <div class="form-text text-danger">{{ form.start_date.errors }}</div>
             {% endif %}
         </div>
-        
+
         <div class="form-group">
             <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
             {{ form.end_date }}
@@ -81,7 +82,7 @@
             {% endif %}
             <div class="form-text">Leave blank if this is an ongoing project</div>
         </div>
-        
+
         <div class="form-check">
             {{ form.is_visible }}
             <label for="{{ form.is_visible.id_for_label }}" class="form-check-label">
@@ -91,7 +92,7 @@
                 <div class="form-text text-danger">{{ form.is_visible.errors }}</div>
             {% endif %}
         </div>
-        
+
         <div class="form-actions">
             <a href="{% url 'home:profile' %}" class="btn-cancel">Cancel</a>
             <button type="submit" class="btn-submit">

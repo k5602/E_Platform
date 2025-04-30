@@ -1,17 +1,17 @@
 {% extends 'home/base_home.html' %}
 
-{% block title %}Error{% endblock %}
+{% block title %}{{ error_type|default:"Error" }} - {{ status_code|default:"500" }}{% endblock %}
 
 {% block home_content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow">
-                <div class="card-header bg-danger text-white">
-                    <h4 class="mb-0">Error Occurred</h4>
+                <div class="card-header {% if status_code == 404 %}bg-warning{% elif status_code == 403 %}bg-info{% else %}bg-danger{% endif %} text-white">
+                    <h4 class="mb-0">{{ error_type|default:"Error Occurred" }} ({{ status_code|default:"500" }})</h4>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-danger">
+                    <div class="alert {% if status_code == 404 %}alert-warning{% elif status_code == 403 %}alert-info{% else %}alert-danger{% endif %}">
                         <h5>We encountered a problem</h5>
                         <p>{{ error }}</p>
                     </div>
@@ -21,20 +21,57 @@
                         <ul>
                             <li>Go back to the <a href="{% url 'home:home' %}">home page</a></li>
                             <li>Try refreshing the page</li>
+                            {% if status_code == 404 %}
+                                <li>Check if the URL is correct</li>
+                            {% elif status_code == 403 %}
+                                <li>Log in with an account that has the necessary permissions</li>
+                            {% else %}
+                                <li>Try again later</li>
+                            {% endif %}
                             <li>Contact the administrator if the problem persists</li>
                         </ul>
                     </div>
+
+                    {% if debug and traceback %}
+                    <div class="mt-4 debug-info">
+                        <h5>Debug Information</h5>
+                        <div class="traceback">
+                            <pre>{{ traceback }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="card-footer">
                     <a href="javascript:history.back()" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Go Back
+                        <i class="material-icons">arrow_back</i> Go Back
                     </a>
                     <a href="{% url 'home:home' %}" class="btn btn-primary">
-                        <i class="fas fa-home"></i> Home
+                        <i class="material-icons">home</i> Home
                     </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .debug-info {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .traceback {
+        max-height: 300px;
+        overflow-y: auto;
+        background-color: #272822;
+        color: #f8f8f2;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+    }
+</style>
 {% endblock %}
