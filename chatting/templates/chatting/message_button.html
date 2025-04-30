@@ -1,0 +1,33 @@
+{% comment %}
+    This template renders a message button that can be included in user profiles.
+    
+    Usage:
+    {% include "chatting/message_button.html" with profile_user=user_object %}
+{% endcomment %}
+
+{% if profile_user and profile_user != request.user %}
+<div class="profile-actions">
+    <a href="{% url 'chatting:start_conversation' profile_user.id %}" class="profile-action-btn chat-btn">
+        <i class="material-icons" aria-hidden="true">chat</i>
+        <span>Chat with {{ profile_user.first_name }}</span>
+    </a>
+    
+    <!-- Online Status Indicator -->
+    <div class="user-status-indicator">
+        <span class="status-indicator {% if profile_user.chat_status.is_online %}online{% else %}offline{% endif %}" 
+              data-user-id="{{ profile_user.id }}" 
+              aria-hidden="true"></span>
+        <span class="status-text" aria-live="polite">
+            {% if profile_user.chat_status.is_online %}
+                Online
+            {% else %}
+                {% if profile_user.chat_status.last_active %}
+                    Last seen {{ profile_user.chat_status.last_active|timesince }} ago
+                {% else %}
+                    Offline
+                {% endif %}
+            {% endif %}
+        </span>
+    </div>
+</div>
+{% endif %}

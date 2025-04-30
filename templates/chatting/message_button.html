@@ -1,0 +1,45 @@
+{% load static %}
+<div class="message-btn-wrapper">
+    <a href="{% url 'chatting:start_conversation' user_id=profile_user.id %}" class="message-button">
+        <i class="fas fa-comments"></i> Message
+    </a>
+</div>
+
+<style>
+    .message-btn-wrapper {
+        margin: 15px 0;
+    }
+    
+    .message-button {
+        display: inline-flex;
+        align-items: center;
+        background: var(--main_button, #645bff);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(100, 91, 255, 0.3);
+    }
+    
+    .message-button:hover {
+        background: var(--accent_color, #4f46e5);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(100, 91, 255, 0.4);
+    }
+    
+    .message-button i {
+        margin-right: 8px;
+        font-size: 1.1em;
+    }
+    
+    /* Dark mode support */
+    [data-theme="dark"] .message-button {
+        background: var(--main_button, #645bff);
+    }
+    
+    [data-theme="dark"] .message-button:hover {
+        background: var(--accent_color, #4f46e5);
+    }
+</style>

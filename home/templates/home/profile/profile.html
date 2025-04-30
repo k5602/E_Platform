@@ -94,20 +94,47 @@
 
         <!-- Profile Actions -->
         <div class="profile-actions">
-            <a href="{% url 'home:edit_profile' %}" class="profile-action-btn">
-                <i class="material-icons">edit</i>
-                <span>Edit Profile</span>
-            </a>
+            {% if is_own_profile %}
+                <a href="{% url 'home:edit_profile' %}" class="profile-action-btn">
+                    <i class="material-icons">edit</i>
+                    <span>Edit Profile</span>
+                </a>
 
-            <a href="{% url 'home:social_links' %}" class="profile-action-btn">
-                <i class="material-icons">share</i>
-                <span>Social Links</span>
-            </a>
+                <a href="{% url 'home:social_links' %}" class="profile-action-btn">
+                    <i class="material-icons">share</i>
+                    <span>Social Links</span>
+                </a>
 
-            <a href="{% url 'home:privacy_settings' %}" class="profile-action-btn">
-                <i class="material-icons">security</i>
-                <span>Privacy Settings</span>
-            </a>
+                <a href="{% url 'home:privacy_settings' %}" class="profile-action-btn">
+                    <i class="material-icons">security</i>
+                    <span>Privacy Settings</span>
+                </a>
+            {% else %}
+                <!-- Message Button for other users' profiles -->
+                <a href="{% url 'chatting:start_conversation' profile_user.id %}" class="profile-action-btn">
+                    <i class="material-icons">chat</i>
+                    <span>Message</span>
+                </a>
+                
+                <!-- Follow Button (if applicable) -->
+                {% if not is_following %}
+                    <form method="post" action="{% url 'home:follow_user' profile_user.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="profile-action-btn">
+                            <i class="material-icons">person_add</i>
+                            <span>Follow</span>
+                        </button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{% url 'home:unfollow_user' profile_user.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="profile-action-btn">
+                            <i class="material-icons">person_remove</i>
+                            <span>Unfollow</span>
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
         </div>
 
         <!-- User Level and Experience -->

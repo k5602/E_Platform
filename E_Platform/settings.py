@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     # Local apps
     'authentication',
     'home',
+    'chatting',  # Added chat app
 ]
 
 MIDDLEWARE = [
@@ -342,6 +343,16 @@ LOGGING = {
             'propagate': False,
         },
         'home.websockets': {
+            'handlers': ['console', 'file_info', 'file_error'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'chatting': {
+            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'chatting.consumers': {
             'handlers': ['console', 'file_info', 'file_error'],
             'level': 'INFO',
             'propagate': False,

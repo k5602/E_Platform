@@ -21,14 +21,18 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'E_Platform.settings')
 django_asgi_app = get_asgi_application()
 
 # Import after initializing Django
-from home.routing import websocket_urlpatterns
+from home.routing import websocket_urlpatterns as home_websocket_urlpatterns
+from chatting.routing import websocket_urlpatterns as chatting_websocket_urlpatterns
+
+# Combine WebSocket URL patterns from different apps
+all_websocket_urlpatterns = home_websocket_urlpatterns + chatting_websocket_urlpatterns
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
     "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
             URLRouter(
-                websocket_urlpatterns
+                all_websocket_urlpatterns
             )
         )
     ),

@@ -29,8 +29,8 @@ E-Platform is a prototype educational platform built with Django that integrates
 2. **Core Applications**
    - `authentication`: User management and authentication
    - `home`: Main platform interface and social feed
+   - `chatting`: Real-time messaging system with WebSockets
    - `Ai_prototype`: Foundation for AI integration (in development)
-   - `chatting_prototype`: Foundation for Messaging (in development)
 
 
 3. **Database Design**

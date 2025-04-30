@@ -1,0 +1,225 @@
+{% extends 'chatting/base_chat.html' %}
+{% load static %}
+
+{% block chat_content %}
+<div class="contacts">
+    <h3>
+        <a href="{% url 'chatting:chat_home' %}" class="back-to-chats">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        All Conversations
+    </h3>
+    <div id="contacts-list">
+        <div class="current-chat-user">
+            <div class="profile-image">
+                <img src="{% if other_user.profile_picture %}{{ other_user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}" alt="{{ other_user.username }}" class="user-img">
+                <div class="status-indicator {% if other_user.chat_status.is_online %}online{% else %}offline{% endif %}"></div>
+            </div>
+            <div class="user-info">
+                <h4>{{ other_user.get_full_name|default:other_user.username }}</h4>
+                <p class="user-status">
+                    {% if other_user.chat_status.is_online %}
+                        Online now
+                    {% else %}
+                        {% if other_user.chat_status.last_active %}
+                            Last seen: {{ other_user.chat_status.last_active|timesince }} ago
+                        {% else %}
+                            Offline
+                        {% endif %}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="messages-container">
+    <h2>Chat with {{ other_user.get_full_name|default:other_user.username }}</h2>
+    
+    <div class="message-list" id="message-list">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {% if message.sender == request.user %}sent{% else %}received{% endif %}">
+                    <p>{{ message.content }}</p>
+                    <span class="timestamp">{{ message.timestamp|date:'g:i A' }}</span>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-messages-notice">
+                <p>No messages yet. Say hello!</p>
+            </div>
+        {% endif %}
+        <div id="typing-indicator" style="display: none;" class="typing-indicator">
+            <span>{{ other_user.username }} is typing...</span>
+        </div>
+    </div>
+    
+    <div class="message-input">
+        <input type="text" id="chat-message-input" placeholder="Type your message..." aria-label="Message input">
+        <button id="chat-message-submit" aria-label="Send message">
+            <i class="fas fa-paper-plane"></i> Send
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block chat_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesList = document.getElementById('message-list');
+    const messageInput = document.getElementById('chat-message-input');
+    const submitButton = document.getElementById('chat-message-submit');
+    const conversationId = "{{ conversation.id }}";
+    const currentUserId = "{{ request.user.id }}";
+    const otherUserId = "{{ other_user.id }}";
+    const typingIndicator = document.getElementById('typing-indicator');
+    let typingTimeout = null;
+    
+    // Scroll to bottom of messages list
+    function scrollToBottom() {
+        messagesList.scrollTop = messagesList.scrollHeight;
+    }
+    
+    // Initial scroll to bottom
+    scrollToBottom();
+    
+    // Connect to WebSocket
+    function connectToWebSocket() {
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/${conversationId}/`);
+        
+        chatSocket.onopen = function(e) {
+            console.log("WebSocket connection established");
+            
+            // Mark messages as read when opening the conversation
+            chatSocket.send(JSON.stringify({
+                'type': 'read_messages'
+            }));
+        };
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.type === 'chat_message') {
+                // Create message element
+                const isCurrentUser = data.user_id === parseInt(currentUserId);
+                const messageHtml = `
+                    <div class="message ${isCurrentUser ? 'sent' : 'received'}">
+                        <p>${data.message}</p>
+                        <span class="timestamp">${new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    </div>
+                `;
+                
+                // Append message to list and scroll down
+                messagesList.insertAdjacentHTML('beforeend', messageHtml);
+                scrollToBottom();
+                
+                // If message is from the other user, mark as read
+                if (!isCurrentUser) {
+                    chatSocket.send(JSON.stringify({
+                        'type': 'read_messages'
+                    }));
+                }
+            } 
+            else if (data.type === 'typing_status') {
+                if (data.user_id !== parseInt(currentUserId)) {
+                    if (data.is_typing) {
+                        typingIndicator.style.display = 'block';
+                        scrollToBottom();
+                    } else {
+                        typingIndicator.style.display = 'none';
+                    }
+                }
+            }
+            else if (data.type === 'user_status') {
+                updateUserStatus(data.user_id, data.status);
+            }
+        };
+        
+        chatSocket.onclose = function(e) {
+            console.log("WebSocket connection closed unexpectedly");
+            // Try to reconnect after a delay
+            setTimeout(function() {
+                connectToWebSocket();
+            }, 3000);
+        };
+        
+        // Send a message when the submit button is clicked
+        submitButton.onclick = function(e) {
+            sendMessage(chatSocket);
+        };
+        
+        // Send a message when Enter is pressed
+        messageInput.onkeypress = function(e) {
+            if (e.key === 'Enter') {
+                sendMessage(chatSocket);
+            }
+        };
+        
+        // Send typing status when input changes
+        messageInput.addEventListener('input', function() {
+            chatSocket.send(JSON.stringify({
+                'type': 'typing',
+                'is_typing': messageInput.value.length > 0
+            }));
+            
+            // Clear previous timeout
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+            
+            // Set new timeout to stop typing indicator after 1 second of inactivity
+            typingTimeout = setTimeout(function() {
+                chatSocket.send(JSON.stringify({
+                    'type': 'typing',
+                    'is_typing': false
+                }));
+            }, 1000);
+        });
+
+        // Function to send a message
+        function sendMessage(socket) {
+            const messageContent = messageInput.value.trim();
+            if (messageContent) {
+                socket.send(JSON.stringify({
+                    'type': 'chat_message',
+                    'message': messageContent
+                }));
+                messageInput.value = '';
+                
+                // Stop typing indicator
+                socket.send(JSON.stringify({
+                    'type': 'typing',
+                    'is_typing': false
+                }));
+                
+                if (typingTimeout) {
+                    clearTimeout(typingTimeout);
+                }
+            }
+        }
+    }
+    
+    // Function to update user status in the UI
+    function updateUserStatus(userId, status) {
+        if (userId === parseInt(otherUserId)) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const userStatus = document.querySelector('.user-status');
+            
+            if (status === 'online') {
+                statusIndicator.classList.remove('offline');
+                statusIndicator.classList.add('online');
+                userStatus.textContent = 'Online now';
+            } else {
+                statusIndicator.classList.remove('online');
+                statusIndicator.classList.add('offline');
+                userStatus.textContent = 'Last seen just now';
+            }
+        }
+    }
+    
+    // Initialize WebSocket connection
+    connectToWebSocket();
+});
+</script>
+{% endblock %}

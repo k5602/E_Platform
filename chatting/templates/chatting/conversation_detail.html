@@ -1,0 +1,179 @@
+{% extends 'chatting/base_chat.html' %}
+{% load static %}
+
+{% block title %}Chat with {{ other_user.first_name }} {{ other_user.last_name }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
+{% endblock %}
+
+{% block chat_content %}
+<div class="chat-container" role="main">
+    <!-- Sidebar - Conversation List -->
+    <div class="chat-sidebar" role="navigation" aria-label="Conversations">
+        <div class="sidebar-header">
+            <h1>Conversations</h1>
+            <a href="{% url 'chatting:users_list' %}" class="new-chat-btn" aria-label="Start a new chat">
+                <i class="material-icons" aria-hidden="true">add</i>
+                <span>New Chat</span>
+            </a>
+        </div>
+
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <i class="material-icons search-icon" aria-hidden="true">search</i>
+                <input type="text" id="conversation-search" placeholder="Search conversations..." aria-label="Search conversations">
+            </div>
+        </div>
+
+        <div class="conversation-list" id="conversation-list" role="list">
+            {% if conversations %}
+                {% for conv in conversations %}
+                    <a href="{% url 'chatting:conversation_detail' conv.id %}" class="conversation-item{% if conv.id == conversation.id %} active{% endif %}" role="listitem" aria-current="{% if conv.id == conversation.id %}page{% endif %}">
+                        <div class="conversation-avatar">
+                            {% if conv.other_user.profile_picture %}
+                                <img src="{{ conv.other_user.profile_picture.url }}" alt="{{ conv.other_user.username }}'s profile picture">
+                            {% else %}
+                                <div class="default-avatar" aria-hidden="true">{{ conv.other_user.username|slice:":1"|upper }}</div>
+                            {% endif %}
+                            <span class="status-indicator {% if conv.other_user.chat_status.is_online %}online{% else %}offline{% endif %}" aria-hidden="true" data-user-id="{{ conv.other_user.id }}"></span>
+                        </div>
+                        <div class="conversation-info">
+                            <div class="conversation-name">
+                                {{ conv.other_user.first_name }} {{ conv.other_user.last_name }}
+                                <span class="conversation-time">
+                                    {% if conv.updated_at %}
+                                        {{ conv.updated_at|date:"h:i A" }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="conversation-preview">
+                                {% if conv.messages.last %}
+                                    <span class="{% if conv.messages.last.sender == request.user %}outgoing{% endif %}">
+                                        {{ conv.messages.last.content|truncatechars:30 }}
+                                    </span>
+                                {% else %}
+                                    <span class="no-messages">No messages yet</span>
+                                {% endif %}
+                                {% if conv.unread_count > 0 %}
+                                    <span class="unread-badge" aria-label="{{ conv.unread_count }} unread messages">{{ conv.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="no-conversations">
+                    <i class="material-icons" aria-hidden="true">chat</i>
+                    <p>No conversations yet</p>
+                    <a href="{% url 'chatting:users_list' %}" class="start-chat-btn">Start a new chat</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content - Conversation Detail -->
+    <div class="chat-main" role="region" aria-label="Chat with {{ other_user.first_name }} {{ other_user.last_name }}">
+        <!-- Conversation Header -->
+        <div class="conversation-header">
+            <div class="conversation-user">
+                <div class="conversation-avatar">
+                    {% if other_user.profile_picture %}
+                        <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture">
+                    {% else %}
+                        <div class="default-avatar" aria-hidden="true">{{ other_user.username|slice:":1"|upper }}</div>
+                    {% endif %}
+                    <span class="status-indicator {% if other_user.chat_status.is_online %}online{% else %}offline{% endif %}"
+                          aria-hidden="true"
+                          data-user-id="{{ other_user.id }}"></span>
+                </div>
+                <div class="conversation-info">
+                    <h2>{{ other_user.first_name }} {{ other_user.last_name }}</h2>
+                    <p class="status-text" aria-live="polite">
+                        {% if other_user.chat_status.is_online %}
+                            Online
+                        {% else %}
+                            Last seen {{ other_user.chat_status.last_active|date:"M d, h:i A" }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="conversation-actions">
+                <button class="action-btn" id="info-btn" aria-label="View conversation information">
+                    <i class="material-icons" aria-hidden="true">info</i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Message List -->
+        <div class="message-list" id="message-list" role="log" aria-label="Message history" aria-live="polite">
+            {% if messages|length > 0 %}
+                {% for message in messages %}
+                    <div class="message-item {% if message.sender == request.user %}outgoing{% else %}incoming{% endif %}"
+                         role="article"
+                         aria-label="{% if message.sender == request.user %}You{% else %}{{ message.sender.first_name }}{% endif %} at {{ message.timestamp|date:'h:i A' }}">
+                        <div class="message-content">{{ message.content }}</div>
+                        <div class="message-meta">
+                            <span class="message-time">{{ message.timestamp|date:"h:i A" }}</span>
+                            {% if message.sender == request.user %}
+                                <span class="message-status" aria-label="{% if message.is_read %}Read{% else %}Sent{% endif %}">
+                                    {% if message.is_read %}
+                                        <i class="material-icons read-indicator" aria-hidden="true">done_all</i>
+                                    {% else %}
+                                        <i class="material-icons" aria-hidden="true">done</i>
+                                    {% endif %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-messages">
+                    <div class="empty-message-icon">
+                        <i class="material-icons" aria-hidden="true">chat_bubble_outline</i>
+                    </div>
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Message Input -->
+        <div class="message-input-container">
+            <div class="typing-indicator" id="typing-indicator" aria-live="polite">
+                <span>{{ other_user.first_name }} is typing...</span>
+            </div>
+            <form id="message-form" aria-label="Message form">
+                <div class="message-input-wrapper">
+                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" aria-label="Type a message">
+                    <button type="submit" id="send-button" aria-label="Send message">
+                        <i class="material-icons" aria-hidden="true">send</i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block chat_js %}
+<script src="{% static 'chatting/js/chat.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the WebSocket connection
+        const chatSocket = initializeChatWebsocket();
+
+        // Initialize the conversation
+        initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});
+
+        // Scroll to the bottom of the message list
+        scrollToBottom();
+    });
+
+    function scrollToBottom() {
+        const messageList = document.getElementById('message-list');
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/chatting/messages.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="animated-background">
+    <div class="wave">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</section>
+<button id="theme-toggle" class="theme-toggle">Toggle Dark Mode</button>
+
+<nav id="side-nav" class="side_nav">
+    <div class="user-profile">
+        <div class="profile-image">
+            <img src="{% if request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default_avatar.png' %}{% endif %}" alt="User Image" class="user-img">
+            <div class="status-indicator online"></div>
+        </div>
+        <div class="profile-info">
+            <h2>{{ request.user.get_full_name|default:request.user.username }}</h2>
+            <p>{{ request.user.email }}</p>
+        </div>
+    </div>
+    <div class="menu-wrapper">
+        <ul class="main-menu">
+            <li>
+                <a href="{% url 'home:home' %}" class="menu-item">
+                    <span class="menu-icon">
+                        <i class="fas fa-home"></i>
+                    </span>
+                    <span class="menu-text">Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'chatting:chat_home' %}" class="menu-item active">
+                    <span class="menu-icon">
+                        <i class="fas fa-comments"></i>
+                    </span>
+                    <span class="menu-text">Messages</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'chatting:users_list' %}" class="menu-item">
+                    <span class="menu-icon">
+                        <i class="fas fa-users"></i>
+                    </span>
+                    <span class="menu-text">Contacts</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home:privacy_settings' %}" class="menu-item">
+                    <span class="menu-icon">
+                        <i class="fas fa-cog"></i>
+                    </span>
+                    <span class="menu-text">Settings</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="logout-section">
+        <a href="{% url 'logout' %}" class="logout-btn">
+            <span class="menu-icon">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            <span class="menu-text">Logout</span>
+        </a>
+    </div>
+</nav>
+
+<div class="container">
+    {% block chat_content %}{% endblock %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Theme Toggle Function
+    document.addEventListener('DOMContentLoaded', function() {
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+        const currentTheme = localStorage.getItem('theme') ? localStorage.getItem('theme') : null;
+
+        if (currentTheme) {
+            body.setAttribute('data-theme', currentTheme);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            let newTheme = 'light';
+            if (body.getAttribute('data-theme') === 'light') {
+                newTheme = 'dark';
+            }
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    });
+</script>
+{% block chat_js %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Find People to Chat{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="users-container" role="main">
+    <div class="users-header">
+        <h1>Find People to Chat</h1>
+        <a href="{% url 'chatting:chat_home' %}" class="back-btn" aria-label="Back to conversations">
+            <i class="material-icons" aria-hidden="true">arrow_back</i>
+            <span>Back to Conversations</span>
+        </a>
+    </div>
+
+    <div class="search-container">
+        <form method="get" action="{% url 'chatting:users_list' %}" role="search">
+            <div class="search-input-wrapper">
+                <i class="material-icons search-icon" aria-hidden="true">search</i>
+                <input type="text" id="user-search" name="q" placeholder="Search users..." value="{{ search_query }}" aria-label="Search users">
+                <button type="submit" class="search-btn" aria-label="Submit search">
+                    <i class="material-icons" aria-hidden="true">search</i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="users-list" role="list">
+        {% if users %}
+            {% for user in users %}
+                <div class="user-item" role="listitem">
+                    <div class="user-avatar">
+                        {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}'s profile picture">
+                        {% else %}
+                            <div class="default-avatar" aria-hidden="true">{{ user.username|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <span class="status-indicator {% if user.chat_status.is_online %}online{% else %}offline{% endif %}"
+                              aria-hidden="true"
+                              data-user-id="{{ user.id }}"></span>
+                    </div>
+
+                    <div class="user-info">
+                        <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+                        <p class="username">@{{ user.username }}</p>
+                        <span class="user-type-badge">{{ user.user_type|title }}</span>
+                    </div>
+
+                    <div class="user-actions">
+                        <a href="{% url 'chatting:start_conversation' user.id %}" class="chat-action-btn" aria-label="Message {{ user.first_name }}">
+                            <i class="material-icons" aria-hidden="true">chat</i>
+                            <span>Message</span>
+                        </a>
+                        <a href="{% url 'home:public_profile' user.username %}" class="profile-action-btn" aria-label="View {{ user.first_name }}'s profile">
+                            <i class="material-icons" aria-hidden="true">person</i>
+                            <span>Profile</span>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-users" role="status">
+                <i class="material-icons" aria-hidden="true">people_outline</i>
+                <p>No users found matching your search.</p>
+                {% if search_query %}
+                    <a href="{% url 'chatting:users_list' %}" class="clear-search-btn">Clear search</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'chatting/js/chat.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the WebSocket connection for online status updates
+        initializeChatWebsocket();
+    });
+</script>
+{% endblock %}

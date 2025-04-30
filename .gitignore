@@ -229,3 +229,4 @@ home/migrations/0003_quiz_creator_quiz_is_randomized_quiz_total_marks.py
 home/migrations/0004_question_image_question_marks_question_question_type.py
 Ai_prototype/migrations/__init__.py
 chatting/migrations/__init__.py
+chatting/migrations/0001_initial.py

@@ -86,13 +86,31 @@
             </div>
         {% endif %}
 
-        <!-- Chat Button (Placeholder) -->
+        <!-- Chat Button -->
         {% if not is_own_profile %}
         <div class="profile-actions">
-            <a href="#" class="profile-action-btn chat-btn" onclick="alert('Chat functionality coming soon!')">
+            <a href="{% url 'chatting:start_conversation' profile_user.id %}" class="profile-action-btn chat-btn">
                 <i class="material-icons">chat</i>
                 <span>Chat with {{ profile_user.first_name }}</span>
             </a>
+
+            <!-- Online Status Indicator -->
+            <div class="user-status-indicator">
+                <span class="status-indicator {% if profile_user.chat_status.is_online %}online{% else %}offline{% endif %}"
+                      data-user-id="{{ profile_user.id }}"
+                      aria-hidden="true"></span>
+                <span class="status-text" aria-live="polite">
+                    {% if profile_user.chat_status.is_online %}
+                        Online
+                    {% else %}
+                        {% if profile_user.chat_status.last_active %}
+                            Last seen {{ profile_user.chat_status.last_active|timesince }} ago
+                        {% else %}
+                            Offline
+                        {% endif %}
+                    {% endif %}
+                </span>
+            </div>
         </div>
         {% endif %}
 
@@ -361,5 +379,18 @@
             {% endfor %}
         </div>
     </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% if not is_own_profile %}
+<script src="{% static 'chatting/js/chat.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize WebSocket connection for online status updates
+        const chatSocket = initializeChatWebsocket();
+    });
+</script>
 {% endif %}
 {% endblock %}

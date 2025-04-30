@@ -1,0 +1,657 @@
+/**
+ * Chat functionality for real-time messaging
+ */
+
+let chatSocket = null;
+let currentConversationId = null;
+let currentUserId = null;
+let otherUserId = null;
+let typingTimeout = null;
+
+/**
+ * Initialize the WebSocket connection for chat
+ */
+function initializeChatWebsocket() {
+    // Close any existing connection
+    if (chatSocket !== null) {
+        chatSocket.close();
+    }
+
+    // Create a new WebSocket connection
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/`;
+
+    chatSocket = new WebSocket(wsUrl);
+
+    // WebSocket event handlers
+    chatSocket.onopen = function() {
+        console.log('Chat WebSocket connection established');
+
+        // Show connection status
+        showConnectionStatus('connected');
+
+        // If we were reconnecting, send any pending messages
+        sendPendingMessages();
+    };
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        handleWebSocketMessage(data);
+    };
+
+    chatSocket.onclose = function() {
+        console.log('Chat WebSocket connection closed');
+
+        // Show disconnected status
+        showConnectionStatus('disconnected');
+
+        // Try to reconnect after a delay
+        setTimeout(function() {
+            initializeChatWebsocket();
+        }, 3000);
+    };
+
+    chatSocket.onerror = function(e) {
+        console.error('Chat WebSocket error:', e);
+
+        // Show error status
+        showConnectionStatus('error');
+
+        // Show toast notification
+        showToast('Connection error. Trying to reconnect...', 'error');
+
+        // Try to reconnect after a delay
+        setTimeout(function() {
+            initializeChatWebsocket();
+        }, 5000);
+    };
+
+    return chatSocket;
+}
+
+/**
+ * Show connection status to the user
+ */
+function showConnectionStatus(status) {
+    // Check if we're on a chat page
+    const messageList = document.getElementById('message-list');
+    if (!messageList) return;
+
+    // Remove any existing status messages
+    const existingStatus = document.querySelector('.connection-status');
+    if (existingStatus) {
+        existingStatus.remove();
+    }
+
+    let statusMessage = '';
+    let statusClass = '';
+
+    switch (status) {
+        case 'connected':
+            // No need to show a message when connected
+            return;
+        case 'disconnected':
+            statusMessage = 'Connection lost. Reconnecting...';
+            statusClass = 'warning';
+            break;
+        case 'error':
+            statusMessage = 'Connection error. Trying to reconnect...';
+            statusClass = 'error';
+            break;
+    }
+
+    // Create and add the status message
+    const statusElement = document.createElement('div');
+    statusElement.className = `connection-status ${statusClass}`;
+    statusElement.textContent = statusMessage;
+
+    // Add to the top of the message list
+    messageList.prepend(statusElement);
+
+    // Auto-remove after 5 seconds if it's a connected message
+    if (status === 'connected') {
+        setTimeout(() => {
+            statusElement.remove();
+        }, 5000);
+    }
+}
+
+/**
+ * Store messages when offline and send them when reconnected
+ */
+let pendingMessages = [];
+
+function sendPendingMessages() {
+    if (pendingMessages.length > 0 && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        console.log(`Sending ${pendingMessages.length} pending messages`);
+
+        pendingMessages.forEach(message => {
+            chatSocket.send(JSON.stringify(message));
+        });
+
+        // Clear the pending messages
+        pendingMessages = [];
+    }
+}
+
+/**
+ * Initialize a conversation and its event listeners
+ */
+function initializeConversation(conversationId, userId, otherUser) {
+    currentConversationId = conversationId;
+    currentUserId = userId;
+    otherUserId = otherUser;
+
+    // Hide typing indicator initially
+    document.getElementById('typing-indicator').style.display = 'none';
+
+    // Form submission event
+    document.getElementById('message-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    // Typing indicator
+    document.getElementById('message-input').addEventListener('input', function() {
+        sendTypingIndicator(true);
+
+        // Clear existing timeout
+        if (typingTimeout) {
+            clearTimeout(typingTimeout);
+        }
+
+        // Set a new timeout to stop typing
+        typingTimeout = setTimeout(function() {
+            sendTypingIndicator(false);
+        }, 3000);
+    });
+
+    // Mark messages as read when the page loads
+    markMessagesAsRead();
+}
+
+/**
+ * Handle incoming WebSocket messages
+ */
+function handleWebSocketMessage(data) {
+    const messageType = data.type;
+
+    switch (messageType) {
+        case 'chat_message':
+            handleChatMessage(data);
+            break;
+        case 'new_message_notification':
+            handleNewMessageNotification(data);
+            break;
+        case 'typing_indicator':
+            handleTypingIndicator(data);
+            break;
+        case 'messages_read':
+            handleMessagesRead(data);
+            break;
+        case 'user_status':
+            handleUserStatusUpdate(data);
+            break;
+        default:
+            console.log('Unknown message type:', messageType);
+    }
+}
+
+/**
+ * Handle a new chat message
+ */
+function handleChatMessage(data) {
+    // Only process if we are in the correct conversation
+    if (currentConversationId && data.conversation_id === currentConversationId) {
+        const message = data.message;
+        addMessageToChat(message);
+
+        // If the message is from the other user, mark it as read
+        if (message.sender_id !== currentUserId) {
+            markMessagesAsRead();
+        }
+    }
+}
+
+/**
+ * Handle a new message notification (when in a different conversation or chat home)
+ */
+function handleNewMessageNotification(data) {
+    const conversationId = data.conversation_id;
+
+    // Update the conversation list if we're not in that conversation
+    if (currentConversationId !== conversationId) {
+        // Try to find the conversation item in the list
+        const conversationItem = document.querySelector(`.conversation-item[href*="${conversationId}"]`);
+
+        if (conversationItem) {
+            // Update the unread badge
+            let unreadBadge = conversationItem.querySelector('.unread-badge');
+            if (!unreadBadge) {
+                // Create a new badge
+                const previewElement = conversationItem.querySelector('.conversation-preview');
+                unreadBadge = document.createElement('span');
+                unreadBadge.className = 'unread-badge';
+                unreadBadge.textContent = '1';
+                previewElement.appendChild(unreadBadge);
+            } else {
+                // Update existing badge
+                const count = parseInt(unreadBadge.textContent) || 0;
+                unreadBadge.textContent = count + 1;
+            }
+
+            // Update the preview text
+            const previewText = conversationItem.querySelector('.conversation-preview span');
+            if (previewText) {
+                previewText.textContent = data.message.content.substring(0, 30);
+            }
+
+            // Move the conversation to the top of the list
+            const conversationList = document.getElementById('conversation-list');
+            if (conversationList) {
+                conversationList.prepend(conversationItem);
+            }
+        }
+    }
+}
+
+/**
+ * Handle typing indicator updates
+ */
+function handleTypingIndicator(data) {
+    if (currentConversationId && data.conversation_id === currentConversationId) {
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        if (data.is_typing) {
+            typingIndicator.style.display = 'block';
+        } else {
+            typingIndicator.style.display = 'none';
+        }
+    }
+}
+
+/**
+ * Handle messages read updates
+ */
+function handleMessagesRead(data) {
+    if (currentConversationId && data.conversation_id === currentConversationId) {
+        // Update read indicators for all messages
+        const messages = document.querySelectorAll('.message-item.outgoing');
+        messages.forEach(function(messageElement) {
+            const statusElement = messageElement.querySelector('.message-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<i class="material-icons read-indicator">done_all</i>';
+            }
+        });
+    }
+}
+
+/**
+ * Handle user status updates
+ */
+function handleUserStatusUpdate(data) {
+    const userId = data.user_id;
+    const isOnline = data.status;
+    const lastSeen = data.last_seen;
+
+    // Update status indicators for this user
+    const statusIndicators = document.querySelectorAll(`.status-indicator[data-user-id="${userId}"]`);
+
+    statusIndicators.forEach(function(indicator) {
+        if (isOnline) {
+            indicator.classList.add('online');
+            indicator.classList.remove('offline');
+        } else {
+            indicator.classList.add('offline');
+            indicator.classList.remove('online');
+        }
+    });
+
+    // Update the status text in conversation header if this is the current conversation
+    if (otherUserId && userId === otherUserId) {
+        const statusText = document.querySelector('.status-text');
+        if (statusText) {
+            if (isOnline) {
+                statusText.textContent = 'Online';
+            } else if (lastSeen) {
+                // Format the last seen time
+                const lastSeenDate = new Date(lastSeen);
+                const now = new Date();
+                const diffMs = now - lastSeenDate;
+                const diffMins = Math.round(diffMs / 60000);
+                const diffHours = Math.round(diffMs / 3600000);
+                const diffDays = Math.round(diffMs / 86400000);
+
+                let lastSeenText = '';
+                if (diffMins < 1) {
+                    lastSeenText = 'Just now';
+                } else if (diffMins < 60) {
+                    lastSeenText = `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                } else if (diffHours < 24) {
+                    lastSeenText = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                } else if (diffDays < 7) {
+                    lastSeenText = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                } else {
+                    // Format as date
+                    const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    lastSeenText = lastSeenDate.toLocaleDateString(undefined, options);
+                }
+
+                statusText.textContent = `Last seen ${lastSeenText}`;
+            } else {
+                statusText.textContent = 'Offline';
+            }
+        }
+    }
+}
+
+/**
+ * Send a new message
+ */
+function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const content = messageInput.value.trim();
+
+    if (content) {
+        const messageData = {
+            'type': 'chat_message',
+            'conversation_id': currentConversationId,
+            'content': content
+        };
+
+        // Check if we're connected
+        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            // Send the message through WebSocket
+            chatSocket.send(JSON.stringify(messageData));
+
+            // Add a temporary message to the UI
+            const tempMessage = {
+                sender_id: currentUserId,
+                content: content,
+                timestamp: new Date().toISOString(),
+                is_read: false
+            };
+            addMessageToChat(tempMessage);
+        } else {
+            // We're offline, store the message to send later
+            pendingMessages.push(messageData);
+
+            // Add a temporary message to the UI with offline indicator
+            const tempMessage = {
+                sender_id: currentUserId,
+                content: content,
+                timestamp: new Date().toISOString(),
+                is_read: false,
+                is_pending: true
+            };
+            addMessageToChat(tempMessage);
+
+            // Show offline toast
+            showToast('You are currently offline. Message will be sent when connection is restored.', 'warning');
+        }
+
+        // Clear the input
+        messageInput.value = '';
+
+        // Reset typing indicator
+        if (typingTimeout) {
+            clearTimeout(typingTimeout);
+        }
+        sendTypingIndicator(false);
+
+        // Focus the input again
+        messageInput.focus();
+    }
+}
+
+/**
+ * Show a toast notification
+ */
+function showToast(message, type = 'info') {
+    // Check if the global showToastNotification function exists (from main site)
+    if (typeof window.showToastNotification === 'function') {
+        // Use the global toast function
+        window.showToastNotification(message, type);
+        return;
+    }
+
+    // Fallback implementation if global function doesn't exist
+    // Check if toast container exists, create if not
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element with proper structure
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    // Create icon element
+    const iconElement = document.createElement('div');
+    iconElement.className = 'toast-icon';
+
+    // Set icon based on type
+    let iconSvg = '';
+    switch (type) {
+        case 'success':
+            iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+            break;
+        case 'error':
+            iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+            break;
+        case 'warning':
+            iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+            break;
+        default: // info
+            iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+    }
+
+    iconElement.innerHTML = iconSvg;
+
+    // Create content element
+    const contentElement = document.createElement('div');
+    contentElement.className = 'toast-content';
+    contentElement.innerHTML = `<p>${message}</p>`;
+
+    // Create close button
+    const closeButton = document.createElement('button');
+    closeButton.className = 'toast-close';
+    closeButton.setAttribute('aria-label', 'Close notification');
+    closeButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
+    // Add event listener to close button
+    closeButton.addEventListener('click', () => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    });
+
+    // Assemble the toast
+    toast.appendChild(iconElement);
+    toast.appendChild(contentElement);
+    toast.appendChild(closeButton);
+
+    // Add to container
+    toastContainer.appendChild(toast);
+
+    // Show the toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+
+/**
+ * Send a typing indicator update
+ */
+function sendTypingIndicator(isTyping) {
+    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+            'type': 'typing',
+            'conversation_id': currentConversationId,
+            'is_typing': isTyping
+        }));
+    }
+}
+
+/**
+ * Mark messages as read
+ */
+function markMessagesAsRead() {
+    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        chatSocket.send(JSON.stringify({
+            'type': 'read_messages',
+            'conversation_id': currentConversationId
+        }));
+
+        // Remove unread badge from this conversation in the list
+        const conversationItem = document.querySelector(`.conversation-item[href*="${currentConversationId}"]`);
+        if (conversationItem) {
+            const unreadBadge = conversationItem.querySelector('.unread-badge');
+            if (unreadBadge) {
+                unreadBadge.remove();
+            }
+        }
+    }
+}
+
+/**
+ * Add a message to the chat UI
+ */
+function addMessageToChat(message) {
+    const messageList = document.getElementById('message-list');
+    if (!messageList) return;
+
+    const isOutgoing = message.sender_id === currentUserId;
+
+    // Create the message element
+    const messageElement = document.createElement('div');
+    messageElement.className = `message-item ${isOutgoing ? 'outgoing' : 'incoming'}`;
+
+    // Add data attributes for potential future reference
+    if (message.id) {
+        messageElement.dataset.messageId = message.id;
+    }
+
+    // Create the message content
+    const contentElement = document.createElement('div');
+    contentElement.className = 'message-content';
+    contentElement.textContent = message.content;
+
+    // Create the message meta information
+    const metaElement = document.createElement('div');
+    metaElement.className = 'message-meta';
+
+    // Add timestamp
+    const timeElement = document.createElement('span');
+    timeElement.className = 'message-time';
+
+    // Format the timestamp
+    const timestamp = new Date(message.timestamp);
+    const hours = timestamp.getHours();
+    const minutes = timestamp.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 || 12;
+    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+    timeElement.textContent = `${formattedHours}:${formattedMinutes} ${ampm}`;
+
+    // Add read status for outgoing messages
+    if (isOutgoing) {
+        const statusElement = document.createElement('span');
+        statusElement.className = 'message-status';
+
+        const statusIcon = document.createElement('i');
+        statusIcon.className = 'material-icons';
+
+        if (message.is_pending) {
+            // Show clock icon for pending messages
+            statusIcon.textContent = 'schedule';
+            statusIcon.className += ' pending-indicator';
+            statusElement.setAttribute('aria-label', 'Pending');
+
+            // Add a tooltip
+            statusElement.title = 'Message will be sent when you are back online';
+        } else if (message.is_read) {
+            statusIcon.className += ' read-indicator';
+            statusIcon.textContent = 'done_all';
+            statusElement.setAttribute('aria-label', 'Read');
+        } else {
+            statusIcon.textContent = 'done';
+            statusElement.setAttribute('aria-label', 'Sent');
+        }
+
+        statusElement.appendChild(statusIcon);
+        metaElement.appendChild(statusElement);
+    }
+
+    // Assemble the message element
+    metaElement.prepend(timeElement);
+    messageElement.appendChild(contentElement);
+    messageElement.appendChild(metaElement);
+
+    // Add ARIA attributes for accessibility
+    messageElement.setAttribute('role', 'article');
+    messageElement.setAttribute('aria-label',
+        `${isOutgoing ? 'You' : 'Other user'} at ${formattedHours}:${formattedMinutes} ${ampm}`);
+
+    // Check if we need to remove the empty message placeholder
+    const emptyMessages = messageList.querySelector('.empty-messages');
+    if (emptyMessages) {
+        emptyMessages.remove();
+    }
+
+    // Add the message to the chat
+    messageList.appendChild(messageElement);
+
+    // Scroll to the new message
+    messageList.scrollTop = messageList.scrollHeight;
+
+    // Add animation class after a small delay (for better animation)
+    setTimeout(() => {
+        messageElement.classList.add('visible');
+    }, 10);
+}
+
+// Handle network status changes
+window.addEventListener('online', function() {
+    console.log('Network connection restored');
+    showToast('You are back online', 'success');
+
+    // Reconnect WebSocket if needed
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+        initializeChatWebsocket();
+    }
+
+    // Send any pending messages
+    sendPendingMessages();
+});
+
+window.addEventListener('offline', function() {
+    console.log('Network connection lost');
+    showToast('You are offline. Messages will be sent when you reconnect.', 'warning');
+
+    // Update UI to show offline status
+    showConnectionStatus('disconnected');
+});
+
+// Check initial network status when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check initial network status
+    if (!navigator.onLine) {
+        showToast('You are currently offline. Messages will be sent when you reconnect.', 'warning');
+    }
+});
