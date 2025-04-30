@@ -1,0 +1,57 @@
+{% extends 'home/profile/profile_base.html' %}
+{% load static %}
+
+{% block profile_content %}
+<div class="form-container">
+    <h1 class="form-title">
+        {% if is_add %}
+            Add Skill
+        {% else %}
+            Edit Skill
+        {% endif %}
+    </h1>
+    
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}" class="form-label">Skill Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+                <div class="form-text text-danger">{{ form.name.errors }}</div>
+            {% endif %}
+            <div class="form-text">Name of the skill (e.g., Python, Project Management)</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.proficiency.id_for_label }}" class="form-label">Proficiency Level</label>
+            {{ form.proficiency }}
+            {% if form.proficiency.errors %}
+                <div class="form-text text-danger">{{ form.proficiency.errors }}</div>
+            {% endif %}
+            <div class="form-text">How skilled are you in this area?</div>
+        </div>
+        
+        <div class="form-check">
+            {{ form.is_visible }}
+            <label for="{{ form.is_visible.id_for_label }}" class="form-check-label">
+                Show this skill on my profile
+            </label>
+            {% if form.is_visible.errors %}
+                <div class="form-text text-danger">{{ form.is_visible.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'home:profile' %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-submit">
+                {% if is_add %}
+                    Add Skill
+                {% else %}
+                    Save Changes
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 from django.contrib import messages
+from django.db.models import Q
 from .models import Post, Like, Comment, Contact, FAQ, Appointment, Notification
 from .forms import PostForm, CommentForm, ContactForm, AppointmentForm
 from django.db import transaction
@@ -147,7 +148,8 @@ def add_comment(request, post_id):
             'user': comment.user.username,
             'content': comment.content,
             'formatted_content': formatted_content,
-            'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M')
+            'created_at': comment.created_at.strftime('%Y-%m-%d %H:%M'),
+            'profile_picture': comment.user.profile_picture.url if comment.user.profile_picture else None
         })
 
     return JsonResponse({
@@ -211,7 +213,8 @@ def get_post_comments(request, post_id):
             'user': c.user.username,
             'content': c.content,
             'formatted_content': format_content_with_mentions(c.content),
-            'created_at': c.created_at.strftime('%Y-%m-%d %H:%M')
+            'created_at': c.created_at.strftime('%Y-%m-%d %H:%M'),
+            'profile_picture': c.user.profile_picture.url if c.user.profile_picture else None
         }
         for c in comments
     ]
@@ -460,6 +463,67 @@ def test_extract_mentions(request):
             for user in mentioned_users
         ]
     })
+
+@login_required
+def search_users(request):
+    """View for searching users by name or username."""
+    query = request.GET.get('q', '')
+
+    if query:
+        # Search for users by first name, last name, or username
+        users = CustomUser.objects.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(username__icontains=query)
+        ).distinct()
+
+        # Paginate results
+        paginator = Paginator(users, 20)  # Show 20 users per page
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'query': query,
+            'page_obj': page_obj,
+            'total_results': users.count(),
+            'active_page': 'home',
+        }
+
+        return render(request, 'home/search_results.html', context)
+
+    # If no query, redirect back to home
+    return redirect('home:home')
+
+
+@login_required
+def search_suggestions(request):
+    """API endpoint for search suggestions with autocomplete."""
+    query = request.GET.get('q', '')
+
+    if not query or len(query) < 2:
+        return JsonResponse({'suggestions': []})
+
+    # Search for users by first name, last name, or username
+    users = CustomUser.objects.filter(
+        Q(first_name__icontains=query) |
+        Q(last_name__icontains=query) |
+        Q(username__icontains=query)
+    ).distinct()[:10]  # Limit to 10 suggestions
+
+    suggestions = []
+    for user in users:
+        profile_pic_url = user.profile_picture.url if user.profile_picture else None
+        suggestions.append({
+            'id': user.id,
+            'username': user.username,
+            'full_name': f"{user.first_name} {user.last_name}",
+            'profile_pic': profile_pic_url,
+            'user_type': user.user_type,
+            'url': f"/home/profile/{user.username}/"
+        })
+
+    return JsonResponse({'suggestions': suggestions})
+
 
 # Helper function to format time ago
 def get_time_ago(timestamp):

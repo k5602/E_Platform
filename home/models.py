@@ -3,6 +3,9 @@ from authentication.models import CustomUser
 from django.utils import timezone
 import re
 
+# Import profile models
+from .models_profile import ProfileUserProfile, ProfileEducation, ProfileExperience, ProfileSkill, ProfileProject, ProfileCertification
+
 class Post(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='posts')
     content = models.TextField()

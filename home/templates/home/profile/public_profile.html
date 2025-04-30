@@ -1,0 +1,365 @@
+{% extends 'home/profile/profile_base.html' %}
+{% load static %}
+
+{% block profile_content %}
+<!-- Profile Header -->
+<div class="profile-header">
+    <!-- Profile Picture -->
+    <div class="profile-picture-container">
+        {% if profile_user.profile_picture %}
+            <img src="{{ profile_user.profile_picture.url }}" alt="{{ profile_user.get_full_name }}" class="profile-picture">
+        {% else %}
+            <img src="{% static 'home/images/student.jpeg' %}" alt="{{ profile_user.get_full_name }}" class="profile-picture">
+        {% endif %}
+    </div>
+
+    <!-- Profile Info -->
+    <div class="profile-info">
+        <h1 class="profile-name">{{ profile_user.first_name }} {{ profile_user.last_name }}</h1>
+        <p class="profile-username">@{{ profile_user.username }}</p>
+        <span class="profile-type">{{ profile_user.user_type|title }}</span>
+
+        {% if show_bio and profile.bio %}
+            <p class="profile-bio">{{ profile.bio }}</p>
+        {% endif %}
+
+        <div class="profile-details">
+            {% if show_location and profile.location %}
+                <div class="profile-detail">
+                    <i class="material-icons">location_on</i>
+                    <span>{{ profile.location }}</span>
+                </div>
+            {% endif %}
+
+            {% if profile_user.email %}
+                <div class="profile-detail">
+                    <i class="material-icons">email</i>
+                    <span>{{ profile_user.email }}</span>
+                </div>
+            {% endif %}
+
+            {% if show_website and profile.website %}
+                <div class="profile-detail">
+                    <i class="material-icons">link</i>
+                    <a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Social Links -->
+        {% if show_social_links and profile.social_links %}
+            <div class="social-links">
+                {% if profile.social_links.linkedin %}
+                    <a href="{{ profile.social_links.linkedin }}" target="_blank" class="social-link">
+                        <i class="material-icons">link</i>
+                        <span>LinkedIn</span>
+                    </a>
+                {% endif %}
+
+                {% if profile.social_links.github %}
+                    <a href="{{ profile.social_links.github }}" target="_blank" class="social-link">
+                        <i class="material-icons">code</i>
+                        <span>GitHub</span>
+                    </a>
+                {% endif %}
+
+                {% if profile.social_links.twitter %}
+                    <a href="{{ profile.social_links.twitter }}" target="_blank" class="social-link">
+                        <i class="material-icons">chat</i>
+                        <span>Twitter</span>
+                    </a>
+                {% endif %}
+
+                {% if profile.social_links.facebook %}
+                    <a href="{{ profile.social_links.facebook }}" target="_blank" class="social-link">
+                        <i class="material-icons">people</i>
+                        <span>Facebook</span>
+                    </a>
+                {% endif %}
+
+                {% if profile.social_links.instagram %}
+                    <a href="{{ profile.social_links.instagram }}" target="_blank" class="social-link">
+                        <i class="material-icons">photo_camera</i>
+                        <span>Instagram</span>
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Chat Button (Placeholder) -->
+        {% if not is_own_profile %}
+        <div class="profile-actions">
+            <a href="#" class="profile-action-btn chat-btn" onclick="alert('Chat functionality coming soon!')">
+                <i class="material-icons">chat</i>
+                <span>Chat with {{ profile_user.first_name }}</span>
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- User Level and Experience -->
+        <div class="profile-completion">
+            <div class="completion-text">
+                <span>Level {{ profile_user.level|default:"1" }}</span>
+                <span>{{ profile_user.experience_points|default:"0" }} XP</span>
+            </div>
+            <div class="completion-bar">
+                <div class="completion-progress" style="width: {{ profile_user.experience_points|default:"0" }}%;"></div>
+            </div>
+            <div class="level-info">
+                <span>{{ profile_user.experience_points|default:"0" }}/100 XP to Level {{ profile_user.level|default:"1"|add:"1" }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Posts Section -->
+{% if recent_posts or is_own_profile %}
+<div class="profile-section">
+    <div class="section-header">
+        <h2>Recent Posts</h2>
+    </div>
+    <div class="recent-posts">
+        {% if recent_posts %}
+            {% for post in recent_posts %}
+            <div class="post-card">
+                <div class="post-header">
+                    <div class="post-avatar">
+                        {% if profile_user.profile_picture %}
+                            <img src="{{ profile_user.profile_picture.url }}" alt="{{ profile_user.username }}">
+                        {% else %}
+                            <img src="{% static 'home/images/student.jpeg' %}" alt="{{ profile_user.username }}">
+                        {% endif %}
+                    </div>
+                    <div class="post-info">
+                        <div class="post-author">{{ profile_user.first_name }} {{ profile_user.last_name }}</div>
+                        <div class="post-date">{{ post.created_at|date:"F d, Y" }}</div>
+                    </div>
+                </div>
+                <div class="post-content">
+                    <p>{{ post.formatted_content|safe }}</p>
+                    {% if post.image %}
+                    <div class="post-image">
+                        <img src="{{ post.image.url }}" alt="Post image">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="post-footer">
+                    <a href="{% url 'home:home' %}#post-{{ post.id }}" class="view-post-btn">View Full Post</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-posts-message">
+                {% if is_own_profile %}
+                    <p>You haven't created any posts yet. <a href="{% url 'home:home' %}">Create your first post</a> to share with others!</p>
+                {% else %}
+                    <p>{{ profile_user.first_name }} hasn't created any posts yet.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Education Section -->
+{% if education %}
+    <div class="profile-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="material-icons">school</i>
+                <span>Education</span>
+            </h2>
+        </div>
+
+        <div class="timeline-container">
+            {% for edu in education %}
+                <div class="timeline-item">
+                    <div class="timeline-header">
+                        <div>
+                            <h3 class="timeline-title">{{ edu.degree }} in {{ edu.field_of_study }}</h3>
+                            <p class="timeline-subtitle">{{ edu.institution }}</p>
+                        </div>
+                        <div class="timeline-date">
+                            {{ edu.start_date|date:"M Y" }} -
+                            {% if edu.end_date %}
+                                {{ edu.end_date|date:"M Y" }}
+                            {% else %}
+                                Present
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if edu.description %}
+                        <p class="timeline-description">{{ edu.description }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Experience Section -->
+{% if experience %}
+    <div class="profile-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="material-icons">work</i>
+                <span>Experience</span>
+            </h2>
+        </div>
+
+        <div class="timeline-container">
+            {% for exp in experience %}
+                <div class="timeline-item">
+                    <div class="timeline-header">
+                        <div>
+                            <h3 class="timeline-title">{{ exp.position }}</h3>
+                            <p class="timeline-subtitle">{{ exp.company }}{% if exp.location %} - {{ exp.location }}{% endif %}</p>
+                        </div>
+                        <div class="timeline-date">
+                            {{ exp.start_date|date:"M Y" }} -
+                            {% if exp.end_date %}
+                                {{ exp.end_date|date:"M Y" }}
+                            {% else %}
+                                Present
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if exp.description %}
+                        <p class="timeline-description">{{ exp.description }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Skills Section -->
+{% if skills %}
+    <div class="profile-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="material-icons">psychology</i>
+                <span>Skills</span>
+            </h2>
+        </div>
+
+        <div class="skills-container">
+            {% for skill in skills %}
+                <div class="skill-item">
+                    <div class="skill-header">
+                        <h3 class="skill-name">{{ skill.name }}</h3>
+                        <div class="skill-level">
+                            {% for i in "12345" %}
+                                <div class="skill-level-dot {% if forloop.counter <= skill.proficiency %}active{% endif %}"></div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Projects Section -->
+{% if projects %}
+    <div class="profile-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="material-icons">code</i>
+                <span>Projects</span>
+            </h2>
+        </div>
+
+        <div class="projects-container">
+            {% for project in projects %}
+                <div class="project-item">
+                    {% if project.image %}
+                        <img src="{{ project.image.url }}" alt="{{ project.title }}" class="project-image">
+                    {% else %}
+                        <div class="project-image-placeholder"></div>
+                    {% endif %}
+
+                    <div class="project-content">
+                        <h3 class="project-title">{{ project.title }}</h3>
+                        <div class="project-date">
+                            {{ project.start_date|date:"M Y" }} -
+                            {% if project.end_date %}
+                                {{ project.end_date|date:"M Y" }}
+                            {% else %}
+                                Present
+                            {% endif %}
+                        </div>
+
+                        <p class="project-description">{{ project.description }}</p>
+
+                        {% if project.technologies %}
+                            <div class="project-technologies">
+                                {% for tech in project.technologies.split|slice:":5" %}
+                                    <span class="project-technology">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="project-actions">
+                            {% if project.url %}
+                                <a href="{{ project.url }}" target="_blank" class="project-link">
+                                    <i class="material-icons">open_in_new</i>
+                                    <span>View Project</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Certifications Section -->
+{% if certifications %}
+    <div class="profile-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="material-icons">verified</i>
+                <span>Certifications</span>
+            </h2>
+        </div>
+
+        <div class="certifications-container">
+            {% for cert in certifications %}
+                <div class="certification-item">
+                    <div class="certification-header">
+                        <div>
+                            <h3 class="certification-title">{{ cert.name }}</h3>
+                            <p class="certification-issuer">{{ cert.issuing_organization }}</p>
+                        </div>
+                        <div class="certification-date">
+                            Issued: {{ cert.issue_date|date:"M Y" }}
+                            {% if cert.expiration_date %}
+                                <br>Expires: {{ cert.expiration_date|date:"M Y" }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if cert.credential_id %}
+                        <div class="certification-credential">
+                            Credential ID: {{ cert.credential_id }}
+                        </div>
+                    {% endif %}
+
+                    <div class="certification-actions">
+                        {% if cert.credential_url %}
+                            <a href="{{ cert.credential_url }}" target="_blank" class="certification-link">
+                                <i class="material-icons">verified</i>
+                                <span>Verify</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

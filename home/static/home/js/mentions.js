@@ -399,11 +399,19 @@ function formatExistingMentions() {
         // Get the text content
         let content = element.innerHTML;
 
-        // Replace @username with styled mention
-        content = content.replace(/@(\w+)/g, '<a href="#" class="mention" data-username="$1">@$1</a>');
+        // Replace @username with styled mention that links to the user's profile
+        content = content.replace(/@(\w+)/g, '<a href="/home/profile/$1/" class="mention" data-username="$1">@$1</a>');
 
         // Update the element
         element.innerHTML = content;
+    });
+
+    // Add click event listeners to all mentions
+    document.querySelectorAll('.mention').forEach(mention => {
+        mention.addEventListener('click', function(e) {
+            // Navigate to the user's profile
+            window.location.href = `/home/profile/${this.dataset.username}/`;
+        });
     });
 }
 

@@ -31,7 +31,11 @@
 
     <div class="side_nav" id="side-nav">
         <div class="user">
-            <img src="{% static 'home/images/student.jpeg' %}" alt="std_img" class="user-img">
+            {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="user-img">
+            {% else %}
+                <img src="{% static 'home/images/student.jpeg' %}" alt="std_img" class="user-img">
+            {% endif %}
             <h2>{{ user.first_name }} {{ user.last_name }}</h2>
             <p>{{ user.username }}</p>
         </div>
@@ -43,7 +47,7 @@
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{% url 'home:profile' %}">
                     <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="profile">
                     <p>Profile</p>
                 </a>
@@ -73,16 +77,32 @@
 
     <div class="main-content-area">
         <nav class="main_nav">
-            <a href="{% url 'home:home' %}" {% if active_page == 'home' %}class="active"{% endif %}>Home</a>
-            <a href="{% url 'home:subjects_list' %}" {% if active_page == 'subjects' %}class="active"{% endif %}>Subjects</a>
-            <a href="#" {% if active_page == 'quiz' %}class="active"{% endif %}>Quiz</a>
-            <a href="#" {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
-            <a href="{% url 'home:contact' %}" {% if active_page == 'contact' %}class="active"{% endif %}>Contact</a>
+            <div class="nav-left">
+                <a href="{% url 'home:home' %}" {% if active_page == 'home' %}class="active"{% endif %}>Home</a>
+                <a href="{% url 'home:subjects_list' %}" {% if active_page == 'subjects' %}class="active"{% endif %}>Subjects</a>
+                <a href="#" {% if active_page == 'quiz' %}class="active"{% endif %}>Quiz</a>
+            </div>
 
-            <!-- Notification Bell -->
-            <div class="notification-bell" id="notification-bell" aria-label="Notifications">
-                <img src="{% static 'home/images/bell.svg' %}" alt="Notifications">
-                <span class="notification-badge" id="notification-badge"></span>
+            <!-- Search Bar -->
+            <div class="nav-search">
+                <form action="{% url 'home:search_users' %}" method="GET" class="search-form" id="search-form">
+                    <input type="text" name="q" placeholder="Search users by name or username..." class="search-input" id="search-input" autocomplete="off">
+                    <button type="submit" class="search-btn">
+                        <i class="material-icons">search</i>
+                    </button>
+                </form>
+                <div class="search-suggestions" id="search-suggestions"></div>
+            </div>
+
+            <div class="nav-right">
+                <a href="{% url 'home:profile' %}" {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
+                <a href="{% url 'home:contact' %}" {% if active_page == 'contact' %}class="active"{% endif %}>Contact</a>
+
+                <!-- Notification Bell -->
+                <div class="notification-bell" id="notification-bell" aria-label="Notifications">
+                    <img src="{% static 'home/images/bell.svg' %}" alt="Notifications">
+                    <span class="notification-badge" id="notification-badge"></span>
+                </div>
             </div>
 
             <!-- Include Notification Panel -->
@@ -109,5 +129,6 @@
 <script src="{% static 'home/js/websocket-notifications.js' %}"></script>
 <script src="{% static 'home/js/notification-bell.js' %}"></script>
 <script src="{% static 'home/js/notification-panel.js' %}"></script>
+<script src="{% static 'home/js/search-autocomplete.js' %}"></script>
 {% block page_js %}{% endblock %}
 {% endblock %}

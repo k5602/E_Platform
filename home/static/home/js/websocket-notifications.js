@@ -20,7 +20,10 @@ function initializeWebSocket(userId) {
         // Determine WebSocket protocol (wss for HTTPS, ws for HTTP)
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const host = window.location.host;
+        // Fix the WebSocket URL to include the correct path
         const wsUrl = `${protocol}${host}/ws/notifications/${userId}/`;
+
+        console.log('User ID:', userId);
 
         console.log('Connecting to WebSocket at:', wsUrl);
 

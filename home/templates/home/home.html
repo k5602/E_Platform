@@ -10,10 +10,6 @@
 
 {% block home_content %}
 <div class="addpost-outer">
-    <!-- Test button for toast notifications -->
-    <button type="button" id="test-toast-btn" style="margin-bottom: 10px; background-color: var(--main_button); color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
-        Test Toast Notifications
-    </button>
 
     <form id="add-post-form" class="addpost-container" method="post" action="{% url 'home:create_post' %}" enctype="multipart/form-data">
         {% csrf_token %}
@@ -40,8 +36,14 @@
     {% for post in page_obj %}
     <div class="post">
         <div class="poster-info" style="display:flex;align-items:center;margin-bottom:10px;">
-            <img src="{% static 'home/images/student.jpeg' %}" alt="{{ post.user.username }}" style="width:36px;height:36px;border-radius:50%;margin-right:10px;">
-            <span style="font-weight:bold;">{{ post.user.first_name }} {{ post.user.last_name }}</span>
+            <a href="{% url 'home:public_profile' post.user.username %}" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
+                {% if post.user.profile_picture %}
+                    <img src="{{ post.user.profile_picture.url }}" alt="{{ post.user.username }}" style="width:36px;height:36px;border-radius:50%;margin-right:10px;object-fit:cover;cursor:pointer;">
+                {% else %}
+                    <img src="{% static 'home/images/student.jpeg' %}" alt="{{ post.user.username }}" style="width:36px;height:36px;border-radius:50%;margin-right:10px;cursor:pointer;">
+                {% endif %}
+                <span style="font-weight:bold;">{{ post.user.first_name }} {{ post.user.last_name }}</span>
+            </a>
         </div>
 
         {% if post.image %}
@@ -104,8 +106,14 @@
             {% for comment in post.comments.all %}
             <li>
                 <span class="commenter-info">
-                    <img src="{% static 'home/images/student.jpeg' %}" alt="{{ comment.user.username }}">
-                    <span>{{ comment.user.username }}</span>
+                    <a href="{% url 'home:public_profile' comment.user.username %}" style="display:flex;align-items:center;text-decoration:none;color:inherit;">
+                        {% if comment.user.profile_picture %}
+                            <img src="{{ comment.user.profile_picture.url }}" alt="{{ comment.user.username }}" style="object-fit:cover;cursor:pointer;">
+                        {% else %}
+                            <img src="{% static 'home/images/student.jpeg' %}" alt="{{ comment.user.username }}" style="cursor:pointer;">
+                        {% endif %}
+                        <span>{{ comment.user.username }}</span>
+                    </a>
                 </span>
                 <span class="format-mentions">{{ comment.content }}</span>
                 {% if comment.user == user %}

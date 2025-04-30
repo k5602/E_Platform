@@ -1,0 +1,107 @@
+{% extends 'home/profile/profile_base.html' %}
+{% load static %}
+
+{% block profile_content %}
+<div class="form-container">
+    <h1 class="form-title">
+        {% if is_add %}
+            Add Project
+        {% else %}
+            Edit Project
+        {% endif %}
+    </h1>
+    
+    <form method="post" class="needs-validation" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.title.id_for_label }}" class="form-label">Project Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div class="form-text text-danger">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+                <div class="form-text text-danger">{{ form.description.errors }}</div>
+            {% endif %}
+            <div class="form-text">Describe what the project is about and your role in it</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.url.id_for_label }}" class="form-label">Project URL</label>
+            {{ form.url }}
+            {% if form.url.errors %}
+                <div class="form-text text-danger">{{ form.url.errors }}</div>
+            {% endif %}
+            <div class="form-text">Link to the project (e.g., GitHub repository, live demo)</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.image.id_for_label }}" class="form-label">Project Image</label>
+            {{ form.image }}
+            {% if form.image.errors %}
+                <div class="form-text text-danger">{{ form.image.errors }}</div>
+            {% endif %}
+            <div class="form-text">Upload an image that represents your project</div>
+            
+            {% if project and project.image %}
+                <div class="current-image">
+                    <p>Current image:</p>
+                    <img src="{{ project.image.url }}" alt="{{ project.title }}" style="max-width: 200px; max-height: 150px;">
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.technologies.id_for_label }}" class="form-label">Technologies Used</label>
+            {{ form.technologies }}
+            {% if form.technologies.errors %}
+                <div class="form-text text-danger">{{ form.technologies.errors }}</div>
+            {% endif %}
+            <div class="form-text">List the technologies used, separated by commas (e.g., Python, Django, React)</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
+            {{ form.start_date }}
+            {% if form.start_date.errors %}
+                <div class="form-text text-danger">{{ form.start_date.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+            {{ form.end_date }}
+            {% if form.end_date.errors %}
+                <div class="form-text text-danger">{{ form.end_date.errors }}</div>
+            {% endif %}
+            <div class="form-text">Leave blank if this is an ongoing project</div>
+        </div>
+        
+        <div class="form-check">
+            {{ form.is_visible }}
+            <label for="{{ form.is_visible.id_for_label }}" class="form-check-label">
+                Show this project on my profile
+            </label>
+            {% if form.is_visible.errors %}
+                <div class="form-text text-danger">{{ form.is_visible.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'home:profile' %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-submit">
+                {% if is_add %}
+                    Add Project
+                {% else %}
+                    Save Changes
+                {% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

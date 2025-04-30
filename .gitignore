@@ -185,3 +185,7 @@ home/migrations/0002_post_document.py
 home/migrations/0003_contact.py
 home/migrations/0004_faq.py
 home/migrations/0005_appointment.py
+home/migrations/0002_remove_userbadge_badge_and_more.py
+home/migrations/0003_auto_20250430_0248.py
+home/migrations/0004_create_profile_models.py
+home/migrations/0005_create_profile_models.py

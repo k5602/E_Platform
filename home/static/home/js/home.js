@@ -1059,15 +1059,34 @@ function submitComment(postId, content, post) {
                 const commenterInfo = document.createElement('span');
                 commenterInfo.className = 'commenter-info';
 
+                // Create link to user profile
+                const profileLink = document.createElement('a');
+                profileLink.href = `/profile/${data.user}/`;
+                profileLink.style.display = 'flex';
+                profileLink.style.alignItems = 'center';
+                profileLink.style.textDecoration = 'none';
+                profileLink.style.color = 'inherit';
+
                 const commenterImg = document.createElement('img');
-                commenterImg.src = document.querySelector('.user-img').src;
-                commenterImg.alt = 'commenter';
+                // Get the current user's profile picture from the sidebar
+                const userImg = document.querySelector('.user-img');
+                if (userImg) {
+                    commenterImg.src = userImg.src;
+                    commenterImg.alt = 'commenter';
+                    commenterImg.style.objectFit = 'cover';
+                    commenterImg.style.cursor = 'pointer';
+                } else {
+                    commenterImg.src = '/static/home/images/student.jpeg';
+                    commenterImg.alt = 'commenter';
+                    commenterImg.style.cursor = 'pointer';
+                }
 
                 const commenterName = document.createElement('span');
                 commenterName.textContent = data.user;
 
-                commenterInfo.appendChild(commenterImg);
-                commenterInfo.appendChild(commenterName);
+                profileLink.appendChild(commenterImg);
+                profileLink.appendChild(commenterName);
+                commenterInfo.appendChild(profileLink);
 
                 const commentText = document.createElement('span');
                 commentText.className = 'format-mentions';
@@ -1283,7 +1302,10 @@ function initializeRealtimePolling() {
             const li = document.createElement('li');
             // Use formatted_content if available, otherwise use regular content
             const contentHtml = c.formatted_content || c.content;
-            li.innerHTML = `<span class="commenter-info"><img src="/static/home/images/student.jpeg" alt="${c.user}"><span>${c.user}</span></span> <span class="format-mentions">${contentHtml}</span>`;
+            // Check if we have profile picture information in the comment data
+            const profilePicture = c.profile_picture ? `<img src="${c.profile_picture}" alt="${c.user}" style="object-fit:cover;cursor:pointer;">` :
+                                                      `<img src="/static/home/images/student.jpeg" alt="${c.user}" style="cursor:pointer;">`;
+            li.innerHTML = `<span class="commenter-info"><a href="/profile/${c.user}/" style="display:flex;align-items:center;text-decoration:none;color:inherit;">${profilePicture}<span>${c.user}</span></a></span> <span class="format-mentions">${contentHtml}</span>`;
             commentList.appendChild(li);
         });
     }

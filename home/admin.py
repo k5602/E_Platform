@@ -3,6 +3,10 @@ from .models import (
     Post, Like, Comment, Contact, FAQ, Appointment,
     Subject, SubjectMaterial, SubjectEnrollment
 )
+from .admin_profile import (
+    UserProfileAdmin, EducationAdmin, ExperienceAdmin,
+    SkillAdmin, ProjectAdmin, CertificationAdmin
+)
 
 class CommentInline(admin.TabularInline):
     model = Comment

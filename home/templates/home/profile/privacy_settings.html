@@ -1,0 +1,127 @@
+{% extends 'home/profile/profile_base.html' %}
+{% load static %}
+
+{% block profile_content %}
+<div class="form-container">
+    <h1 class="form-title">Privacy Settings</h1>
+    
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        
+        <div class="privacy-settings">
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Bio</h2>
+                <div class="privacy-options">
+                    {% for choice in form.bio %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Location</h2>
+                <div class="privacy-options">
+                    {% for choice in form.location %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Website</h2>
+                <div class="privacy-options">
+                    {% for choice in form.website %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Social Links</h2>
+                <div class="privacy-options">
+                    {% for choice in form.social_links %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Education</h2>
+                <div class="privacy-options">
+                    {% for choice in form.education %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Experience</h2>
+                <div class="privacy-options">
+                    {% for choice in form.experience %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Skills</h2>
+                <div class="privacy-options">
+                    {% for choice in form.skills %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Projects</h2>
+                <div class="privacy-options">
+                    {% for choice in form.projects %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="privacy-section">
+                <h2 class="privacy-section-title">Certifications</h2>
+                <div class="privacy-options">
+                    {% for choice in form.certifications %}
+                        <div class="privacy-option">
+                            {{ choice.tag }}
+                            <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{% url 'home:profile' %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-submit">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

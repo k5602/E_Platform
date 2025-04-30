@@ -1,0 +1,83 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block title %}Search Results - KFS University{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/search.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'home/js/search-autocomplete.js' %}"></script>
+{% endblock %}
+
+{% block home_content %}
+<div class="search-results-container">
+    <div class="search-header">
+        <h1>Search Results</h1>
+        <p>Found {{ total_results }} result{{ total_results|pluralize }} for "{{ query }}"</p>
+
+        <form action="{% url 'home:search_users' %}" method="GET" class="search-form" id="search-form">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search users by name or username..." class="search-input" id="search-input" autocomplete="off" required>
+            <button type="submit" class="search-btn">
+                <i class="material-icons">search</i>
+            </button>
+        </form>
+        <div class="search-suggestions" id="search-suggestions"></div>
+    </div>
+
+    {% if page_obj %}
+        <div class="user-results">
+            {% for user in page_obj %}
+                <div class="user-card">
+                    <a href="{% url 'home:public_profile' user.username %}" class="user-link">
+                        <div class="user-avatar">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture.url }}" alt="{{ user.get_full_name }}" class="user-img">
+                            {% else %}
+                                <img src="{% static 'home/images/student.jpeg' %}" alt="{{ user.get_full_name }}" class="user-img">
+                            {% endif %}
+                        </div>
+                        <div class="user-info">
+                            <h3 class="user-name">{{ user.first_name }} {{ user.last_name }}</h3>
+                            <p class="user-username">@{{ user.username }}</p>
+                            <p class="user-type">{{ user.user_type|title }}</p>
+                        </div>
+                    </a>
+                    {% if user != request.user %}
+                        <a href="{% url 'home:public_profile' user.username %}" class="chat-btn">
+                            <i class="material-icons">chat</i>
+                            <span>Chat</span>
+                        </a>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?q={{ query }}&page=1" class="pagination-link">&laquo; First</a>
+                    <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" class="pagination-link">Previous</a>
+                {% endif %}
+
+                <span class="current-page">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" class="pagination-link">Next</a>
+                    <a href="?q={{ query }}&page={{ page_obj.paginator.num_pages }}" class="pagination-link">Last &raquo;</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="no-results">
+            <i class="material-icons">search_off</i>
+            <p>No users found matching "{{ query }}"</p>
+            <p>Try a different search term or check your spelling.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

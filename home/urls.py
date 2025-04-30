@@ -1,6 +1,7 @@
 from django.urls import path, include
 from . import views
 from .urls_subjects import urlpatterns as subject_urlpatterns
+from .urls_profile import urlpatterns as profile_urlpatterns
 
 app_name = 'home'
 
@@ -21,7 +22,11 @@ urlpatterns = [
     path('api/notifications/count/', views.get_unread_notification_count, name='notification_count'),
     path('api/notifications/mark-read/', views.mark_notification_read, name='mark_all_notifications_read'),
     path('api/notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
-    path('api/users/search/', views.search_users_view, name='search_users'),
+    path('api/users/search/', views.search_users_view, name='search_users_api'),
+    path('api/users/suggestions/', views.search_suggestions, name='search_suggestions'),
+    # Add a more specific URL pattern for search suggestions
+    path('search/suggestions/', views.search_suggestions, name='search_suggestions_alt'),
+    path('search/', views.search_users, name='search_users'),
     path('debug/mentions/', views.debug_mentions_view, name='debug_mentions'),
     path('debug/notifications/', views.debug_notifications_view, name='debug_notifications'),
     path('debug/create-test-notification/', views.create_test_notification, name='create_test_notification'),
@@ -30,3 +35,6 @@ urlpatterns = [
 
 # Add subject URL patterns
 urlpatterns += subject_urlpatterns
+
+# Add profile URL patterns
+urlpatterns += profile_urlpatterns
