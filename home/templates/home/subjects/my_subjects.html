@@ -1,0 +1,106 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+{% load math_filters %}
+
+{% block title %}My Subjects - KFS University{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/subjects.css' %}">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block home_content %}
+<div class="subjects-container">
+    <div class="subjects-header">
+        <h1>My Subjects</h1>
+        <div class="subjects-actions">
+            <a href="{% url 'home:subjects_list' %}" class="btn {% if not my_subjects %}active{% endif %}">All Subjects</a>
+            <a href="{% url 'home:my_subjects' %}" class="btn {% if my_subjects %}active{% endif %}">My Subjects</a>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner hidden">
+        <div class="spinner"></div>
+        <p>Loading subjects...</p>
+    </div>
+
+    {% if subjects %}
+    <section class="subjects-grid">
+        {% for subject in subjects %}
+        <a href="{% url 'home:subject_detail' subject_code=subject.code %}" class="subject-card">
+            <h2><span class="material-icons">{{ subject.icon_name }}</span> {{ subject.name }}</h2>
+            <p>{{ subject.description|default:"No description available" }}</p>
+            <div class="icon-container">
+                <span class="material-icons icon-large">{{ subject.background_icon }}</span>
+            </div>
+
+            <div class="enrolled-badge">
+                <span class="material-icons">check_circle</span> Enrolled
+            </div>
+
+            {% if subject.external_links %}
+            <div class="external-links">
+                {% for link in subject.external_links %}
+                <a href="{{ link.url }}" target="_blank" class="external-link">
+                    <span class="material-icons">open_in_new</span>
+                    {{ link.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </section>
+    {% else %}
+    <div class="no-subjects">
+        <p>You are not enrolled in any subjects yet.</p>
+        <a href="{% url 'home:subjects_list' %}" class="btn">Browse Subjects</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show loading spinner on page load
+    const loadingSpinner = document.querySelector('.loading-spinner');
+    loadingSpinner.classList.remove('hidden');
+
+    // Simulate loading delay
+    setTimeout(() => {
+        loadingSpinner.classList.add('hidden');
+    }, 1000);
+
+    // Validate external links
+    const externalLinks = document.querySelectorAll('.external-link');
+    externalLinks.forEach(link => {
+        if (!link.href.startsWith('http://') && !link.href.startsWith('https://')) {
+            link.href = 'https://' + link.href;
+        }
+    });
+
+    // Add error handling for subject cards
+    const subjectCards = document.querySelectorAll('.subject-card');
+    subjectCards.forEach(card => {
+        const description = card.querySelector('p');
+        if (!description.textContent.trim()) {
+            description.textContent = 'No description available';
+        }
+    });
+
+    // Add click confirmation for enrolled subjects
+    const enrolledButtons = document.querySelectorAll('.enrolled-badge');
+    enrolledButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Are you sure you want to leave this subject?')) {
+                // Handle leaving subject logic here
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

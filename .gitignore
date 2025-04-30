@@ -203,3 +203,11 @@ Assets/chat-app/messages.css
 Assets/chat-app/messages.html
 Assets/chat-app/messages.js
 .gitignore
+authentication/tests/__init__.py
+authentication/tests/test_forms.py
+authentication/tests/test_models.py
+authentication/tests/test_views.py
+home/management/commands/create_test_quizzes.py
+home/management/commands/create_test_quizzes.py
+home/management/commands/create_test_quizzes.py
+home/management/commands/create_test_quizzes.py
