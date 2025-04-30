@@ -1,5 +1,4 @@
 /* Subjects CSS */
-
 /* Material Icons Styles */
 .material-icons {
     font-family: 'Material Icons';
@@ -114,124 +113,205 @@
 /* Subjects Grid */
 .subjects-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
 }
 
 /* Subject Card */
 .subject-card {
-    background: var(--subject-card-bg);
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+    background-color: var(--subject-card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    text-decoration: none;
+    color: var(--text_color);
     border: 1px solid var(--subject-border-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    display: flex;
-    flex-direction: column;
+    transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    text-decoration: none;
-    min-height: 200px;
 }
 
 .subject-card:hover {
+    background-color: var(--subject-card-hover-bg);
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    background: var(--subject-card-hover-bg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 .subject-card h2 {
-    color: var(--text_color);
-    font-size: 1.5em;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--header_color);
-    position: relative;
-    z-index: 1;
+    margin: 0 0 12px 0;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
-.subject-card h2 .material-icons {
+.subject-card .material-icons {
     color: var(--subject-icon-color);
+    font-size: 24px;
 }
 
 .subject-card p {
-    color: var(--text_color);
-    line-height: 1.6;
-    margin-bottom: 20px;
-    flex-grow: 1;
-    position: relative;
-    z-index: 1;
+    margin: 0 0 20px 0;
+    color: var(--label_color);
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
+/* Icon Container */
 .icon-container {
     position: absolute;
-    right: -20px;
     bottom: -20px;
-    z-index: 0;
+    right: -20px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
 }
 
-.icon-large {
-    font-size: 150px;
-    opacity: 0.1;
-    transform: rotate(-15deg);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+.subject-card:hover .icon-container {
+    opacity: 1;
+    bottom: 20px;
+    right: 20px;
 }
 
-.subject-card:hover .icon-large {
-    transform: scale(1.1) rotate(5deg);
+.icon-container .material-icons {
+    font-size: 48px;
+    color: var(--subject-icon-color);
 }
 
 /* Enrolled Badge */
 .enrolled-badge {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 10px;
+    right: 10px;
     background-color: var(--enrolled-badge-bg);
     color: var(--enrolled-badge-color);
-    padding: 5px 10px;
+    padding: 6px 12px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
-    gap: 5px;
-    z-index: 2;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.enrolled-badge .material-icons {
-    font-size: 16px;
+.enrolled-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* No Subjects Message */
-.no-subjects {
-    text-align: center;
-    padding: 50px 20px;
-    background: var(--subject-card-bg);
-    border-radius: 15px;
-    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+/* External Links */
+.external-links {
+    margin-top: 15px;
 }
 
-.no-subjects p {
-    margin-bottom: 20px;
-    color: var(--text_color);
-    font-size: 1.2em;
-}
-
-.no-subjects .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: var(--main_button);
-    color: white;
-    border-radius: 8px;
+.external-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--main_button);
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    padding: 6px 12px;
+    border-radius: 6px;
 }
 
-.no-subjects .btn:hover {
-    background-color: var(--accent_color);
-    transform: translateY(-2px);
+.external-link:hover {
+    background-color: rgba(83, 73, 204, 0.1);
+    transform: translateX(4px);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--label_color);
+    text-align: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--main_button);
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .subjects-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .subjects-container {
+        padding: 10px;
+    }
+    
+    .subjects-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .subjects-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .subjects-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+    
+    .subject-card {
+        padding: 15px;
+    }
+    
+    .subject-card h2 {
+        font-size: 1.1rem;
+    }
+    
+    .icon-container {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .icon-container .material-icons {
+        font-size: 36px;
+    }
+}
+
+@media (max-width: 576px) {
+    .subjects-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .subject-card {
+        padding: 12px;
+    }
 }
 
 /* Subject Detail Page */

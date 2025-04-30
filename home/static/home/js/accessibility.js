@@ -36,20 +36,20 @@ function initializeKeyboardNavigation() {
         });
     });
     
-    // Make hamburger menu keyboard accessible
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    if (hamburgerBtn) {
-        hamburgerBtn.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                this.click();
-                
-                // Update aria-expanded state
-                const expanded = this.getAttribute('aria-expanded') === 'true';
-                this.setAttribute('aria-expanded', !expanded);
-            }
-        });
-    }
+    // Hamburger menu keyboard accessibility moved to home.js for consolidation
+    // const hamburgerBtn = document.getElementById('hamburger-btn');
+    // if (hamburgerBtn) {
+    //     hamburgerBtn.addEventListener('keydown', function(e) {
+    //         if (e.key === 'Enter' || e.key === ' ') {
+    //             e.preventDefault();
+    //             this.click();
+    //             
+    //             // Update aria-expanded state
+    //             const expanded = this.getAttribute('aria-expanded') === 'true';
+    //             this.setAttribute('aria-expanded', !expanded);
+    //         }
+    //     });
+    // }
     
     // Make sidebar links keyboard accessible
     const sidebarLinks = document.querySelectorAll('.side_nav a');
@@ -99,10 +99,9 @@ function initializeFocusTraps() {
 function addSkipToContentLink() {
     const skipLink = document.createElement('a');
     skipLink.href = '#main-content';
-    skipLink.className = 'skip-to-content';
     skipLink.textContent = 'Skip to content';
-    
-    document.body.insertBefore(skipLink, document.body.firstChild);
+    skipLink.classList.add('skip-link');
+    document.body.prepend(skipLink);
     
     // Add id to main content area
     const mainContent = document.querySelector('.main-content-area');

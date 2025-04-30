@@ -196,3 +196,11 @@ quiz/models.py
 quiz/tests.py
 quiz/views.py
 quiz/migrations/__init__.py
+home/migrations/0002_question_profilecertification_profileeducation_and_more.py
+home/migrations/0003_quiz_creator_quiz_is_randomized_quiz_total_marks.py
+home/migrations/0006_question_remove_education_user_and_more.py
+home/migrations/0007_remove_quiz_home_quiz_creator_c34a82_idx_and_more.py
+home/migrations/0008_quiz_creator_quiz_is_randomized_quiz_total_marks.py
+home/migrations/0006_question_remove_education_user_and_more.py
+home/migrations/0007_remove_quiz_home_quiz_creator_c34a82_idx_and_more.py
+home/migrations/0008_quiz_creator_quiz_is_randomized_quiz_total_marks.py

@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{% static 'home/css/home_S.css' %}">
 <link rel="stylesheet" href="{% static 'home/css/mentions.css' %}">
 <link rel="stylesheet" href="{% static 'home/css/notifications.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 {% endblock %}
 
@@ -41,35 +42,33 @@
         </div>
         <ul class="main-menu">
             <li>
+                <a href="{% url 'home:subjects_list' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="Subjects">
+                    <p>AI Assistant</p>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home:profile' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="profile">
+                    <p>study plan</p>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home:quiz_list' %}">
+                    <img src="https://cdn-icons-png.flaticon.com/512/6941/6941697.png" alt="quiz">
+                    <p>quick quiz</p>
+                </a>
+            </li>
+            <li>
                 <a href="{% url 'home:home' %}">
                     <img src="https://cdn-icons-png.flaticon.com/512/1828/1828765.png" alt="dashboard">
                     <p>Dashboard</p>
                 </a>
             </li>
             <li>
-                <a href="{% url 'home:profile' %}">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1077/1077063.png" alt="profile">
-                    <p>Profile</p>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'home:quiz_list' %}">
-                    <img src="https://cdn-icons-png.flaticon.com/512/6941/6941697.png" alt="quiz">
-                    <p>Quiz</p>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'home:subjects_list' %}">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="Subjects">
-                    <p>Subjects</p>
-                </a>
-            </li>
-        </ul>
-        <ul class="logout-menu">
-            <li>
-                <a href="{% url 'logout' %}">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1828/1828479.png" alt="logout">
-                    <p>Logout</p>
+                <a href="{% url 'home:home' %}">
+                    <img src="" alt="messages">
+                    <p>Dashboard</p>
                 </a>
             </li>
         </ul>
