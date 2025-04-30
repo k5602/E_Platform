@@ -1,5 +1,6 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
+from .urls_subjects import urlpatterns as subject_urlpatterns
 
 app_name = 'home'
 
@@ -26,3 +27,6 @@ urlpatterns = [
     path('debug/create-test-notification/', views.create_test_notification, name='create_test_notification'),
     path('api/test-extract-mentions/', views.test_extract_mentions, name='test_extract_mentions'),
 ]
+
+# Add subject URL patterns
+urlpatterns += subject_urlpatterns

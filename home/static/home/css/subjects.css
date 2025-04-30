@@ -1,0 +1,559 @@
+/* Subjects CSS */
+
+/* Material Icons Styles */
+.material-icons {
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+
+:root {
+    --subject-card-bg: var(--container_color, #ffffff);
+    --subject-card-hover-bg: var(--main_color, #f8f9fa);
+    --subject-border-color: rgba(0, 0, 0, 0.1);
+    --subject-icon-color: var(--header_color, #5349cc);
+    --enrolled-badge-bg: #4caf50;
+    --enrolled-badge-color: white;
+}
+
+.darkmode {
+    --subject-card-bg: var(--container_color, #1e1f26);
+    --subject-card-hover-bg: var(--main_color, #121212);
+    --subject-border-color: rgba(255, 255, 255, 0.1);
+    --subject-icon-color: var(--main_button, #8a80ff);
+    --enrolled-badge-bg: #388e3c;
+    --enrolled-badge-color: white;
+}
+
+.darkmode .lock-icon {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.darkmode .btn {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.darkmode .btn-secondary {
+    background-color: var(--container_color, #1e1f26);
+    color: var(--text_color, #f0f0f0);
+    border: 1px solid var(--subject-border-color, rgba(255, 255, 255, 0.1));
+}
+
+.darkmode .btn-secondary:hover {
+    background-color: var(--main_color, #121212);
+}
+
+.darkmode .btn-primary:hover,
+.darkmode .btn-secondary:hover,
+.darkmode .btn-danger:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Subjects Container */
+.subjects-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.subjects-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.subjects-header h1 {
+    font-size: 2em;
+    color: var(--text_color);
+    margin: 0;
+}
+
+.subjects-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.subjects-actions .btn {
+    padding: 8px 16px;
+    background-color: var(--container_color);
+    color: var(--text_color);
+    border: 1px solid var(--subject-border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.subjects-actions .btn:hover {
+    background-color: var(--subject-card-hover-bg);
+}
+
+.subjects-actions .btn.active {
+    background-color: var(--main_button);
+    color: white;
+    border-color: var(--main_button);
+}
+
+/* Subjects Grid */
+.subjects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+/* Subject Card */
+.subject-card {
+    background: var(--subject-card-bg);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--subject-border-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    min-height: 200px;
+}
+
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    background: var(--subject-card-hover-bg);
+}
+
+.subject-card h2 {
+    color: var(--text_color);
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--header_color);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.subject-card h2 .material-icons {
+    color: var(--subject-icon-color);
+}
+
+.subject-card p {
+    color: var(--text_color);
+    line-height: 1.6;
+    margin-bottom: 20px;
+    flex-grow: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.icon-container {
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    z-index: 0;
+}
+
+.icon-large {
+    font-size: 150px;
+    opacity: 0.1;
+    transform: rotate(-15deg);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subject-card:hover .icon-large {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Enrolled Badge */
+.enrolled-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background-color: var(--enrolled-badge-bg);
+    color: var(--enrolled-badge-color);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 2;
+}
+
+.enrolled-badge .material-icons {
+    font-size: 16px;
+}
+
+/* No Subjects Message */
+.no-subjects {
+    text-align: center;
+    padding: 50px 20px;
+    background: var(--subject-card-bg);
+    border-radius: 15px;
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.no-subjects p {
+    margin-bottom: 20px;
+    color: var(--text_color);
+    font-size: 1.2em;
+}
+
+.no-subjects .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: var(--main_button);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.no-subjects .btn:hover {
+    background-color: var(--accent_color);
+    transform: translateY(-2px);
+}
+
+/* Subject Detail Page */
+.subject-detail-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.subject-header {
+    background: var(--subject-card-bg);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text_color);
+    text-decoration: none;
+    margin-bottom: 15px;
+    transition: color 0.3s ease;
+}
+
+.back-link:hover {
+    color: var(--main_button);
+}
+
+.subject-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    color: var(--text_color);
+}
+
+.subject-header h1 .material-icons {
+    color: var(--subject-icon-color);
+}
+
+.subject-code {
+    font-size: 1.2em;
+    color: var(--label_color);
+    margin-bottom: 15px;
+}
+
+.subject-instructor,
+.subject-enrollment {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: var(--text_color);
+}
+
+.enrollment-form {
+    margin-top: 20px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    min-width: 120px;
+}
+
+.btn-primary {
+    background-color: var(--main_button, #5349cc);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent_color, #4a41b8);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-secondary {
+    background-color: var(--container_color, #ffffff);
+    color: var(--text_color, #121212);
+    border: 1px solid var(--subject-border-color, rgba(0, 0, 0, 0.1));
+}
+
+.btn-secondary:hover {
+    background-color: var(--main_color, #f8f9fa);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-danger {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-large {
+    padding: 12px 24px;
+    font-size: 1.1em;
+    min-width: 150px;
+}
+
+.subject-description {
+    background: var(--subject-card-bg);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+    margin-bottom: 30px;
+}
+
+.subject-description h2 {
+    color: var(--text_color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--header_color);
+}
+
+.subject-description p {
+    color: var(--text_color);
+    line-height: 1.6;
+}
+
+/* Subject Materials */
+.subject-materials {
+    background: var(--subject-card-bg);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.subject-materials h2 {
+    color: var(--text_color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--header_color);
+}
+
+.material-section {
+    margin-bottom: 30px;
+}
+
+.material-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text_color);
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.materials-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.material-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background-color: var(--container_color);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.material-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.material-item .material-icons {
+    font-size: 24px;
+    color: var(--main_button);
+}
+
+.material-info {
+    flex: 1;
+}
+
+.material-info h4 {
+    color: var(--text_color);
+    margin: 0 0 5px 0;
+}
+
+.material-info p {
+    color: var(--label_color);
+    margin: 0;
+    font-size: 0.9em;
+}
+
+.material-info .material-note {
+    color: #f44336;
+    font-style: italic;
+    margin-top: 5px;
+    font-size: 0.8em;
+}
+
+.darkmode .material-info .material-note {
+    color: #ff8a80;
+}
+
+.no-materials {
+    text-align: center;
+    padding: 30px;
+    color: var(--label_color);
+}
+
+/* Enrollment Required */
+.enrollment-required {
+    background: var(--subject-card-bg);
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+    text-align: center;
+}
+
+.lock-icon {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.05);
+    margin: 0 auto 20px;
+}
+
+.lock-icon .material-icons {
+    font-size: 60px;
+    color: var(--main_button);
+}
+
+.enrollment-required h3 {
+    color: var(--text_color);
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.enrollment-required p {
+    color: var(--text_color);
+    margin-bottom: 25px;
+}
+
+.enrollment-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+@media (min-width: 576px) {
+    .enrollment-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .subjects-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .subjects-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subject-card {
+        min-height: 180px;
+    }
+
+    .subject-header {
+        padding: 20px;
+    }
+
+    .subject-header h1 {
+        font-size: 1.5em;
+    }
+
+    .enrollment-required {
+        padding: 30px 20px;
+    }
+
+    /* Fix for mobile layout */
+    .subject-detail-container,
+    .subjects-container {
+        padding: 10px;
+    }
+
+    .main-content-area {
+        padding: 10px;
+    }
+
+    .material-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .material-item .material-icons {
+        margin-bottom: 10px;
+    }
+}

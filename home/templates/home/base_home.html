@@ -1,9 +1,11 @@
-++666{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'home/css/home_S.css' %}">
 <link rel="stylesheet" href="{% static 'home/css/mentions.css' %}">
 <link rel="stylesheet" href="{% static 'home/css/notifications.css' %}">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -53,7 +55,7 @@
                 </a>
             </li>
             <li>
-                <a href="#">
+                <a href="{% url 'home:subjects_list' %}">
                     <img src="https://cdn-icons-png.flaticon.com/512/3024/3024593.png" alt="Subjects">
                     <p>Subjects</p>
                 </a>
@@ -72,7 +74,7 @@
     <div class="main-content-area">
         <nav class="main_nav">
             <a href="{% url 'home:home' %}" {% if active_page == 'home' %}class="active"{% endif %}>Home</a>
-            <a href="#" {% if active_page == 'subjects' %}class="active"{% endif %}>Subjects</a>
+            <a href="{% url 'home:subjects_list' %}" {% if active_page == 'subjects' %}class="active"{% endif %}>Subjects</a>
             <a href="#" {% if active_page == 'quiz' %}class="active"{% endif %}>Quiz</a>
             <a href="#" {% if active_page == 'profile' %}class="active"{% endif %}>Profile</a>
             <a href="{% url 'home:contact' %}" {% if active_page == 'contact' %}class="active"{% endif %}>Contact</a>

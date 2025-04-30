@@ -1,0 +1,67 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block title %}Subjects - KFS University{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/subjects.css' %}">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block home_content %}
+<div class="subjects-container">
+    <div class="subjects-header">
+        <h1>Subjects</h1>
+        <div class="subjects-actions">
+            <a href="{% url 'home:subjects_list' %}" class="btn {% if not my_subjects %}active{% endif %}">All Subjects</a>
+            <a href="{% url 'home:my_subjects' %}" class="btn {% if my_subjects %}active{% endif %}">My Subjects</a>
+        </div>
+    </div>
+
+    {% if subjects %}
+    <section class="subjects-grid">
+        {% for subject in subjects %}
+        <a href="{% url 'home:subject_detail' subject_code=subject.code %}" class="subject-card">
+            <h2><span class="material-icons">{{ subject.icon_name }}</span> {{ subject.name }}</h2>
+            <p>{{ subject.description }}</p>
+            <div class="icon-container">
+                <span class="material-icons icon-large">{{ subject.background_icon }}</span>
+            </div>
+
+            {% if subject.id in enrolled_subjects %}
+            <div class="enrolled-badge">
+                <span class="material-icons">check_circle</span> Enrolled
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </section>
+    {% else %}
+    <div class="no-subjects">
+        {% if my_subjects %}
+        <p>You are not enrolled in any subjects yet.</p>
+        <a href="{% url 'home:subjects_list' %}" class="btn">Browse Subjects</a>
+        {% else %}
+        <p>No subjects available at the moment.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any subject-specific JavaScript here
+        console.log('Subjects page loaded');
+
+        // Check for Django messages and display them as toasts
+        {% if messages %}
+            {% for message in messages %}
+                showToast('{{ message }}', '{{ message.tags }}');
+            {% endfor %}
+        {% endif %}
+    });
+</script>
+{% endblock %}

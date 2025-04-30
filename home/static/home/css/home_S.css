@@ -16,6 +16,14 @@
   --like-color: #d81b60; /* Darker like color for better contrast */
   --like-active-color: #b71752; /* Darker active like color for better contrast */
   --toggle-color: #000000;
+
+  /* Subject-specific variables */
+  --subject-card-bg: #ffffff;
+  --subject-card-hover-bg: #f8f9fa;
+  --subject-border-color: rgba(0, 0, 0, 0.1);
+  --subject-icon-color: #5349cc;
+  --enrolled-badge-bg: #4caf50;
+  --enrolled-badge-color: white;
 }
 
 /* --- Dark Mode --- */
@@ -34,6 +42,14 @@
   --like-color: #ff90b8; /* Brighter like color for better contrast */
   --like-active-color: #ff6090; /* Brighter active like color for better contrast */
   --toggle-color: #ffffff;
+
+  /* Subject-specific variables for dark mode */
+  --subject-card-bg: #1e1f26;
+  --subject-card-hover-bg: #2a2b36;
+  --subject-border-color: rgba(255, 255, 255, 0.1);
+  --subject-icon-color: #8a80ff;
+  --enrolled-badge-bg: #388e3c;
+  --enrolled-badge-color: white;
 }
 
 .electrolize-regular {

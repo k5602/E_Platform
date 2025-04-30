@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Post, Like, Comment, Contact, FAQ, Appointment
+from .models import (
+    Post, Like, Comment, Contact, FAQ, Appointment,
+    Subject, SubjectMaterial, SubjectEnrollment
+)
 
 class CommentInline(admin.TabularInline):
     model = Comment
@@ -19,7 +22,7 @@ class LikeInline(admin.TabularInline):
 class PostAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'content_preview', 'has_image', 'has_video', 'has_document', 'comment_count', 'like_count', 'created_at')
     list_filter = (
-        'created_at', 
+        'created_at',
         'user',
         ('image', admin.EmptyFieldListFilter),
         ('video', admin.EmptyFieldListFilter),
@@ -122,7 +125,7 @@ class AppointmentAdmin(admin.ModelAdmin):
     ordering = ('-appointment_date', '-appointment_time')
     list_editable = ('status',)
     raw_id_fields = ('user', 'instructor')
-    
+
     fieldsets = (
         ('Appointment Details', {
             'fields': ('name', 'email', 'phone', 'appointment_date', 'appointment_time', 'appointment_type')
@@ -134,7 +137,7 @@ class AppointmentAdmin(admin.ModelAdmin):
             'fields': ('message',)
         }),
     )
-    
+
     def get_queryset(self, request):
         """Customize the queryset based on user role."""
         qs = super().get_queryset(request)
@@ -142,3 +145,77 @@ class AppointmentAdmin(admin.ModelAdmin):
             return qs
         # If user is an instructor, only show their appointments
         return qs.filter(instructor=request.user)
+
+
+# Subject Models Admin
+class SubjectMaterialInline(admin.TabularInline):
+    model = SubjectMaterial
+    extra = 1
+    fields = ('title', 'material_type', 'file', 'external_url', 'is_active')
+
+
+class SubjectEnrollmentInline(admin.TabularInline):
+    model = SubjectEnrollment
+    extra = 0
+    fields = ('student', 'enrolled_at', 'is_active')
+    readonly_fields = ('enrolled_at',)
+    raw_id_fields = ('student',)
+
+
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ('code', 'name', 'instructor', 'is_active', 'enrolled_students_count', 'created_at')
+    list_filter = ('is_active', 'instructor', 'created_at')
+    search_fields = ('name', 'code', 'description', 'instructor__username')
+    prepopulated_fields = {'code': ('name',)}
+    date_hierarchy = 'created_at'
+    inlines = [SubjectMaterialInline, SubjectEnrollmentInline]
+    list_per_page = 20
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'code', 'description', 'is_active')
+        }),
+        ('Icons', {
+            'fields': ('icon_name', 'background_icon'),
+            'description': 'Enter Material Icons names (see https://fonts.google.com/icons)'
+        }),
+        ('Instructor', {
+            'fields': ('instructor',)
+        }),
+    )
+
+    def enrolled_students_count(self, obj):
+        return obj.get_enrolled_students_count()
+    enrolled_students_count.short_description = 'Enrolled Students'
+
+
+@admin.register(SubjectMaterial)
+class SubjectMaterialAdmin(admin.ModelAdmin):
+    list_display = ('title', 'subject', 'material_type', 'is_active', 'created_at')
+    list_filter = ('material_type', 'is_active', 'subject', 'created_at')
+    search_fields = ('title', 'description', 'subject__name')
+    date_hierarchy = 'created_at'
+    list_editable = ('is_active',)
+    list_per_page = 25
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('subject', 'title', 'description', 'material_type', 'is_active', 'order', 'content')
+        }),
+        ('Content', {
+            'fields': ('file', 'external_url'),
+            'description': 'Upload a file or provide an external URL depending on the material type'
+        }),
+    )
+
+
+@admin.register(SubjectEnrollment)
+class SubjectEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ('student', 'subject', 'enrolled_at', 'is_active')
+    list_filter = ('is_active', 'enrolled_at', 'subject')
+    search_fields = ('student__username', 'student__email', 'subject__name', 'subject__code')
+    date_hierarchy = 'enrolled_at'
+    list_editable = ('is_active',)
+    raw_id_fields = ('student', 'subject')
+    list_per_page = 25

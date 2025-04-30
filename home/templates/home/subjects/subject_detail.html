@@ -1,0 +1,179 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block title %}{{ subject.name }} - KFS University{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/subjects.css' %}">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+{% endblock %}
+
+{% block home_content %}
+<div class="subject-detail-container">
+    <div class="subject-header">
+        <a href="{% url 'home:subjects_list' %}" class="back-link">
+            <span class="material-icons">arrow_back</span> Back to Subjects
+        </a>
+        <h1><span class="material-icons">{{ subject.icon_name }}</span> {{ subject.name }}</h1>
+        <div class="subject-code">{{ subject.code }}</div>
+
+        {% if subject.instructor %}
+        <div class="subject-instructor">
+            <span class="material-icons">person</span> Instructor: {{ subject.instructor.get_full_name }}
+        </div>
+        {% endif %}
+
+        <div class="subject-enrollment">
+            <span class="material-icons">group</span> {{ subject.get_enrolled_students_count }} students enrolled
+        </div>
+
+        {% if is_enrolled %}
+        <form action="{% url 'home:unenroll_subject' subject_id=subject.id %}" method="post" class="enrollment-form" onsubmit="return confirm('Are you sure you want to unenroll from this subject?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <span class="material-icons">cancel</span> Unenroll
+            </button>
+        </form>
+        {% else %}
+        <form action="{% url 'home:enroll_subject' subject_id=subject.id %}" method="post" class="enrollment-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary">
+                <span class="material-icons">school</span> Enroll Now
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="subject-description">
+        <h2>Description</h2>
+        <p>{{ subject.description }}</p>
+    </div>
+
+    {% if is_enrolled %}
+    <div class="subject-materials">
+        <h2>Course Materials</h2>
+
+        {% if materials.documents %}
+        <div class="material-section">
+            <h3><span class="material-icons">description</span> Documents</h3>
+            <ul class="materials-list">
+                {% for material in materials.documents %}
+                <li>
+                    <a href="{% if material.file %}{{ material.file.url }}{% else %}#{% endif %}" target="_blank" class="material-item">
+                        <span class="material-icons">insert_drive_file</span>
+                        <div class="material-info">
+                            <h4>{{ material.title }}</h4>
+                            {% if material.description %}<p>{{ material.description }}</p>{% endif %}
+                            {% if not material.file %}<p class="material-note">(Content preview not available)</p>{% endif %}
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if materials.videos %}
+        <div class="material-section">
+            <h3><span class="material-icons">videocam</span> Videos</h3>
+            <ul class="materials-list">
+                {% for material in materials.videos %}
+                <li>
+                    <a href="{% if material.file %}{{ material.file.url }}{% else %}#{% endif %}" target="_blank" class="material-item">
+                        <span class="material-icons">play_circle_outline</span>
+                        <div class="material-info">
+                            <h4>{{ material.title }}</h4>
+                            {% if material.description %}<p>{{ material.description }}</p>{% endif %}
+                            {% if not material.file %}<p class="material-note">(Video not available)</p>{% endif %}
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if materials.links %}
+        <div class="material-section">
+            <h3><span class="material-icons">link</span> External Resources</h3>
+            <ul class="materials-list">
+                {% for material in materials.links %}
+                <li>
+                    <a href="{{ material.external_url }}" target="_blank" class="material-item">
+                        <span class="material-icons">open_in_new</span>
+                        <div class="material-info">
+                            <h4>{{ material.title }}</h4>
+                            {% if material.description %}<p>{{ material.description }}</p>{% endif %}
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if materials.assignments %}
+        <div class="material-section">
+            <h3><span class="material-icons">assignment</span> Assignments</h3>
+            <ul class="materials-list">
+                {% for material in materials.assignments %}
+                <li>
+                    <a href="{% if material.file %}{{ material.file.url }}{% else %}#{% endif %}" target="_blank" class="material-item">
+                        <span class="material-icons">assignment_turned_in</span>
+                        <div class="material-info">
+                            <h4>{{ material.title }}</h4>
+                            {% if material.description %}<p>{{ material.description }}</p>{% endif %}
+                            {% if not material.file %}<p class="material-note">(Assignment not available)</p>{% endif %}
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if not materials.documents and not materials.videos and not materials.links and not materials.assignments %}
+        <div class="no-materials">
+            <p>No materials available for this subject yet.</p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="enrollment-required">
+        <div class="lock-icon">
+            <span class="material-icons">lock</span>
+        </div>
+        <h3>Enrollment Required</h3>
+        <p>You need to enroll in this subject to access course materials.</p>
+        <div class="enrollment-actions">
+            <form action="{% url 'home:enroll_subject' subject_id=subject.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-large">
+                    <span class="material-icons">school</span> Enroll Now
+                </button>
+            </form>
+            <a href="{% url 'home:subjects_list' %}" class="btn btn-secondary">
+                <span class="material-icons">arrow_back</span> Back to Subjects
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any subject-specific JavaScript here
+        console.log('Subject detail page loaded');
+
+        // Check for Django messages and display them as toasts
+        {% if messages %}
+            {% for message in messages %}
+                showToast('{{ message }}', '{{ message.tags }}');
+            {% endfor %}
+        {% endif %}
+    });
+</script>
+{% endblock %}
