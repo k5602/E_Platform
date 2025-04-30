@@ -154,3 +154,12 @@ home/migrations/0008_delete_notification.py
 home/management/__init__.py
 home/migrations/0009_notification.py
 home/management/commands/__init__.py
+home/migrations/0010_question_quiz_subject_questionoption_question_quiz_and_more.py
+Assets/proflle/level.js
+Assets/proflle/profile_S.css
+Assets/proflle/profile.html
+Assets/quiz/quiz.css
+Assets/quiz/quiz.html
+Assets/quiz/quiz.js
+Assets/subject/subjects_S.css
+Assets/subject/subjects.html
