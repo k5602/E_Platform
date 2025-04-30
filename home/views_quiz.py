@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.db import models
 from django.db.models import Count, Avg, Q, F, Sum
 from django.forms import modelformset_factory, inlineformset_factory
 from .models_quiz import Quiz, Question, Answer, UserAttempt, UserAnswer
@@ -511,24 +512,34 @@ def start_quiz(request, quiz_id):
 @login_required
 def take_quiz(request, attempt_id):
     """View for taking a quiz."""
-    attempt = get_object_or_404(UserAttempt, id=attempt_id)
-    quiz = attempt.quiz
+    logger.info(f"User {request.user.username} accessing quiz attempt {attempt_id}")
 
-    # Check if the attempt belongs to the user
-    if attempt.user != request.user:
-        messages.error(request, "You do not have permission to access this quiz attempt.")
+    try:
+        attempt = get_object_or_404(UserAttempt, id=attempt_id)
+        quiz = attempt.quiz
+
+        # Check if the attempt belongs to the user
+        if attempt.user != request.user:
+            logger.warning(f"Unauthorized access: User {request.user.username} tried to access quiz attempt {attempt_id} belonging to {attempt.user.username}")
+            messages.error(request, "You do not have permission to access this quiz attempt.")
+            return redirect('home:quiz_list')
+
+        # Check if the attempt is already completed
+        if attempt.status != 'in_progress':
+            logger.info(f"User {request.user.username} tried to access completed quiz attempt {attempt_id}")
+            messages.info(request, "This quiz attempt is already completed.")
+            return redirect('home:quiz_result', attempt_id=attempt.id)
+
+        # Check for timeout
+        if attempt.is_timed_out():
+            logger.info(f"Quiz attempt {attempt_id} by user {request.user.username} has timed out")
+            attempt.time_out()
+            messages.warning(request, "Your quiz time has expired. Your answers have been submitted automatically.")
+            return redirect('home:quiz_result', attempt_id=attempt.id)
+    except Exception as e:
+        logger.error(f"Error in take_quiz view: {str(e)}", exc_info=True)
+        messages.error(request, "An error occurred while loading the quiz. Please try again.")
         return redirect('home:quiz_list')
-
-    # Check if the attempt is already completed
-    if attempt.status != 'in_progress':
-        messages.info(request, "This quiz attempt is already completed.")
-        return redirect('home:quiz_result', attempt_id=attempt.id)
-
-    # Check for timeout
-    if attempt.is_timed_out():
-        attempt.time_out()
-        messages.warning(request, "Your quiz time has expired. Your answers have been submitted automatically.")
-        return redirect('home:quiz_result', attempt_id=attempt.id)
 
     # Get quiz questions
     questions = quiz.questions.all().order_by('order')
@@ -539,54 +550,66 @@ def take_quiz(request, attempt_id):
 
     # Process form submission
     if request.method == 'POST':
-        # Process answers
-        for question in questions:
-            answer_key = f'question_{question.id}'
+        logger.info(f"Processing quiz submission for attempt {attempt_id} by user {request.user.username}")
+        try:
+            # Process answers
+            for question in questions:
+                answer_key = f'question_{question.id}'
 
-            if question.question_type == 'mcq' or question.question_type == 'true_false':
-                # Multiple choice or True/False question
-                answer_id = request.POST.get(answer_key)
+                if question.question_type == 'mcq' or question.question_type == 'true_false':
+                    # Multiple choice or True/False question
+                    answer_id = request.POST.get(answer_key)
 
-                if answer_id:
-                    try:
-                        selected_answer = Answer.objects.get(id=answer_id, question=question)
+                    if answer_id:
+                        try:
+                            selected_answer = Answer.objects.get(id=answer_id, question=question)
+                            logger.debug(f"User {request.user.username} selected answer {selected_answer.id} for question {question.id}")
 
+                            # Create or update the user answer
+                            user_answer, created = UserAnswer.objects.update_or_create(
+                                user_attempt=attempt,
+                                question=question,
+                                defaults={
+                                    'selected_answer': selected_answer,
+                                    'text_answer': None
+                                }
+                            )
+                        except Answer.DoesNotExist:
+                            logger.warning(f"Invalid answer ID {answer_id} for question {question.id}")
+                            pass
+
+                elif question.question_type == 'short_answer':
+                    # Short answer question
+                    text_answer = request.POST.get(answer_key, '').strip()
+
+                    if text_answer:
+                        logger.debug(f"User {request.user.username} provided text answer for question {question.id}")
                         # Create or update the user answer
                         user_answer, created = UserAnswer.objects.update_or_create(
                             user_attempt=attempt,
                             question=question,
                             defaults={
-                                'selected_answer': selected_answer,
-                                'text_answer': None
+                                'selected_answer': None,
+                                'text_answer': text_answer
                             }
                         )
-                    except Answer.DoesNotExist:
-                        pass
 
-            elif question.question_type == 'short_answer':
-                # Short answer question
-                text_answer = request.POST.get(answer_key, '').strip()
+            # Check if the "Submit Quiz" button was clicked
+            if 'submit_quiz' in request.POST:
+                logger.info(f"User {request.user.username} submitted quiz attempt {attempt_id}")
+                attempt.submit()
+                messages.success(request, "Quiz submitted successfully!")
+                return redirect('home:quiz_result', attempt_id=attempt.id)
 
-                if text_answer:
-                    # Create or update the user answer
-                    user_answer, created = UserAnswer.objects.update_or_create(
-                        user_attempt=attempt,
-                        question=question,
-                        defaults={
-                            'selected_answer': None,
-                            'text_answer': text_answer
-                        }
-                    )
+            # If just saving progress
+            logger.info(f"User {request.user.username} saved progress for quiz attempt {attempt_id}")
+            messages.info(request, "Your progress has been saved.")
+            return redirect('home:take_quiz', attempt_id=attempt.id)
 
-        # Check if the "Submit Quiz" button was clicked
-        if 'submit_quiz' in request.POST:
-            attempt.submit()
-            messages.success(request, "Quiz submitted successfully!")
-            return redirect('home:quiz_result', attempt_id=attempt.id)
-
-        # If just saving progress
-        messages.info(request, "Your progress has been saved.")
-        return redirect('home:take_quiz', attempt_id=attempt.id)
+        except Exception as e:
+            logger.error(f"Error processing quiz submission: {str(e)}", exc_info=True)
+            messages.error(request, "An error occurred while saving your answers. Please try again.")
+            return redirect('home:take_quiz', attempt_id=attempt.id)
 
     # Get user's existing answers
     user_answers = {
@@ -613,98 +636,150 @@ def take_quiz(request, attempt_id):
 @login_required
 def quiz_result(request, attempt_id):
     """View for displaying quiz results."""
-    attempt = get_object_or_404(UserAttempt, id=attempt_id)
-    quiz = attempt.quiz
+    logger.info(f"User {request.user.username} viewing quiz result for attempt {attempt_id}")
 
-    # Check if the attempt belongs to the user or if the user is the quiz creator/admin
-    if not (attempt.user == request.user or quiz.creator == request.user or request.user.is_staff):
-        messages.error(request, "You do not have permission to view these quiz results.")
+    try:
+        # Get attempt with related quiz in a single query
+        attempt = get_object_or_404(
+            UserAttempt.objects.select_related('quiz', 'quiz__creator', 'user'),
+            id=attempt_id
+        )
+        quiz = attempt.quiz
+
+        # Check if the attempt belongs to the user or if the user is the quiz creator/admin
+        if not (attempt.user == request.user or quiz.creator == request.user or request.user.is_staff):
+            logger.warning(f"Unauthorized access: User {request.user.username} tried to view quiz results for attempt {attempt_id} belonging to {attempt.user.username}")
+            messages.error(request, "You do not have permission to view these quiz results.")
+            return redirect('home:quiz_list')
+
+        # Get all questions with answers in a single query using prefetch_related
+        questions = quiz.questions.prefetch_related('answers').order_by('order')
+
+        # Get user's answers with related data in a single query
+        user_answers_query = UserAnswer.objects.filter(user_attempt=attempt).select_related('selected_answer')
+
+        # Create a dictionary for faster lookup
+        user_answers = {
+            answer.question_id: answer for answer in user_answers_query
+        }
+
+        # Calculate score percentage
+        score_percent = 0
+        if quiz.total_marks > 0:
+            score_percent = (attempt.score / quiz.total_marks) * 100
+
+        logger.info(f"Quiz result for attempt {attempt_id}: score {attempt.score}/{quiz.total_marks} ({score_percent:.1f}%)")
+
+        context = {
+            'quiz': quiz,
+            'attempt': attempt,
+            'questions': questions,
+            'user_answers': user_answers,
+            'score_percent': score_percent,
+            'active_page': 'quiz'
+        }
+
+        return render(request, 'home/quiz/quiz_result.html', context)
+
+    except Exception as e:
+        logger.error(f"Error in quiz_result view: {str(e)}", exc_info=True)
+        messages.error(request, "An error occurred while loading the quiz results. Please try again.")
         return redirect('home:quiz_list')
-
-    # Get all questions with user answers
-    questions = quiz.questions.all().order_by('order')
-
-    # Get user's answers
-    user_answers = {
-        answer.question_id: answer for answer in
-        UserAnswer.objects.filter(user_attempt=attempt)
-    }
-
-    # Calculate score percentage
-    score_percent = 0
-    if quiz.total_marks > 0:
-        score_percent = (attempt.score / quiz.total_marks) * 100
-
-    context = {
-        'quiz': quiz,
-        'attempt': attempt,
-        'questions': questions,
-        'user_answers': user_answers,
-        'score_percent': score_percent,
-        'active_page': 'quiz'
-    }
-
-    return render(request, 'home/quiz/quiz_result.html', context)
 
 @login_required
 def quiz_analytics(request, quiz_id):
     """View for displaying quiz analytics."""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    logger.info(f"User {request.user.username} viewing analytics for quiz {quiz_id}")
 
-    # Check if user has permission to view analytics
-    if not (request.user == quiz.creator or request.user.is_staff):
-        messages.error(request, "You do not have permission to view analytics for this quiz.")
-        return redirect('home:quiz_list')
+    try:
+        # Get quiz with creator in a single query
+        quiz = get_object_or_404(Quiz.objects.select_related('creator', 'subject'), id=quiz_id)
 
-    # Get completed attempts
-    completed_attempts = UserAttempt.objects.filter(
-        quiz=quiz,
-        status__in=['completed', 'timed_out']
-    )
+        # Check if user has permission to view analytics
+        if not (request.user == quiz.creator or request.user.is_staff):
+            logger.warning(f"Unauthorized access: User {request.user.username} tried to view analytics for quiz {quiz_id} created by {quiz.creator.username}")
+            messages.error(request, "You do not have permission to view analytics for this quiz.")
+            return redirect('home:quiz_list')
 
-    # Calculate statistics
-    total_attempts = completed_attempts.count()
-    average_score = completed_attempts.aggregate(Avg('score'))['score__avg'] or 0
+        # Get completed attempts with user data in a single query
+        completed_attempts = UserAttempt.objects.filter(
+            quiz=quiz,
+            status__in=['completed', 'timed_out']
+        ).select_related('user')
 
-    if quiz.total_marks > 0:
-        average_percentage = (average_score / quiz.total_marks) * 100
-    else:
-        average_percentage = 0
+        # Calculate statistics
+        total_attempts = completed_attempts.count()
 
-    # Get question-level statistics
-    questions = quiz.questions.all().order_by('order')
-    question_stats = []
+        # Use database aggregation for better performance
+        stats = completed_attempts.aggregate(
+            avg_score=Avg('score'),
+            total_attempts=Count('id')
+        )
 
-    for question in questions:
-        # Count correct answers for this question
-        correct_count = UserAnswer.objects.filter(
-            user_attempt__in=completed_attempts,
-            question=question,
-            marks_obtained=question.marks
-        ).count()
+        average_score = stats['avg_score'] or 0
+        total_attempts = stats['total_attempts']
 
-        # Calculate percentage correct
-        if total_attempts > 0:
-            percent_correct = (correct_count / total_attempts) * 100
+        if quiz.total_marks > 0:
+            average_percentage = (average_score / quiz.total_marks) * 100
         else:
-            percent_correct = 0
+            average_percentage = 0
 
-        question_stats.append({
-            'question': question,
-            'correct_count': correct_count,
-            'percent_correct': percent_correct
-        })
+        # Get all questions with a single query
+        questions = list(quiz.questions.all().order_by('order'))
 
-    context = {
-        'quiz': quiz,
-        'total_attempts': total_attempts,
-        'average_score': average_score,
-        'average_percentage': average_percentage,
-        'question_stats': question_stats,
-        'active_page': 'quiz'
-    }
+        if questions and total_attempts > 0:
+            # Get all user answers for these questions in a single query
+            question_ids = [q.id for q in questions]
 
-    return render(request, 'home/quiz/quiz_analytics.html', context)
+            # Use a more efficient query with annotations
+            question_stats_data = UserAnswer.objects.filter(
+                user_attempt__in=completed_attempts,
+                question_id__in=question_ids
+            ).values('question_id').annotate(
+                correct_count=Count('id', filter=models.Q(marks_obtained=models.F('question__marks'))),
+                total_count=Count('id')
+            )
+
+            # Create a lookup dictionary
+            question_stats_lookup = {item['question_id']: item for item in question_stats_data}
+
+            # Build the question_stats list
+            question_stats = []
+            for question in questions:
+                stats_data = question_stats_lookup.get(question.id, {'correct_count': 0, 'total_count': 0})
+                correct_count = stats_data['correct_count']
+
+                # Calculate percentage correct
+                if total_attempts > 0:
+                    percent_correct = (correct_count / total_attempts) * 100
+                else:
+                    percent_correct = 0
+
+                question_stats.append({
+                    'question': question,
+                    'correct_count': correct_count,
+                    'percent_correct': percent_correct
+                })
+        else:
+            question_stats = []
+
+        logger.info(f"Quiz analytics for quiz {quiz_id}: {total_attempts} attempts, avg score: {average_score:.2f}/{quiz.total_marks} ({average_percentage:.1f}%)")
+
+        context = {
+            'quiz': quiz,
+            'total_attempts': total_attempts,
+            'average_score': average_score,
+            'average_percentage': average_percentage,
+            'question_stats': question_stats,
+            'active_page': 'quiz'
+        }
+
+        return render(request, 'home/quiz/quiz_analytics.html', context)
+
+    except Exception as e:
+        logger.error(f"Error in quiz_analytics view: {str(e)}", exc_info=True)
+        messages.error(request, "An error occurred while loading the quiz analytics. Please try again.")
+        return redirect('home:quiz_list')
 
 # AJAX API views
 

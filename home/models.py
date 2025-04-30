@@ -223,6 +223,24 @@ class Notification(models.Model):
     def __str__(self):
         return f"{self.notification_type} notification for {self.recipient.username} from {self.sender.username}"
 
+    def get_notification_url(self):
+        """Get the URL for this notification."""
+        if self.notification_type == 'mention' and self.comment:
+            # Mention in a comment
+            return f"/home/post/{self.post.id}/#comment-{self.comment.id}"
+        elif self.notification_type == 'mention' and self.post:
+            # Mention in a post
+            return f"/home/post/{self.post.id}/"
+        elif self.notification_type == 'comment':
+            # Comment on a post
+            return f"/home/post/{self.post.id}/#comment-{self.comment.id}"
+        elif self.notification_type == 'like':
+            # Like on a post
+            return f"/home/post/{self.post.id}/"
+        else:
+            # Default
+            return "/home/"
+
     def save(self, *args, **kwargs):
         """Override save method to send WebSocket notification."""
         is_new = self.pk is None
@@ -234,6 +252,9 @@ class Notification(models.Model):
 
     def send_notification(self):
         """Send notification via WebSocket."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         try:
             # Import here to avoid circular imports
             from channels.layers import get_channel_layer
@@ -242,31 +263,43 @@ class Notification(models.Model):
 
             # Get the channel layer
             channel_layer = get_channel_layer()
+            if not channel_layer:
+                logger.error("Channel layer not available")
+                return
 
             # Prepare notification data
             notification_data = {
                 'id': self.id,
                 'recipient': self.recipient.username,
+                'recipient_id': self.recipient.id,
                 'sender': self.sender.username,
+                'sender_id': self.sender.id,
                 'notification_type': self.notification_type,
                 'text': self.text,
                 'is_read': self.is_read,
                 'created_at': self.created_at.isoformat(),
                 'post_id': self.post.id if self.post else None,
                 'comment_id': self.comment.id if self.comment else None,
+                'url': self.get_notification_url(),
             }
 
             # Send notification to the recipient's group
+            group_name = f'notifications_{self.recipient.id}'
+            logger.info(f"Sending notification {self.id} to group {group_name}")
+
             async_to_sync(channel_layer.group_send)(
-                f'notifications_{self.recipient.id}',
+                group_name,
                 {
                     'type': 'notification_message',
                     'notification': notification_data
                 }
             )
+
+            logger.info(f"Successfully sent notification {self.id} to user {self.recipient.username}")
+
         except Exception as e:
             # Log the error but don't prevent the notification from being saved
-            print(f"Error sending WebSocket notification: {str(e)}")
+            logger.error(f"Error sending WebSocket notification: {str(e)}", exc_info=True)
 
 
 class Subject(models.Model):
