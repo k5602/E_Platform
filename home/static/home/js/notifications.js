@@ -21,20 +21,36 @@ function initializeNotifications() {
     // Fetch notifications
     fetch('/home/api/notifications/', {
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
         }
     })
     .then(response => response.json())
     .then(data => {
-        if (data.status === 'success') {
+        if (data.status === 'success' || data.notifications) {
             // Clear loading spinner
             notificationsList.innerHTML = '';
             
-            if (data.notifications.length === 0) {
+            if (!data.notifications || data.notifications.length === 0) {
                 // Show no notifications message
                 notificationsList.classList.add('hidden');
-                noNotifications.classList.remove('hidden');
+                if (noNotifications) {
+                    noNotifications.classList.remove('hidden');
+                } else {
+                    notificationsList.innerHTML = `
+                        <div class="no-notifications">
+                            <img src="/static/home/images/no-notifications.svg" alt="لا توجد إشعارات" class="no-notifications-icon">
+                            <p>لا توجد إشعارات حاليا</p>
+                        </div>
+                    `;
+                }
             } else {
+                // Show notifications list
+                if (noNotifications) {
+                    noNotifications.classList.add('hidden');
+                }
+                notificationsList.classList.remove('hidden');
+                
                 // Render notifications
                 data.notifications.forEach(notification => {
                     const notificationElement = createNotificationElement(notification);
@@ -48,7 +64,7 @@ function initializeNotifications() {
             console.error('Failed to fetch notifications:', data.message);
             notificationsList.innerHTML = `
                 <div class="notification-error">
-                    <p>Failed to load notifications. Please try again later.</p>
+                    <p>حدث خطأ أثناء تحميل الإشعارات</p>
                 </div>
             `;
         }
@@ -57,7 +73,7 @@ function initializeNotifications() {
         console.error('Error fetching notifications:', error);
         notificationsList.innerHTML = `
             <div class="notification-error">
-                <p>An error occurred while loading notifications. Please try again later.</p>
+                <p>حدث خطأ أثناء تحميل الإشعارات. يرجى المحاولة مرة أخرى</p>
             </div>
         `;
     });

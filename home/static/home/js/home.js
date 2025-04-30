@@ -71,95 +71,33 @@ function initializeMobileMenu() {
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sideNav = document.getElementById('side-nav');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
-    const toggleBtn = document.getElementById('toggle');
+    const body = document.body;
 
     if (hamburgerBtn && sideNav) {
-        // Toggle sidebar on hamburger button click
-        hamburgerBtn.addEventListener('click', function() {
-            this.classList.toggle('active');
-            sideNav.classList.toggle('active');
-
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.toggle('active');
-            }
-
-            // Prevent body scrolling when sidebar is open
-            document.body.style.overflow = sideNav.classList.contains('active') ? 'hidden' : '';
-
-            // Add animation class
-            if (sideNav.classList.contains('active')) {
-                sideNav.classList.add('animated');
-                setTimeout(() => {
-                    sideNav.classList.remove('animated');
-                }, 300);
-            }
+        // فتح/إغلاق القائمة عند النقر على الزر
+        hamburgerBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            body.classList.toggle('sidebar-open');
+            console.log('Hamburger clicked, sidebar-open:', body.classList.contains('sidebar-open'));
         });
 
-        // Close sidebar when clicking overlay
+        // إغلاق القائمة عند النقر على الغطاء
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', function() {
-                hamburgerBtn.classList.remove('active');
-                sideNav.classList.remove('active');
-                this.classList.remove('active');
-                document.body.style.overflow = '';
+                body.classList.remove('sidebar-open');
             });
         }
 
-        // Close sidebar when clicking outside on mobile
+        // إغلاق القائمة عند النقر خارجها
         document.addEventListener('click', function(e) {
-            // Check if sidebar is active and click is outside sidebar and hamburger button
             if (window.innerWidth <= 768 &&
-                sideNav.classList.contains('active') &&
+                body.classList.contains('sidebar-open') &&
                 !sideNav.contains(e.target) &&
-                !hamburgerBtn.contains(e.target) &&
-                !toggleBtn.contains(e.target)) {
-
-                hamburgerBtn.classList.remove('active');
-                sideNav.classList.remove('active');
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.remove('active');
-                }
-                document.body.style.overflow = '';
+                !hamburgerBtn.contains(e.target)) {
+                body.classList.remove('sidebar-open');
             }
         });
-
-        // Handle swipe gestures for mobile
-        let touchStartX = 0;
-        let touchEndX = 0;
-
-        // Detect touch start position
-        document.addEventListener('touchstart', function(e) {
-            touchStartX = e.changedTouches[0].screenX;
-        }, false);
-
-        // Detect touch end position and handle swipe
-        document.addEventListener('touchend', function(e) {
-            touchEndX = e.changedTouches[0].screenX;
-            handleSwipe();
-        }, false);
-
-        // Handle swipe logic
-        function handleSwipe() {
-            // Left to right swipe (open sidebar)
-            if (touchEndX - touchStartX > 100 && touchStartX < 50) {
-                hamburgerBtn.classList.add('active');
-                sideNav.classList.add('active');
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.add('active');
-                }
-                document.body.style.overflow = 'hidden';
-            }
-
-            // Right to left swipe (close sidebar)
-            if (touchStartX - touchEndX > 100 && sideNav.classList.contains('active')) {
-                hamburgerBtn.classList.remove('active');
-                sideNav.classList.remove('active');
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.remove('active');
-                }
-                document.body.style.overflow = '';
-            }
-        }
     }
 }
 

@@ -75,7 +75,7 @@ function loadNotifications() {
     panelBody.innerHTML = `
         <div class="loading-spinner">
             <div class="spinner"></div>
-            <p>Loading notifications...</p>
+            <p>جاري التحميل...</p>
         </div>
     `;
 
@@ -97,9 +97,9 @@ function loadNotifications() {
         // Clear loading spinner
         panelBody.innerHTML = '';
 
-        if (data.results && data.results.length > 0) {
+        if (data.notifications && data.notifications.length > 0) {
             // Create notification items
-            data.results.forEach(notification => {
+            data.notifications.forEach(notification => {
                 const item = createNotificationItem(notification);
                 panelBody.appendChild(item);
             });
@@ -107,7 +107,8 @@ function loadNotifications() {
             // No notifications
             panelBody.innerHTML = `
                 <div class="no-notifications">
-                    <p>You don't have any notifications yet</p>
+                    <img src="/static/home/images/no-notifications.svg" alt="لا توجد إشعارات" class="no-notifications-icon">
+                    <p>لا توجد إشعارات حاليا</p>
                 </div>
             `;
         }
@@ -115,8 +116,8 @@ function loadNotifications() {
     .catch(error => {
         console.error('Error loading notifications:', error);
         panelBody.innerHTML = `
-            <div class="no-notifications">
-                <p>Error loading notifications</p>
+            <div class="no-notifications error">
+                <p>حدث خطأ أثناء تحميل الإشعارات</p>
             </div>
         `;
     });

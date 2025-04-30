@@ -10,27 +10,45 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .notifications-header h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     color: var(--text_color);
     margin: 0;
 }
 
 .mark-all-read-btn {
-    background-color: var(--main_button);
-    color: white;
+    background-color: #f8f9fa;
+    color: #5349cc;
     border: none;
-    border-radius: 4px;
-    padding: 8px 16px;
+    border-radius: 3px;
+    padding: 1px 4px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background-color 0.2s;
+    font-size: 0.5rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    letter-spacing: 0.1px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    min-width: 40px;
+    height: 14px;
+    max-width: 60px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    margin: 4px;
 }
 
 .mark-all-read-btn:hover {
-    background-color: var(--main_button_hover);
+    background-color: #5349cc;
+    color: white;
+    transform: translateY(-1px);
 }
 
 .notifications-list {
@@ -193,9 +211,17 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px;
+    padding: 40px 20px;
     color: var(--label_color);
     text-align: center;
+    min-height: 200px;
+    background-color: var(--container_color);
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.no-notifications.error {
+    color: #ef4444;
 }
 
 .no-notifications-icon {
@@ -203,6 +229,13 @@
     height: 80px;
     margin-bottom: 16px;
     opacity: 0.6;
+}
+
+.no-notifications p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: inherit;
 }
 
 .hidden {
@@ -223,16 +256,26 @@
     border-top-color: var(--main_button);
 }
 
+.darkmode .no-notifications {
+    background-color: var(--container_color);
+}
+
+.darkmode .no-notifications-icon {
+    opacity: 0.4;
+}
+
 /* Notification Bell */
 .notification-bell {
     position: relative;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex !important;
     align-items: center;
     justify-content: center;
     z-index: 100;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
 }
 
 .notification-bell:hover {
@@ -240,27 +283,29 @@
 }
 
 .notification-bell img {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     display: block;
+    opacity: 0.85;
 }
 
 .notification-badge {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: 6px;
+    right: 6px;
     background-color: #ef4444;
     color: white;
-    font-size: 10px;
-    min-width: 16px;
-    height: 16px;
-    border-radius: 8px;
+    font-size: 9px;
+    min-width: 14px;
+    height: 14px;
+    border-radius: 7px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 4px;
+    padding: 0 3px;
     font-weight: bold;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transform: scale(0.95);
 }
 
 .notification-badge.hidden {
@@ -272,45 +317,28 @@
     position: absolute;
     top: 50px;
     right: 0;
-    width: 320px;
+    width: 350px;
     background-color: white;
-    border-radius: 0 0 8px 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     overflow: hidden;
     display: none;
-    transform: translateY(-100%);
-    transition: transform 0.3s ease;
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .notification-panel.active {
     display: block;
     transform: translateY(0);
-}
-
-.mark-all-read-btn {
-    background-color: #f8f9fa;
-    color: #333;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 15px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: background-color 0.2s;
-    font-weight: 500;
-    display: block;
-    margin: 10px auto;
-    text-align: center;
-    width: auto;
-}
-
-.mark-all-read-btn:hover {
-    background-color: #e9ecef;
+    opacity: 1;
 }
 
 .notification-panel-body {
-    max-height: 350px;
+    max-height: 450px;
     overflow-y: auto;
+    padding-top: 5px;
 }
 
 /* Notification items */
@@ -427,11 +455,34 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .notifications-container {
-        padding: 10px;
+        padding: 15px;
+    }
+
+    .notifications-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
 
     .notifications-header h1 {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
+    }
+
+    .mark-all-read-btn {
+        font-size: 0.45rem;
+        padding: 1px 3px;
+        height: 12px;
+        min-width: 35px;
+    }
+
+    .main_nav {
+        height: 45px;
+        padding: 0 10px;
+    }
+
+    .main_nav a {
+        padding: 0 12px;
+        font-size: 0.85rem;
     }
 
     .notification-item {
@@ -459,6 +510,32 @@
     }
 }
 
+@media (max-width: 480px) {
+    .notifications-container {
+        padding: 10px;
+    }
+
+    .notifications-header h1 {
+        font-size: 1.2rem;
+    }
+
+    .mark-all-read-btn {
+        font-size: 0.4rem;
+        padding: 1px 2px;
+        height: 10px;
+        min-width: 30px;
+    }
+
+    .main_nav {
+        height: 40px;
+    }
+
+    .main_nav a {
+        padding: 0 8px;
+        font-size: 0.8rem;
+    }
+}
+
 /* CSS Variables - will inherit from global theme */
 :root {
     --unread_bg: rgba(0, 0, 0, 0.03);
@@ -477,3 +554,26 @@
     --preview_bg: rgba(255, 255, 255, 0.05);
     --preview_border: #444;
 }
+
+/* Force smaller mark-all-read button */
+.notification-panel .mark-all-read-btn {
+    padding: 1px 3px !important;
+    font-size: 0.4rem !important;
+    margin: 4px auto !important;
+    max-width: 50px !important;
+    height: 12px !important;
+}
+
+/* Responsive tweak */
+@media (max-width: 480px) {
+    .notification-panel .mark-all-read-btn {
+        padding: 1px 3px !important;
+        font-size: 0.4rem !important;
+        margin: 4px auto !important;
+        max-width: 50px !important;
+        height: 12px !important;
+    }
+}
+
+/* Ensure CSS file is loaded after others and clear cache */
+/* After saving, do a hard reload (Ctrl+F5) to apply changes */
