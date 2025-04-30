@@ -196,3 +196,10 @@ quiz/models.py
 quiz/tests.py
 quiz/views.py
 quiz/migrations/__init__.py
+home/migrations/0006_question_remove_education_user_and_more.py
+home/migrations/0007_auto_20250430_1105.py
+home/migrations/0008_auto_20250430_1106.py
+Assets/chat-app/messages.css
+Assets/chat-app/messages.html
+Assets/chat-app/messages.js
+.gitignore
