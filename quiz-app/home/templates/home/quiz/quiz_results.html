@@ -1,0 +1,46 @@
+{% extends 'home/base_home.html' %}
+{% load static %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'home/css/results.css' %}">
+{% endblock %}
+
+{% block home_content %}
+<div class="quiz-results-container">
+    <h1 class="results-title">Quiz Results</h1>
+    <div class="results-summary">
+        <p class="results-score">Your Score: <span class="score-value">{{ score }}</span></p>
+        <p class="results-feedback">{{ feedback }}</p>
+    </div>
+
+    <div class="results-details">
+        <h2>Question Breakdown</h2>
+        <ul class="results-list">
+            {% for question in questions %}
+            <li class="results-item">
+                <div class="question-text">{{ question.text }}</div>
+                <div class="user-answer">
+                    <strong>Your Answer:</strong> {{ user_answers.question.id.selected_answer.text }}
+                </div>
+                <div class="correct-answer">
+                    <strong>Correct Answer:</strong> {{ question.correct_answer.text }}
+                </div>
+                <div class="question-result {% if user_answers.question.id.selected_answer.id == question.correct_answer.id %}correct{% else %}incorrect{% endif %}">
+                    {% if user_answers.question.id.selected_answer.id == question.correct_answer.id %}
+                    <span class="result-indicator">✔️ Correct</span>
+                    {% else %}
+                    <span class="result-indicator">❌ Incorrect</span>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="results-navigation">
+        <a href="{% url 'home:take_quiz' attempt_id=attempt.id %}" class="monster-btn monster-btn-primary">Retake Quiz</a>
+        <a href="{% url 'home:quiz_list' %}" class="monster-btn monster-btn-secondary">Back to Quiz List</a>
+    </div>
+</div>
+{% endblock %}

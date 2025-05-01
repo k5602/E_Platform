@@ -1,0 +1,68 @@
+/* Responsive styles for the quiz page */
+
+.monster-quiz-container {
+    padding: 20px;
+}
+
+.quiz-header {
+    text-align: center;
+}
+
+.monster-question-card {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.question-text {
+    font-size: 1.2em;
+}
+
+.mcq-options, .true-false-options {
+    display: flex;
+    flex-direction: column;
+}
+
+.mcq-option, .true-false-option {
+    margin: 10px 0;
+}
+
+.monster-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+}
+
+@media (max-width: 768px) {
+    .monster-quiz-container {
+        padding: 10px;
+    }
+
+    .quiz-header {
+        font-size: 1.5em;
+    }
+
+    .monster-question-card {
+        padding: 10px;
+    }
+
+    .monster-btn {
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    .monster-question-card {
+        font-size: 0.9em;
+    }
+
+    .question-text {
+        font-size: 1em;
+    }
+
+    .monster-btn {
+        padding: 8px;
+    }
+}

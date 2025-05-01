@@ -1,0 +1,138 @@
+/* Monster Quiz Specific Styles */
+
+/* General Container Styles */
+.monster-quiz-container {
+    background: url('../images/monster-background.jpg') no-repeat center center;
+    background-size: cover;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Header Styles */
+.quiz-header {
+    text-align: center;
+    color: #fff;
+}
+
+.quiz-monster-title {
+    font-size: 2.5em;
+    margin: 10px 0;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+}
+
+/* Question Card Styles */
+.monster-question-card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s;
+}
+
+.monster-question-card:hover {
+    transform: scale(1.02);
+}
+
+/* Answer Options */
+.mcq-options, .true-false-options {
+    margin-top: 10px;
+}
+
+.monster-option {
+    background: #f9f9f9;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 5px 0;
+    transition: background 0.3s, border-color 0.3s;
+}
+
+.monster-option:hover {
+    background: #e0f7fa;
+    border-color: #00796b;
+}
+
+/* Button Styles */
+.monster-btn {
+    background-color: #ff4081;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.monster-btn:hover {
+    background-color: #f50057;
+}
+
+/* Timer Styles */
+.quiz-timer {
+    font-size: 1.5em;
+    color: #ffeb3b;
+}
+
+/* Navigation Styles */
+.monster-quiz-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+/* Warning and Confirmation Dialogs */
+.monster-timeout-warning, .monster-confirm-dialog {
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    display: none; /* Initially hidden */
+}
+
+.monster-timeout-warning.hidden, .monster-confirm-dialog.hidden {
+    display: none;
+}
+
+/* Overlay */
+.monster-quiz-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none; /* Initially hidden */
+}
+
+.monster-quiz-overlay.hidden {
+    display: none;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .monster-quiz-container {
+        padding: 10px;
+    }
+
+    .quiz-monster-title {
+        font-size: 2em;
+    }
+
+    .monster-question-card {
+        padding: 10px;
+    }
+
+    .monster-btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+}

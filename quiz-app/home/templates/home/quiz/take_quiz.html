@@ -10,40 +10,50 @@
 
 {% block home_content %}
 <div class="monster-quiz-container">
-    <div class="monster-quiz-header">
+    <div class="quiz-header monster-header">
         <div class="monster-eyes">
-            <div class="monster-eye"><div class="pupil"></div></div>
-            <div class="monster-eye"><div class="pupil"></div></div>
+            <div class="monster-eye"></div>
+            <div class="monster-eye"></div>
         </div>
-        <h1 class="quiz-title">{{ quiz.title }}</h1>
+        <h1 class="quiz-monster-title">{{ quiz.title }}</h1>
         <div class="quiz-meta">
-            <span class="quiz-subject"><i class="material-icons">school</i> {{ quiz.subject.name }}</span>
-            <span class="quiz-timer" id="timer-display">10:00</span>
+            <div class="quiz-subject">
+                <i class="material-icons">school</i> {{ quiz.subject.name }}
+            </div>
+            <div class="quiz-timer" id="quiz-timer">
+                <i class="material-icons">timer</i> <span id="timer-display">--:--</span>
+            </div>
         </div>
     </div>
 
-    <div class="quiz-instructions">
-        <p><strong>Instructions:</strong> Answer all questions. Progress is auto-saved.</p>
-        <div class="quiz-progress-bar">
-            <div class="progress" style="width: {{ progress_percent }}%"></div>
-        </div>
+    <div class="monster-quiz-instructions">
+        <p><strong>Monster Challenge Instructions:</strong> Answer all questions to defeat this monster challenge. Your progress is automatically saved as you navigate.</p>
+        <p>Time remaining: <span id="timer-countdown" class="monster-timer">{{ remaining_seconds }}</span> seconds</p>
     </div>
 
     <form id="quiz-form" method="post" action="{% url 'home:take_quiz' attempt_id=attempt.id %}">
         {% csrf_token %}
         
-        <div class="questions-list">
+        <div class="monster-questions-container">
             {% for question in questions %}
-            <div class="question-card">
-                <div class="question-header">
-                    <span class="question-number">#{{ forloop.counter }}</span>
-                    <span class="question-marks">{{ question.marks }} pt{{ question.marks|pluralize }}</span>
+            <div class="monster-question-card" id="question-{{ question.id }}">
+                <div class="question-number">Challenge #{{ forloop.counter }}</div>
+                <div class="question-text">
+                    {{ question.text }}
+                    {% if question.marks > 1 %}
+                    <span class="question-marks">{{ question.marks }} points</span>
+                    {% else %}
+                    <span class="question-marks">{{ question.marks }} point</span>
+                    {% endif %}
                 </div>
-                <div class="question-text">{{ question.text }}</div>
+                
                 {% if question.image %}
-                <img src="{{ question.image.url }}" class="question-image" alt="Question image">
+                <div class="question-image">
+                    <img src="{{ question.image.url }}" alt="Challenge image">
+                </div>
                 {% endif %}
-                <div class="answer-options">
+                
+                <div class="question-answers">
                     {% if question.question_type == 'mcq' %}
                     <div class="mcq-options monster-options">
                         {% for answer in question.answers.all %}
@@ -80,13 +90,21 @@
                     </div>
                     {% endif %}
                 </div>
+                
+                <div class="monster-decoration">
+                    <div class="monster-claw"></div>
+                </div>
             </div>
             {% endfor %}
         </div>
         
-        <div class="quiz-nav-bar">
-            <button class="btn btn-secondary" type="submit" name="save_progress"><i class="material-icons">save</i> Save</button>
-            <button class="btn btn-primary" type="submit" name="submit_quiz"><i class="material-icons">done_all</i> Submit</button>
+        <div class="monster-quiz-navigation">
+            <button type="submit" name="save_progress" class="monster-btn monster-btn-secondary">
+                <span class="btn-content"><i class="material-icons">save</i> Save Progress</span>
+            </button>
+            <button type="submit" name="submit_quiz" class="monster-btn monster-btn-primary" id="submit-quiz">
+                <span class="btn-content"><i class="material-icons">done_all</i> Submit Challenge</span>
+            </button>
         </div>
     </form>
     
@@ -120,7 +138,6 @@
 {% block page_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Timer functionality
         let remainingSeconds = {{ remaining_seconds }};
         const timerDisplay = document.getElementById('timer-display');
         const timerCountdown = document.getElementById('timer-countdown');
@@ -134,17 +151,14 @@
         const dismissWarning = document.getElementById('dismiss-warning');
         let warningShown = false;
         
-        // Format time as MM:SS
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
         
-        // Update timer display
         function updateTimer() {
             if (remainingSeconds <= 0) {
-                // Auto-submit when time is up
                 clearInterval(timerInterval);
                 timerDisplay.textContent = "00:00";
                 timerCountdown.textContent = "0";
@@ -156,66 +170,50 @@
             timerDisplay.textContent = formatTime(remainingSeconds);
             timerCountdown.textContent = remainingSeconds;
             
-            // Show warning when 2 minutes remaining
             if (remainingSeconds <= 120 && !warningShown) {
                 timeoutWarning.classList.remove('hidden');
                 quizOverlay.classList.remove('hidden');
                 warningShown = true;
-                
-                // Add pulsing animation to timer
                 timerDisplay.classList.add('monster-timer-warning');
             }
         }
         
-        // Initialize timer
         timerDisplay.textContent = formatTime(remainingSeconds);
         const timerInterval = setInterval(updateTimer, 1000);
         
-        // Dismiss warning
         dismissWarning.addEventListener('click', function() {
             timeoutWarning.classList.add('hidden');
             quizOverlay.classList.add('hidden');
         });
         
-        // Handle form submission
         submitBtn.addEventListener('click', function(e) {
             e.preventDefault();
             confirmDialog.classList.remove('hidden');
             quizOverlay.classList.remove('hidden');
         });
         
-        // Cancel submission
         cancelSubmit.addEventListener('click', function() {
             confirmDialog.classList.add('hidden');
             quizOverlay.classList.add('hidden');
         });
         
-        // Confirm submission
         confirmSubmitBtn.addEventListener('click', function() {
-            // Add hidden input to indicate submit action
             const submitInput = document.createElement('input');
             submitInput.type = 'hidden';
             submitInput.name = 'submit_quiz';
             submitInput.value = 'true';
             quizForm.appendChild(submitInput);
-            
-            // Submit the form
             quizForm.submit();
         });
         
-        // Prevent accidental navigation away
         window.addEventListener('beforeunload', function(e) {
             const confirmationMessage = 'Your monster challenge progress will be saved, but you will need to resume later. Are you sure you want to leave?';
             e.returnValue = confirmationMessage;
             return confirmationMessage;
         });
         
-        // Save progress periodically (every 30 seconds)
         setInterval(function() {
-            // Create a FormData object
             const formData = new FormData(quizForm);
-            
-            // Send AJAX request to save progress
             fetch(quizForm.action, {
                 method: 'POST',
                 body: formData,
@@ -229,10 +227,8 @@
             });
         }, 30000);
         
-        // Monster theme animations
         const monsterEyes = document.querySelectorAll('.monster-eye');
         
-        // Add eye movement animations
         document.addEventListener('mousemove', function(e) {
             const mouseX = e.clientX;
             const mouseY = e.clientY;
@@ -242,21 +238,17 @@
                 const eyeCenterX = eyeRect.left + eyeRect.width/2;
                 const eyeCenterY = eyeRect.top + eyeRect.height/2;
                 
-                // Calculate distance from eye to mouse
                 const deltaX = mouseX - eyeCenterX;
                 const deltaY = mouseY - eyeCenterY;
                 
-                // Limit the movement
                 const maxMove = 3;
                 const moveX = Math.min(Math.max(deltaX / 20, -maxMove), maxMove);
                 const moveY = Math.min(Math.max(deltaY / 20, -maxMove), maxMove);
                 
-                // Apply the transform
                 eye.querySelector('.pupil')?.style.transform = `translate(${moveX}px, ${moveY}px)`;
             });
         });
 
-        // Ensure responsiveness for mobile devices
         const adjustLayout = () => {
             const container = document.querySelector('.monster-quiz-container');
             if (window.innerWidth < 768) {

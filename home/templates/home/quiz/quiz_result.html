@@ -5,158 +5,130 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/monster_quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/responsive_results.css' %}">
 {% endblock %}
 
 {% block home_content %}
-<div class="quiz-result-container">
-    <div class="result-header">
-        <h1>Quiz Results: {{ quiz.title }}</h1>
-        <div class="result-meta">
-            <div class="quiz-subject">
-                <i class="material-icons">school</i> {{ quiz.subject.name }}
-            </div>
-            <div class="attempt-date">
-                <i class="material-icons">event</i> {{ attempt.end_time|date:"F d, Y H:i" }}
-            </div>
+<div class="monster-quiz-container">
+    <div class="quiz-header monster-header">
+        <div class="monster-eyes">
+            <div class="monster-eye"></div>
+            <div class="monster-eye"></div>
         </div>
+        <h1 class="quiz-monster-title">Challenge Complete!</h1>
     </div>
 
-    <div class="result-summary">
-        <div class="result-card">
-            <div class="score-circle {% if score_percent >= 70 %}high{% elif score_percent >= 50 %}medium{% else %}low{% endif %}">
-                <div class="score-text">
-                    <span class="score-percent">{{ score_percent|floatformat:1 }}%</span>
-                    <span class="score-points">{{ attempt.score }}/{{ quiz.total_marks }}</span>
-                </div>
-            </div>
-
-            <div class="result-details">
-                <div class="result-item">
-                    <i class="material-icons">assignment_turned_in</i>
-                    <div>
-                        <strong>Status</strong>
-                        <span>{{ attempt.get_status_display }}</span>
-                    </div>
-                </div>
-                <div class="result-item">
-                    <i class="material-icons">schedule</i>
-                    <div>
-                        <strong>Time Taken</strong>
-                        <span>
-                            {% if attempt.end_time %}
-                                {% with time_taken=attempt.end_time|timeuntil:attempt.start_time %}
-                                    {{ time_taken }}
-                                {% endwith %}
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
-            </div>
+    <div class="monster-results-container">
+        <div class="monster-results-header">
+            <h2 class="monster-results-title">{{ quiz.title }} Results</h2>
+            <div class="monster-detail-subject">{{ quiz.subject.name }}</div>
         </div>
-    </div>
-
-    <div class="result-actions">
-        <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="btn btn-secondary">
-            <i class="material-icons">arrow_back</i> Back to Quiz
-        </a>
-        <a href="{% url 'home:quiz_list' %}" class="btn btn-primary">
-            <i class="material-icons">list</i> All Quizzes
-        </a>
-        {% if attempt.user == user %}
-        <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="btn btn-success">
-            <i class="material-icons">replay</i> Try Again
-        </a>
-        {% endif %}
-    </div>
-
-    <div class="result-questions-header">
-        <h2>Question Review</h2>
-        <p>Review your answers and see the correct solutions below.</p>
-    </div>
-
-    <div class="result-questions">
-        {% for question in questions %}
-            {% with user_answer=user_answers.question.id %}
-            <div class="review-question">
-                <div class="question-header">
-                    <h3>Question {{ forloop.counter }}</h3>
-                    <div class="question-marks">
-                        {% if user_answer and user_answer.marks_obtained > 0 %}
-                            <span class="correct-answer">
-                                <i class="material-icons">check_circle</i> {{ user_answer.marks_obtained }}/{{ question.marks }}
-                            </span>
-                        {% else %}
-                            <span class="incorrect-answer">
-                                <i class="material-icons">cancel</i> 0/{{ question.marks }}
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="question-content">
-                    <p>{{ question.text }}</p>
-
+        <div class="monster-results-badge">
+            <div class="monster-score-value">{{ score_percent|floatformat:1 }}%</div>
+            <div class="monster-score-label">Score</div>
+        </div>
+        <div class="monster-results-summary">
+            <h3>
+                {% if score_percent >= 80 %}Monster Defeated! <i class="material-icons">emoji_events</i>{% elif score_percent >= 50 %}Monster Weakened! <i class="material-icons">star_half</i>{% else %}Monster Prevails! <i class="material-icons">replay</i>{% endif %}
+            </h3>
+            <p>
+                {% if score_percent >= 80 %}
+                    You've conquered this monster challenge with a <span class="monster-high-score">{{ score_percent|floatformat:1 }}%</span> score!
+                {% elif score_percent >= 50 %}
+                    You've fought well with a <span class="monster-high-score">{{ score_percent|floatformat:1 }}%</span> score!
+                {% else %}
+                    The monster was too strong this time with a <span class="monster-low-score">{{ score_percent|floatformat:1 }}%</span> score.
+                {% endif %}
+            </p>
+            <p>You scored {{ attempt.score }}/{{ quiz.total_marks }} points.</p>
+            <p>Time taken: {% if attempt.end_time %}{% with time_taken=attempt.end_time|timeuntil:attempt.start_time %}{{ time_taken }}{% endwith %}{% else %}N/A{% endif %}</p>
+        </div>
+        <div class="monster-detail-actions">
+            <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="monster-btn monster-btn-secondary">
+                <span class="btn-content"><i class="material-icons">arrow_back</i> Back to Quiz</span>
+            </a>
+            <a href="{% url 'home:quiz_list' %}" class="monster-btn monster-btn-secondary">
+                <span class="btn-content"><i class="material-icons">format_list_bulleted</i> All Quizzes</span>
+            </a>
+            {% if attempt.user == user %}
+            <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="monster-btn monster-btn-primary">
+                <span class="btn-content"><i class="material-icons">replay</i> Try Again</span>
+            </a>
+            {% endif %}
+        </div>
+        <h3 class="monster-review-title">Review Your Answers</h3>
+        <div class="monster-questions-container">
+            {% for question in questions %}
+                {% with user_answer=user_answers.question.id %}
+                <div class="monster-question-card">
+                    <div class="question-number">Challenge #{{ forloop.counter }}</div>
+                    <div class="question-text">{{ question.text }}</div>
                     {% if question.image %}
                     <div class="question-image">
                         <img src="{{ question.image.url }}" alt="Question image">
                     </div>
                     {% endif %}
-
-                    <div class="answers-review">
+                    <div class="question-answers">
                         {% if question.question_type == 'mcq' or question.question_type == 'true_false' %}
-                            <div class="mcq-review">
+                            <div class="mcq-options monster-options">
                                 {% for answer in question.answers.all %}
-                                <div class="mcq-option
-                                    {% if answer.is_correct %}correct-option{% endif %}
-                                    {% if user_answer.selected_answer == answer and not answer.is_correct %}incorrect-selection{% endif %}
-                                    {% if user_answer.selected_answer == answer %}user-selected{% endif %}">
-
-                                    <span class="answer-text">{{ answer.text }}</span>
-
-                                    {% if answer.is_correct %}
-                                    <span class="answer-icon correct">
-                                        <i class="material-icons">check_circle</i>
-                                    </span>
-                                    {% elif user_answer.selected_answer == answer %}
-                                    <span class="answer-icon incorrect">
-                                        <i class="material-icons">cancel</i>
-                                    </span>
-                                    {% endif %}
+                                <div class="mcq-option monster-option">
+                                    <label class="monster-option-label
+                                        {% if answer.is_correct %}monster-correct-answer{% endif %}
+                                        {% if user_answer.selected_answer == answer and not answer.is_correct %}monster-incorrect-answer{% endif %}
+                                        {% if user_answer.selected_answer == answer %}monster-user-selected{% endif %}">
+                                        {% if answer.is_correct %}
+                                            <i class="material-icons" style="color: var(--monster-success);">check_circle</i>
+                                        {% elif user_answer.selected_answer == answer %}
+                                            <i class="material-icons" style="color: var(--monster-danger);">cancel</i>
+                                        {% endif %}
+                                        {{ answer.text }}
+                                        {% if answer.is_correct %}<span style="color: var(--monster-success);">(Correct)</span>{% elif user_answer.selected_answer == answer %}<span style="color: var(--monster-danger);">(Your Answer)</span>{% endif %}
+                                    </label>
                                 </div>
                                 {% endfor %}
                             </div>
                         {% elif question.question_type == 'short_answer' %}
-                            <div class="short-answer-review">
-                                <div class="user-answer">
-                                    <h4>Your Answer:</h4>
-                                    <p>{{ user_answer.text_answer|default:"No answer provided" }}</p>
-                                </div>
-                                {% if quiz.creator == user or user.is_staff %}
-                                <div class="grading-controls">
-                                    <h4>Grade Answer:</h4>
-                                    <div class="grade-input">
-                                        <input type="number" min="0" max="{{ question.marks }}" value="{{ user_answer.marks_obtained }}" id="grade-{{ user_answer.id }}" class="form-control">
-                                        <span class="grade-max">/ {{ question.marks }}</span>
-                                        <button class="btn btn-sm btn-primary save-grade" data-answer-id="{{ user_answer.id }}">Save</button>
+                            <div class="short-answer monster-short-answer">
+                                <div class="question-answer-comparison">
+                                    <div class="user-answer">
+                                        <h4>Your Answer:</h4>
+                                        <div class="monster-textarea" style="{% if user_answer and user_answer.marks_obtained > 0 %}border-color: var(--monster-success); background-color: rgba(76, 175, 80, 0.1);{% else %}border-color: var(--monster-danger); background-color: rgba(244, 67, 54, 0.1);{% endif %}">
+                                            {{ user_answer.text_answer|default:"No answer provided" }}
+                                        </div>
+                                    </div>
+                                    <div class="correct-answer">
+                                        <h4>Correct Answer:</h4>
+                                        <div class="monster-textarea" style="border-color: var(--monster-success); background-color: rgba(76, 175, 80, 0.1);">
+                                            {{ question.answers.all.0.text }}
+                                        </div>
                                     </div>
                                 </div>
-                                {% endif %}
                             </div>
                         {% endif %}
                     </div>
-
+                    {% if user_answer and user_answer.marks_obtained > 0 %}
+                        <div class="monster-feedback" style="background-color: rgba(76, 175, 80, 0.1); border-left: 4px solid var(--monster-success); padding: 10px; margin-top: 15px;">
+                            <i class="material-icons" style="color: var(--monster-success);">check_circle</i>
+                            Correct! You earned {{ user_answer.marks_obtained }}/{{ question.marks }} points.
+                        </div>
+                    {% else %}
+                        <div class="monster-feedback" style="background-color: rgba(244, 67, 54, 0.1); border-left: 4px solid var(--monster-danger); padding: 10px; margin-top: 15px;">
+                            <i class="material-icons" style="color: var(--monster-danger);">cancel</i>
+                            Incorrect. You earned 0 out of {{ question.marks }} possible points.
+                        </div>
+                    {% endif %}
                     {% if question.explanation %}
-                    <div class="question-explanation">
-                        <h4>Explanation:</h4>
+                    <div class="monster-explanation" style="background-color: rgba(156, 39, 176, 0.1); border-left: 4px solid var(--monster-primary); padding: 15px; margin-top: 15px;">
+                        <h4><i class="material-icons">lightbulb</i> Explanation:</h4>
                         <p>{{ question.explanation }}</p>
                     </div>
                     {% endif %}
                 </div>
-            </div>
-            {% endwith %}
-        {% endfor %}
+                {% endwith %}
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -164,42 +136,45 @@
 {% block page_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Handle manual grading of short answers
-        const gradeButtons = document.querySelectorAll('.save-grade');
-
-        gradeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const answerId = this.dataset.answerId;
-                const marksInput = document.getElementById(`grade-${answerId}`);
-                const marks = marksInput.value;
-
-                // Send AJAX request to update marks
-                fetch(`{% url 'home:mark_short_answer' answer_id=0 %}`.replace('0', answerId), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ marks: marks })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        // Show success message
-                        alert('Grade saved successfully!');
-                        // Update UI if necessary
-                    } else {
-                        // Show error message
-                        alert('Error saving grade: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while saving the grade.');
-                });
+        // Monster eye animations
+        const monsterEyes = document.querySelectorAll('.monster-eye');
+        monsterEyes.forEach(eye => {
+            const pupil = document.createElement('div');
+            pupil.className = 'pupil';
+            eye.appendChild(pupil);
+        });
+        document.addEventListener('mousemove', function(e) {
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            monsterEyes.forEach(eye => {
+                const eyeRect = eye.getBoundingClientRect();
+                const eyeCenterX = eyeRect.left + eyeRect.width/2;
+                const eyeCenterY = eyeRect.top + eyeRect.height/2;
+                const deltaX = mouseX - eyeCenterX;
+                const deltaY = mouseY - eyeCenterY;
+                const maxMove = 3;
+                const moveX = Math.min(Math.max(deltaX / 20, -maxMove), maxMove);
+                const moveY = Math.min(Math.max(deltaY / 20, -maxMove), maxMove);
+                eye.querySelector('.pupil')?.style.transform = `translate(${moveX}px, ${moveY}px)`;
             });
         });
+        // Score animation
+        const scoreValue = document.querySelector('.monster-score-value');
+        if (scoreValue) {
+            const finalScore = parseFloat(scoreValue.textContent);
+            let currentScore = 0;
+            const duration = 1500;
+            const interval = 20;
+            const increment = finalScore / (duration / interval);
+            const timer = setInterval(() => {
+                currentScore += increment;
+                if (currentScore >= finalScore) {
+                    clearInterval(timer);
+                    currentScore = finalScore;
+                }
+                scoreValue.textContent = Math.floor(currentScore) + '%';
+            }, interval);
+        }
     });
 </script>
 {% endblock %}

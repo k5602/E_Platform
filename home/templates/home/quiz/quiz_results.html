@@ -5,6 +5,7 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
 <link rel="stylesheet" href="{% static 'home/css/monster_quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/responsive_results.css' %}">
 {% endblock %}
 
 {% block home_content %}
@@ -217,6 +218,19 @@
                 scoreValue.textContent = Math.floor(currentScore) + '%';
             }, interval);
         }
+
+        // Ensure responsiveness for mobile devices
+        const adjustLayout = () => {
+            const container = document.querySelector('.monster-results-container');
+            if (window.innerWidth < 768) {
+                container.classList.add('mobile-layout');
+            } else {
+                container.classList.remove('mobile-layout');
+            }
+        };
+
+        window.addEventListener('resize', adjustLayout);
+        adjustLayout();
     });
 </script>
 {% endblock %}
