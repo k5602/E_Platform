@@ -4,60 +4,69 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/monster_quiz.css' %}">
 {% endblock %}
 
 {% block home_content %}
 <div class="quiz-container">
     <div class="quiz-header">
-        <h1 class="quiz-title">Available Quizzes</h1>
+        <h1 class="quiz-title monster-title">Monster Quiz Challenge</h1>
         {% if user.is_staff or user.user_type == 'instructor' %}
-        <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">
+        <a href="{% url 'home:create_quiz' %}" class="quiz-btn quiz-btn-primary">
             <i class="material-icons">add</i> Create Quiz
         </a>
         {% endif %}
+        <div class="monster-eyes">
+            <div class="monster-eye"><div class="monster-pupil"></div></div>
+            <div class="monster-eye"><div class="monster-pupil"></div></div>
+        </div>
     </div>
 
     <div class="quiz-filters">
-        <form method="get" action="{% url 'home:quiz_list' %}" class="filter-form">
-            <div class="filter-group">
-                <label for="subject">Filter by Subject:</label>
-                <select name="subject" id="subject" class="form-control" onchange="this.form.submit()">
-                    <option value="">All Subjects</option>
-                    {% for subject in subjects %}
-                    <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"i" %}selected{% endif %}>
-                        {{ subject.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
+        <form method="get" action="{% url 'home:quiz_list' %}" class="filter-group">
+            <label for="subject">Filter by Subject:</label>
+            <select name="subject" id="subject" class="filter-input" onchange="this.form.submit()">
+                <option value="">All Subjects</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}" {% if selected_subject == subject.id|stringformat:"i" %}selected{% endif %}>
+                    {{ subject.name }}
+                </option>
+                {% endfor %}
+            </select>
         </form>
 
         <div class="view-options">
-            <a href="{% url 'home:quiz_list' %}" class="{% if not selected_subject %}active{% endif %}" aria-label="View all quizzes">All</a>
-            <a href="{% url 'home:my_quizzes' %}" aria-label="View my quizzes">My Quizzes</a>
+            <a href="{% url 'home:quiz_list' %}" class="quiz-btn quiz-btn-outline {% if not selected_subject %}active{% endif %}" aria-label="View all quizzes">All Quizzes</a>
+            <a href="{% url 'home:my_quizzes' %}" class="quiz-btn quiz-btn-outline" aria-label="View my quizzes">My Quizzes</a>
         </div>
     </div>
 
     {% if subject_name %}
-    <div class="subject-filter-badge">
-        Showing quizzes for: <span>{{ subject_name }}</span>
-        <a href="{% url 'home:quiz_list' %}" class="clear-filter" aria-label="Clear subject filter">✕</a>
+    <div class="alert alert-info">
+        <strong>Showing quizzes for: {{ subject_name }}</strong>
+        <a href="{% url 'home:quiz_list' %}" class="quiz-btn quiz-btn-outline ml-2" aria-label="Clear subject filter">Clear Filter</a>
     </div>
     {% endif %}
 
-    <div class="quiz-list">
+    <div class="quiz-grid">
         {% if quizzes %}
             {% for quiz in quizzes %}
-            <div class="quiz-card">
+            <div class="quiz-card fade-in">
+                {% if quiz.status == 'draft' %}
+                <span class="quiz-status-badge quiz-status-draft">Draft</span>
+                {% else %}
+                <span class="quiz-status-badge quiz-status-active">Active</span>
+                {% endif %}
+                
                 <div class="quiz-card-header">
-                    <h3>{{ quiz.title }}</h3>
-                    {% if quiz.status == 'draft' %}
-                    <span class="quiz-status draft">Draft</span>
-                    {% endif %}
+                    <h3 class="quiz-card-title">{{ quiz.title }}</h3>
+                    <div class="monster-slime"></div>
                 </div>
-                <div class="quiz-card-body">
-                    <p class="quiz-description">{{ quiz.description|truncatechars:100 }}</p>
-                    <div class="quiz-meta">
+                
+                <div class="quiz-card-content">
+                    <p class="quiz-card-description">{{ quiz.description|truncatechars:100 }}</p>
+                    
+                    <div class="quiz-card-meta">
                         <div class="quiz-meta-item">
                             <i class="material-icons">school</i>
                             <span>{{ quiz.subject.name }}</span>
@@ -76,23 +85,24 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="quiz-card-footer">
-                    <a href="{% url 'home:quiz_detail' quiz.id %}" class="quiz-btn view">View Details</a>
+                    <a href="{% url 'home:quiz_detail' quiz.id %}" class="quiz-btn quiz-btn-primary">View Details</a>
                     {% if user == quiz.creator or user.is_staff %}
-                    <a href="{% url 'home:quiz_edit' quiz.id %}" class="quiz-btn edit">Edit</a>
+                    <a href="{% url 'home:quiz_edit' quiz.id %}" class="quiz-btn quiz-btn-secondary">Edit</a>
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <div class="no-quizzes">
-                <i class="material-icons">sentiment_dissatisfied</i>
-                <p>No quizzes found.</p>
+            <div class="alert alert-info text-center" style="grid-column: 1 / -1;">
+                <i class="material-icons" style="font-size: 48px;">sentiment_dissatisfied</i>
+                <p class="mt-3">No monster quizzes found.</p>
                 {% if subject_name %}
                 <p>Try selecting a different subject or check back later.</p>
                 {% endif %}
                 {% if user.is_staff or user.user_type == 'instructor' %}
-                <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">Create a Quiz</a>
+                <a href="{% url 'home:create_quiz' %}" class="quiz-btn quiz-btn-primary mt-3">Create a Quiz</a>
                 {% endif %}
             </div>
         {% endif %}
@@ -123,7 +133,30 @@
 {% block page_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add any quiz-specific JavaScript here
+        // Add animation classes to quiz cards
+        const quizCards = document.querySelectorAll('.quiz-card');
+        quizCards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('fade-in');
+            }, index * 100);
+        });
+        
+        // Animate monster eyes to follow cursor
+        const container = document.querySelector('.quiz-container');
+        const pupils = document.querySelectorAll('.monster-pupil');
+        
+        container.addEventListener('mousemove', (e) => {
+            const containerRect = container.getBoundingClientRect();
+            const x = (e.clientX - containerRect.left) / containerRect.width;
+            const y = (e.clientY - containerRect.top) / containerRect.height;
+            
+            pupils.forEach(pupil => {
+                const maxMove = 3;
+                const moveX = (x - 0.5) * maxMove;
+                const moveY = (y - 0.5) * maxMove;
+                pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            });
+        });
     });
 </script>
 {% endblock %}

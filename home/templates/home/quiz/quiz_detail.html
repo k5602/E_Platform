@@ -4,157 +4,161 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/monster_quiz.css' %}">
 {% endblock %}
 
 {% block home_content %}
-<div class="container">
+<div class="quiz-detail-container">
     <div class="quiz-detail-header">
-        <h1>{{ quiz.title }}</h1>
+        <h1 class="quiz-detail-title">{{ quiz.title }}</h1>
         <div class="quiz-badges">
-            <span class="badge" style="background-color: {{ quiz.subject.icon_color }}">{{ quiz.subject.name }}</span>
-            <span class="badge {% if quiz.is_active %}badge-success{% else %}badge-warning{% endif %}">
+            <span class="quiz-status-badge" style="background-color: rgba{{ quiz.subject.icon_color|slice:'4:-1' }}, 0.2); color: {{ quiz.subject.icon_color }}; border: 1px solid {{ quiz.subject.icon_color }};">
+                {{ quiz.subject.name }}
+            </span>
+            <span class="quiz-status-badge {% if quiz.is_active %}quiz-status-active{% else %}quiz-status-draft{% endif %}">
                 {% if quiz.is_active %}Active{% else %}Inactive{% endif %}
             </span>
         </div>
+        
+        <!-- Monster fangs decoration -->
+        <div class="monster-fangs">
+            <div class="monster-fang"></div>
+            <div class="monster-fang"></div>
+            <div class="monster-fang"></div>
+            <div class="monster-fang"></div>
+            <div class="monster-fang"></div>
+        </div>
     </div>
 
-    <div class="quiz-content">
-        <div class="quiz-info-card">
-            <div class="quiz-details">
-                <div class="details-item">
-                    <i class="material-icons">help</i>
-                    <div>
-                        <strong>Questions</strong>
-                        <span>{{ quiz.get_questions_count }}</span>
-                    </div>
-                </div>
+    <div class="quiz-detail-meta">
+        <div class="quiz-detail-meta-item">
+            <span class="quiz-detail-meta-label"><i class="material-icons">help</i> Questions</span>
+            <span class="quiz-detail-meta-value">{{ quiz.get_questions_count }}</span>
+        </div>
 
-                <div class="details-item">
-                    <i class="material-icons">schedule</i>
-                    <div>
-                        <strong>Time Limit</strong>
-                        <span>{{ quiz.time_limit }} minutes</span>
-                    </div>
-                </div>
+        <div class="quiz-detail-meta-item">
+            <span class="quiz-detail-meta-label"><i class="material-icons">schedule</i> Time Limit</span>
+            <span class="quiz-detail-meta-value">{{ quiz.time_limit }} minutes</span>
+        </div>
 
-                <div class="details-item">
-                    <i class="material-icons">star</i>
-                    <div>
-                        <strong>Passing Score</strong>
-                        <span>{{ quiz.passing_score }}</span>
-                    </div>
-                </div>
+        <div class="quiz-detail-meta-item">
+            <span class="quiz-detail-meta-label"><i class="material-icons">star</i> Passing Score</span>
+            <span class="quiz-detail-meta-value">{{ quiz.passing_score }}</span>
+        </div>
 
-                <div class="details-item">
-                    <i class="material-icons">school</i>
-                    <div>
-                        <strong>Subject</strong>
-                        <span>{{ quiz.subject.name }}</span>
-                    </div>
-                </div>
+        <div class="quiz-detail-meta-item">
+            <span class="quiz-detail-meta-label"><i class="material-icons">school</i> Subject</span>
+            <span class="quiz-detail-meta-value">{{ quiz.subject.name }}</span>
+        </div>
 
-                <div class="details-item">
-                    <i class="material-icons">date_range</i>
-                    <div>
-                        <strong>Created</strong>
-                        <span>{{ quiz.created_at|date:"M d, Y" }}</span>
-                    </div>
+        <div class="quiz-detail-meta-item">
+            <span class="quiz-detail-meta-label"><i class="material-icons">date_range</i> Created</span>
+            <span class="quiz-detail-meta-value">{{ quiz.created_at|date:"M d, Y" }}</span>
+        </div>
+    </div>
+
+    <div class="quiz-detail-content">
+        <div class="quiz-card">
+            <div class="quiz-card-content">
+                <h3 class="quiz-card-title">Challenge Description</h3>
+                <p class="quiz-detail-description">{{ quiz.description|linebreaks|default:"No description provided for this monster challenge." }}</p>
+                
+                <div class="mt-4">
+                    <h3 class="quiz-card-title">Special Features</h3>
+                    <ul class="feature-list">
+                        {% if quiz.is_randomized %}
+                        <li><i class="material-icons">shuffle</i> Monster questions will appear in random order</li>
+                        {% endif %}
+                        {% if quiz.shuffle_answers %}
+                        <li><i class="material-icons">swap_horiz</i> Monster answers will be shuffled</li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
-
-            <div class="quiz-description">
-                <h3>Description</h3>
-                <p>{{ quiz.description|linebreaks|default:"No description provided." }}</p>
+            
+            <div class="monster-claws">
+                <div class="monster-claw"></div>
+                <div class="monster-claw"></div>
+                <div class="monster-claw"></div>
+                <div class="monster-claw"></div>
             </div>
+        </div>
 
-            <div class="quiz-features">
-                <h3>Features</h3>
-                <ul class="feature-list">
-                    {% if quiz.is_randomized %}
-                    <li><i class="material-icons">shuffle</i> Questions will be presented in random order</li>
-                    {% endif %}
-                    {% if quiz.shuffle_answers %}
-                    <li><i class="material-icons">swap_horiz</i> Answer options will be shuffled</li>
-                    {% endif %}
-                </ul>
+        {% if user_attempts %}
+        <div class="quiz-card mt-4">
+            <div class="quiz-card-header">
+                <h3 class="quiz-card-title">Your Previous Monster Encounters</h3>
             </div>
-
-            {% if user_attempts %}
-            <div class="previous-attempts">
-                <h3>Your Previous Attempts</h3>
-                <div class="attempt-list">
-                    {% for attempt in user_attempts %}
-                    <div class="attempt-item">
-                        <div class="attempt-info">
-                            <span class="attempt-date">{{ attempt.start_time|date:"M d, Y H:i" }}</span>
-                            <span class="attempt-status badge {% if attempt.status == 'completed' %}badge-success{% elif attempt.status == 'in_progress' %}badge-warning{% else %}badge-danger{% endif %}">
-                                {{ attempt.get_status_display }}
-                            </span>
-                        </div>
-                        <div class="attempt-score">
-                            {% if attempt.status != 'in_progress' %}
-                            <span>Score: {{ attempt.score }}/{{ quiz.total_marks }} ({{ attempt.score|floatformat:0|default:0 }}%)</span>
-                            {% endif %}
-                        </div>
-                        <div class="attempt-actions">
+            <div class="quiz-card-content">
+                {% for attempt in user_attempts %}
+                <div class="question-box mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="quiz-meta-item"><i class="material-icons">calendar_today</i> {{ attempt.start_time|date:"M d, Y H:i" }}</span>
+                        <span class="quiz-status-badge {% if attempt.status == 'completed' %}quiz-status-active{% elif attempt.status == 'in_progress' %}quiz-status-draft{% else %}quiz-status-draft{% endif %}">
+                            {{ attempt.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        {% if attempt.status != 'in_progress' %}
+                        <span class="quiz-meta-item"><i class="material-icons">grade</i> Score: {{ attempt.score }}/{{ quiz.total_marks }} ({{ attempt.score|floatformat:0|default:0 }}%)</span>
+                        {% endif %}
+                        <div>
                             {% if attempt.status == 'in_progress' %}
-                            <a href="{% url 'home:take_quiz' attempt_id=attempt.id %}" class="btn btn-warning">Continue Attempt</a>
+                            <a href="{% url 'home:take_quiz' attempt_id=attempt.id %}" class="quiz-btn quiz-btn-secondary">Continue Challenge</a>
                             {% else %}
-                            <a href="{% url 'home:quiz_result' attempt_id=attempt.id %}" class="btn btn-info">View Results</a>
+                            <a href="{% url 'home:quiz_result' attempt_id=attempt.id %}" class="quiz-btn quiz-btn-info">View Results</a>
                             {% endif %}
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="quiz-detail-actions">
+            {% if quiz.is_active %}
+            {% if user_attempts and user_attempts.0.status == 'in_progress' %}
+            <a href="{% url 'home:take_quiz' attempt_id=user_attempts.0.id %}" class="quiz-btn quiz-btn-primary">
+                <i class="material-icons">play_arrow</i> Continue Monster Challenge
+            </a>
+            {% else %}
+            <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-primary">
+                <i class="material-icons">play_arrow</i> Begin Monster Challenge
+            </a>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="material-icons">warning</i>
+                This monster challenge is currently dormant and not available for taking.
             </div>
             {% endif %}
+        </div>
 
-            <div class="quiz-actions">
-                {% if quiz.is_active %}
-                {% if user_attempts and user_attempts.0.status == 'in_progress' %}
-                <a href="{% url 'home:take_quiz' attempt_id=user_attempts.0.id %}" class="btn btn-primary btn-lg">
-                    <i class="material-icons">play_arrow</i> Continue Quiz
-                </a>
-                {% else %}
-                <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="btn btn-primary btn-lg">
-                    <i class="material-icons">play_arrow</i> Start Quiz
-                </a>
-                {% endif %}
-                {% else %}
-                <div class="alert alert-warning">
-                    <i class="material-icons">warning</i>
-                    This quiz is currently inactive and not available for taking.
-                </div>
-                {% endif %}
-                </div>
-
-                <!-- Instructor/admin actions -->
-                <div class="admin-actions">
-                    <h3>Manage Quiz</h3>
-                    {% if user.is_staff or user == quiz.subject.instructor %}
-                    <div class="admin-buttons">
-                        <a href="{% url 'home:edit_quiz' quiz_id=quiz.id %}" class="btn btn-outline-primary">
-                            <i class="material-icons">edit</i> Edit Quiz
-                        </a>
-                        <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="btn btn-outline-info">
-                            <i class="material-icons">format_list_bulleted</i> Manage Questions
-                        </a>
-                        <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="btn btn-outline-success">
-                            <i class="material-icons">analytics</i> View Analytics
-                        </a>
-                        <a href="{% url 'home:delete_quiz' quiz_id=quiz.id %}" class="btn btn-outline-danger">
-                            <i class="material-icons">delete</i> Delete Quiz
-                        </a>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <i class="material-icons">info</i>
-                        Only staff members or the subject instructor can manage this quiz.
-                    </div>
-                    {% endif %}
+        <!-- Instructor/admin actions -->
+        {% if user.is_staff or user == quiz.subject.instructor %}
+        <div class="quiz-card mt-4">
+            <div class="quiz-card-header">
+                <h3 class="quiz-card-title">Monster Keeper Controls</h3>
+            </div>
+            <div class="quiz-card-content">
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'home:edit_quiz' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-secondary">
+                        <i class="material-icons">edit</i> Edit Challenge
+                    </a>
+                    <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-info">
+                        <i class="material-icons">format_list_bulleted</i> Manage Questions
+                    </a>
+                    <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-secondary">
+                        <i class="material-icons">analytics</i> View Analytics
+                    </a>
+                    <a href="{% url 'home:delete_quiz' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-outline" style="color: var(--monster-accent);">
+                        <i class="material-icons">delete</i> Delete Challenge
+                    </a>
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -162,7 +166,21 @@
 {% block page_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Any quiz detail specific JavaScript here
+        // Add monster-themed animations
+        const fangs = document.querySelectorAll('.monster-fang');
+        
+        // Randomly animate fangs
+        setInterval(() => {
+            const randomFang = fangs[Math.floor(Math.random() * fangs.length)];
+            randomFang.animate([
+                { transform: 'translateY(0)' },
+                { transform: 'translateY(-5px)' },
+                { transform: 'translateY(0)' }
+            ], {
+                duration: 300,
+                easing: 'ease-in-out'
+            });
+        }, 2000);
     });
 </script>
 {% endblock %}
