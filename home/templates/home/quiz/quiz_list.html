@@ -4,21 +4,23 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
-<link rel="stylesheet" href="{% static 'home/css/monster_quiz.css' %}">
 {% endblock %}
 
 {% block home_content %}
 <div class="quiz-container">
     <div class="quiz-header">
-        <h1 class="quiz-title monster-title">Monster Quiz Challenge</h1>
+        <h1 class="quiz-title">Quiz Challenge</h1>
         {% if user.is_staff or user.user_type == 'instructor' %}
         <a href="{% url 'home:create_quiz' %}" class="quiz-btn quiz-btn-primary">
             <i class="material-icons">add</i> Create Quiz
         </a>
         {% endif %}
-        <div class="monster-eyes">
-            <div class="monster-eye"><div class="monster-pupil"></div></div>
-            <div class="monster-eye"><div class="monster-pupil"></div></div>
+        <div class="quiz-decoration">
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
         </div>
     </div>
 
@@ -57,15 +59,15 @@
                 {% else %}
                 <span class="quiz-status-badge quiz-status-active">Active</span>
                 {% endif %}
-                
+
                 <div class="quiz-card-header">
                     <h3 class="quiz-card-title">{{ quiz.title }}</h3>
-                    <div class="monster-slime"></div>
+                    <div class="quiz-decoration-item"></div>
                 </div>
-                
+
                 <div class="quiz-card-content">
                     <p class="quiz-card-description">{{ quiz.description|truncatechars:100 }}</p>
-                    
+
                     <div class="quiz-card-meta">
                         <div class="quiz-meta-item">
                             <i class="material-icons">school</i>
@@ -85,7 +87,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="quiz-card-footer">
                     <a href="{% url 'home:quiz_detail' quiz.id %}" class="quiz-btn quiz-btn-primary">View Details</a>
                     {% if user == quiz.creator or user.is_staff %}
@@ -97,7 +99,7 @@
         {% else %}
             <div class="alert alert-info text-center" style="grid-column: 1 / -1;">
                 <i class="material-icons" style="font-size: 48px;">sentiment_dissatisfied</i>
-                <p class="mt-3">No monster quizzes found.</p>
+                <p class="mt-3">No quizzes found.</p>
                 {% if subject_name %}
                 <p>Try selecting a different subject or check back later.</p>
                 {% endif %}
@@ -140,23 +142,23 @@
                 card.classList.add('fade-in');
             }, index * 100);
         });
-        
-        // Animate monster eyes to follow cursor
+
+        // Animate decoration elements
         const container = document.querySelector('.quiz-container');
-        const pupils = document.querySelectorAll('.monster-pupil');
-        
-        container.addEventListener('mousemove', (e) => {
-            const containerRect = container.getBoundingClientRect();
-            const x = (e.clientX - containerRect.left) / containerRect.width;
-            const y = (e.clientY - containerRect.top) / containerRect.height;
-            
-            pupils.forEach(pupil => {
-                const maxMove = 3;
-                const moveX = (x - 0.5) * maxMove;
-                const moveY = (y - 0.5) * maxMove;
-                pupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        const decorElements = document.querySelectorAll('.decoration-element');
+
+        // Add subtle animation to decoration elements
+        setInterval(() => {
+            const randomElement = decorElements[Math.floor(Math.random() * decorElements.length)];
+            randomElement.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(1.2)' },
+                { transform: 'scale(1)' }
+            ], {
+                duration: 300,
+                easing: 'ease-in-out'
             });
-        });
+        }, 2000);
     });
 </script>
 {% endblock %}

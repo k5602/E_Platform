@@ -4,7 +4,6 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
-<link rel="stylesheet" href="{% static 'home/css/monster_quiz.css' %}">
 {% endblock %}
 
 {% block home_content %}
@@ -19,14 +18,14 @@
                 {% if quiz.is_active %}Active{% else %}Inactive{% endif %}
             </span>
         </div>
-        
-        <!-- Monster fangs decoration -->
-        <div class="monster-fangs">
-            <div class="monster-fang"></div>
-            <div class="monster-fang"></div>
-            <div class="monster-fang"></div>
-            <div class="monster-fang"></div>
-            <div class="monster-fang"></div>
+
+        <!-- Header decoration -->
+        <div class="quiz-decoration">
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
+            <div class="decoration-element"></div>
         </div>
     </div>
 
@@ -61,33 +60,33 @@
         <div class="quiz-card">
             <div class="quiz-card-content">
                 <h3 class="quiz-card-title">Challenge Description</h3>
-                <p class="quiz-detail-description">{{ quiz.description|linebreaks|default:"No description provided for this monster challenge." }}</p>
-                
+                <p class="quiz-detail-description">{{ quiz.description|linebreaks|default:"No description provided for this quiz challenge." }}</p>
+
                 <div class="mt-4">
                     <h3 class="quiz-card-title">Special Features</h3>
                     <ul class="feature-list">
                         {% if quiz.is_randomized %}
-                        <li><i class="material-icons">shuffle</i> Monster questions will appear in random order</li>
+                        <li><i class="material-icons">shuffle</i> Questions will appear in random order</li>
                         {% endif %}
                         {% if quiz.shuffle_answers %}
-                        <li><i class="material-icons">swap_horiz</i> Monster answers will be shuffled</li>
+                        <li><i class="material-icons">swap_horiz</i> Answers will be shuffled</li>
                         {% endif %}
                     </ul>
                 </div>
             </div>
-            
-            <div class="monster-claws">
-                <div class="monster-claw"></div>
-                <div class="monster-claw"></div>
-                <div class="monster-claw"></div>
-                <div class="monster-claw"></div>
+
+            <div class="quiz-decorations">
+                <div class="quiz-decoration-item"></div>
+                <div class="quiz-decoration-item"></div>
+                <div class="quiz-decoration-item"></div>
+                <div class="quiz-decoration-item"></div>
             </div>
         </div>
 
         {% if user_attempts %}
         <div class="quiz-card mt-4">
             <div class="quiz-card-header">
-                <h3 class="quiz-card-title">Your Previous Monster Encounters</h3>
+                <h3 class="quiz-card-title">Your Previous Attempts</h3>
             </div>
             <div class="quiz-card-content">
                 {% for attempt in user_attempts %}
@@ -120,17 +119,17 @@
             {% if quiz.is_active %}
             {% if user_attempts and user_attempts.0.status == 'in_progress' %}
             <a href="{% url 'home:take_quiz' attempt_id=user_attempts.0.id %}" class="quiz-btn quiz-btn-primary">
-                <i class="material-icons">play_arrow</i> Continue Monster Challenge
+                <i class="material-icons">play_arrow</i> Continue Challenge
             </a>
             {% else %}
             <a href="{% url 'home:start_quiz' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-primary">
-                <i class="material-icons">play_arrow</i> Begin Monster Challenge
+                <i class="material-icons">play_arrow</i> Begin Challenge
             </a>
             {% endif %}
             {% else %}
             <div class="alert alert-info">
                 <i class="material-icons">warning</i>
-                This monster challenge is currently dormant and not available for taking.
+                This quiz is currently inactive and not available for taking.
             </div>
             {% endif %}
         </div>
@@ -139,7 +138,7 @@
         {% if user.is_staff or user == quiz.subject.instructor %}
         <div class="quiz-card mt-4">
             <div class="quiz-card-header">
-                <h3 class="quiz-card-title">Monster Keeper Controls</h3>
+                <h3 class="quiz-card-title">Instructor Controls</h3>
             </div>
             <div class="quiz-card-content">
                 <div class="d-flex flex-wrap gap-3">
@@ -152,7 +151,7 @@
                     <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-secondary">
                         <i class="material-icons">analytics</i> View Analytics
                     </a>
-                    <a href="{% url 'home:delete_quiz' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-outline" style="color: var(--monster-accent);">
+                    <a href="{% url 'home:delete_quiz' quiz_id=quiz.id %}" class="quiz-btn quiz-btn-outline quiz-btn-danger">
                         <i class="material-icons">delete</i> Delete Challenge
                     </a>
                 </div>
@@ -166,13 +165,13 @@
 {% block page_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add monster-themed animations
-        const fangs = document.querySelectorAll('.monster-fang');
-        
-        // Randomly animate fangs
+        // Add subtle animations to decoration elements
+        const decorElements = document.querySelectorAll('.decoration-element');
+
+        // Randomly animate decoration elements
         setInterval(() => {
-            const randomFang = fangs[Math.floor(Math.random() * fangs.length)];
-            randomFang.animate([
+            const randomElement = decorElements[Math.floor(Math.random() * decorElements.length)];
+            randomElement.animate([
                 { transform: 'translateY(0)' },
                 { transform: 'translateY(-5px)' },
                 { transform: 'translateY(0)' }

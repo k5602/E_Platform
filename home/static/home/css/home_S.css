@@ -323,6 +323,52 @@ body {
   opacity: 1;
 }
 
+/* Add new logout container styles */
+.logout-container {
+  margin-top: auto;
+  padding: 10px 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+}
+
+.logout-container .logout-btn {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin: 8px 0;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+  text-decoration: none;
+}
+
+.logout-container .logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.logout-container .logout-btn img {
+  width: 24px;
+  height: 24px;
+  margin-right: 15px;
+  filter: invert(1);
+  flex-shrink: 0;
+}
+
+.logout-container .logout-btn p {
+  margin: 0;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s 0.1s;
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.side_nav:hover .logout-container .logout-btn p {
+  opacity: 1;
+}
+
 .main-content-area {
   flex-grow: 1;
   padding: 20px;

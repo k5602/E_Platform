@@ -498,13 +498,14 @@ def start_quiz(request, quiz_id):
             question=question
         )
 
-    # Send notification to quiz subject instructor
-    Notification.objects.create(
-        recipient=quiz.subject.instructor,
-        sender=request.user,
-        notification_type='quiz_attempt',
-        text=f"{request.user.username} has started your quiz: {quiz.title}"
-    )
+    # Send notification to quiz subject instructor if there is one assigned
+    if hasattr(quiz.subject, 'instructor') and quiz.subject.instructor is not None:
+        Notification.objects.create(
+            recipient=quiz.subject.instructor,
+            sender=request.user,
+            notification_type='quiz_attempt',
+            text=f"{request.user.username} has started your quiz: {quiz.title}"
+        )
 
     messages.success(request, f"You have {quiz.time_limit} minutes to complete this quiz. Good luck!")
     return redirect('home:take_quiz', attempt_id=attempt.id)
