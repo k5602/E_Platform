@@ -1,28 +1,23 @@
-{% extends 'base.html' %}
+{% extends 'chatting/base_chat.html' %}
 {% load static %}
 
 {% block title %}Chat with {{ other_user.first_name }} {{ other_user.last_name }}{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
-{% endblock %}
-
-{% block content %}
-<div class="chat-wrapper">
+{% block chat_content %}
 <div class="chat-container" role="main">
     <!-- Sidebar - Conversation List -->
     <div class="chat-sidebar" role="navigation" aria-label="Conversations">
         <div class="sidebar-header">
             <h1>Conversations</h1>
             <a href="{% url 'chatting:users_list' %}" class="new-chat-btn" aria-label="Start a new chat">
-                <i class="material-icons" aria-hidden="true">add</i>
+                <i class="fas fa-plus" aria-hidden="true"></i>
                 <span>New Chat</span>
             </a>
         </div>
 
         <div class="search-container">
             <div class="search-input-wrapper">
-                <i class="material-icons search-icon" aria-hidden="true">search</i>
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
                 <input type="text" id="conversation-search" placeholder="Search conversations..." aria-label="Search conversations">
             </div>
         </div>
@@ -33,7 +28,7 @@
                     <a href="{% url 'chatting:conversation_detail' conv.id %}" class="conversation-item{% if conv.id == conversation.id %} active{% endif %}" role="listitem" aria-current="{% if conv.id == conversation.id %}page{% endif %}">
                         <div class="conversation-avatar">
                             {% if conv.other_user.profile_picture %}
-                                <img src="{{ conv.other_user.profile_picture.url }}" alt="{{ conv.other_user.username }}'s profile picture">
+                                <img src="{{ conv.other_user.profile_picture.url }}" alt="{{ conv.other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
                             {% else %}
                                 <div class="default-avatar" aria-hidden="true">{{ conv.other_user.username|slice:":1"|upper }}</div>
                             {% endif %}
@@ -65,7 +60,7 @@
                 {% endfor %}
             {% else %}
                 <div class="no-conversations">
-                    <i class="material-icons" aria-hidden="true">chat</i>
+                    <i class="fas fa-comments" aria-hidden="true"></i>
                     <p>No conversations yet</p>
                     <a href="{% url 'chatting:users_list' %}" class="start-chat-btn">Start a new chat</a>
                 </div>
@@ -80,7 +75,7 @@
             <div class="conversation-user">
                 <div class="conversation-avatar">
                     {% if other_user.profile_picture %}
-                        <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture">
+                        <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
                     {% else %}
                         <div class="default-avatar" aria-hidden="true">{{ other_user.username|slice:":1"|upper }}</div>
                     {% endif %}
@@ -102,7 +97,7 @@
 
             <div class="conversation-actions">
                 <button class="action-btn" id="info-btn" aria-label="View conversation information">
-                    <i class="material-icons" aria-hidden="true">info</i>
+                    <i class="fas fa-info-circle" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
@@ -120,9 +115,9 @@
                             {% if message.sender == request.user %}
                                 <span class="message-status" aria-label="{% if message.is_read %}Read{% else %}Sent{% endif %}">
                                     {% if message.is_read %}
-                                        <i class="material-icons read-indicator" aria-hidden="true">done_all</i>
+                                        <i class="fas fa-check-double read-indicator" aria-hidden="true"></i>
                                     {% else %}
-                                        <i class="material-icons" aria-hidden="true">done</i>
+                                        <i class="fas fa-check" aria-hidden="true"></i>
                                     {% endif %}
                                 </span>
                             {% endif %}
@@ -132,7 +127,7 @@
             {% else %}
                 <div class="empty-messages">
                     <div class="empty-message-icon">
-                        <i class="material-icons" aria-hidden="true">chat_bubble_outline</i>
+                        <i class="fas fa-comment-alt" aria-hidden="true"></i>
                     </div>
                     <p>No messages yet. Start the conversation!</p>
                 </div>
@@ -148,7 +143,7 @@
                 <div class="message-input-wrapper">
                     <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" aria-label="Type a message">
                     <button type="submit" id="send-button" aria-label="Send message">
-                        <i class="material-icons" aria-hidden="true">send</i>
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
                     </button>
                 </div>
             </form>
@@ -157,8 +152,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'chatting/js/chat.js' %}"></script>
+{% block chat_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the WebSocket connection
@@ -176,6 +170,4 @@
         messageList.scrollTop = messageList.scrollHeight;
     }
 </script>
-{% endblock %}
-</div>
 {% endblock %}

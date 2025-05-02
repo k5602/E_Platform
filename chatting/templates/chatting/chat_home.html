@@ -1,30 +1,23 @@
-{% extends 'base.html' %}
+{% extends 'chatting/base_chat.html' %}
 {% load static %}
 
 {% block title %}Messages | E-Platform{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
-{% endblock %}
-
-{% block content %}
-<div class="chat-wrapper">
-
-
+{% block chat_content %}
 <div class="chat-container" role="main">
     <!-- Sidebar with conversation list -->
     <div class="chat-sidebar" role="navigation" aria-label="Conversations">
         <div class="sidebar-header">
             <h1>Messages</h1>
             <a href="{% url 'chatting:users_list' %}" class="new-chat-btn" aria-label="Start a new chat">
-                <i class="material-icons" aria-hidden="true">add</i>
+                <i class="fas fa-plus" aria-hidden="true"></i>
                 New Chat
             </a>
         </div>
 
         <div class="search-container">
             <div class="search-input-wrapper">
-                <span class="material-icons search-icon" aria-hidden="true">search</span>
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
                 <input type="text" id="conversation-search" placeholder="Search conversations..." aria-label="Search conversations">
             </div>
         </div>
@@ -39,7 +32,7 @@
                        aria-label="Conversation with {{ other_user.first_name }} {{ other_user.last_name }}">
                         <div class="conversation-avatar">
                             {% if other_user.profile_picture %}
-                                <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture">
+                                <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
                             {% else %}
                                 <div class="default-avatar" aria-hidden="true">{{ other_user.first_name|first }}{{ other_user.last_name|first }}</div>
                             {% endif %}
@@ -76,7 +69,7 @@
                 {% endfor %}
             {% else %}
                 <div class="no-conversations">
-                    <i class="material-icons" aria-hidden="true">forum</i>
+                    <i class="fas fa-comments" aria-hidden="true"></i>
                     <p>You don't have any conversations yet</p>
                     <a href="{% url 'chatting:users_list' %}" class="start-chat-btn">Start a chat</a>
                 </div>
@@ -88,7 +81,7 @@
     <div class="chat-main" role="region" aria-label="Welcome screen">
         <div class="welcome-screen">
             <div class="welcome-icon">
-                <i class="material-icons" aria-hidden="true">chat</i>
+                <i class="fas fa-comment-dots" aria-hidden="true"></i>
             </div>
             <h2>Welcome to E-Platform Messenger</h2>
             <p>Select a conversation from the list or start a new chat to begin messaging.</p>
@@ -96,9 +89,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'chatting/js/chat.js' %}"></script>
+{% block chat_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize WebSocket connection
@@ -125,6 +118,4 @@
         }
     });
 </script>
-{% endblock %}
-</div>
 {% endblock %}

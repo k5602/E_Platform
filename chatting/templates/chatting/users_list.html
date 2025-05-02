@@ -1,15 +1,9 @@
-{% extends 'base.html' %}
+{% extends 'chatting/base_chat.html' %}
 {% load static %}
 
 {% block title %}Find People to Chat{% endblock %}
 
-{% block extra_css %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
-{% endblock %}
-
-{% block content %}
-<div class="chat-wrapper">
+{% block chat_content %}
 <div class="users-container" role="main">
     <div class="users-header">
         <h1>Find People to Chat</h1>
@@ -37,7 +31,7 @@
                 <div class="user-item" role="listitem">
                     <div class="user-avatar">
                         {% if user.profile_picture %}
-                            <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}'s profile picture">
+                            <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
                         {% else %}
                             <div class="default-avatar" aria-hidden="true">{{ user.username|slice:":1"|upper }}</div>
                         {% endif %}
@@ -77,24 +71,13 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'chatting/js/chat.js' %}"></script>
+{% block chat_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the WebSocket connection for online status updates
         if (typeof initializeChatWebsocket === 'function') {
             initializeChatWebsocket();
         }
-
-        // Highlight the active menu item
-        const contactsMenuItem = document.querySelector('a[href="{% url "chatting:users_list" %}"]');
-        if (contactsMenuItem) {
-            const menuItems = document.querySelectorAll('.menu-item');
-            menuItems.forEach(item => item.classList.remove('active'));
-            contactsMenuItem.classList.add('active');
-        }
     });
 </script>
-{% endblock %}
-</div>
 {% endblock %}
