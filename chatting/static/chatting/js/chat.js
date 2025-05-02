@@ -26,6 +26,8 @@ function initializeChatWebsocket() {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/`;
 
+    console.log('Attempting to connect to WebSocket at:', wsUrl);
+
     try {
         chatSocket = new WebSocket(wsUrl);
 
@@ -56,7 +58,7 @@ function initializeChatWebsocket() {
             // Check if the close was clean (code 1000 or 1001)
             const wasClean = event.code === 1000 || event.code === 1001;
 
-            console.log(`Chat WebSocket connection closed. Code: ${event.code}, Clean: ${wasClean}`);
+            console.log(`Chat WebSocket connection closed. Code: ${event.code}, Clean: ${wasClean}, Reason: ${event.reason}`);
 
             // Show disconnected status
             showConnectionStatus('disconnected');
@@ -69,6 +71,9 @@ function initializeChatWebsocket() {
 
                 console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms`);
 
+                // Show toast notification
+                showToast(`Connection lost. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+
                 setTimeout(function() {
                     initializeChatWebsocket();
                 }, delay);
@@ -79,6 +84,10 @@ function initializeChatWebsocket() {
 
         chatSocket.onerror = function(e) {
             console.error('Chat WebSocket error:', e);
+
+            // Log more detailed information
+            console.log('WebSocket readyState:', chatSocket.readyState);
+            console.log('WebSocket URL:', wsUrl);
 
             // Show error status
             showConnectionStatus('error');
@@ -316,7 +325,7 @@ function handleMessagesRead(data) {
         messages.forEach(function(messageElement) {
             const statusElement = messageElement.querySelector('.message-status');
             if (statusElement) {
-                statusElement.innerHTML = '<i class="material-icons read-indicator">done_all</i>';
+                statusElement.innerHTML = '<i class="fas fa-check-double read-indicator"></i>';
             }
         });
     }
@@ -611,22 +620,19 @@ function addMessageToChat(message) {
         statusElement.className = 'message-status';
 
         const statusIcon = document.createElement('i');
-        statusIcon.className = 'material-icons';
 
         if (message.is_pending) {
             // Show clock icon for pending messages
-            statusIcon.textContent = 'schedule';
-            statusIcon.className += ' pending-indicator';
+            statusIcon.className = 'fas fa-clock pending-indicator';
             statusElement.setAttribute('aria-label', 'Pending');
 
             // Add a tooltip
             statusElement.title = 'Message will be sent when you are back online';
         } else if (message.is_read) {
-            statusIcon.className += ' read-indicator';
-            statusIcon.textContent = 'done_all';
+            statusIcon.className = 'fas fa-check-double read-indicator';
             statusElement.setAttribute('aria-label', 'Read');
         } else {
-            statusIcon.textContent = 'done';
+            statusIcon.className = 'fas fa-check';
             statusElement.setAttribute('aria-label', 'Sent');
         }
 

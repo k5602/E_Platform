@@ -71,9 +71,8 @@
 /* --- Main Container Layout --- */
 .chat-container {
     display: flex;
-    max-width: 1400px;
+    width: 100%;
     height: calc(100vh - 70px);
-    margin: 0 auto;
     background-color: var(--main-color);
     color: var(--text-color);
     transition: all var(--transition-time) var(--transition-timing);
@@ -1186,4 +1185,48 @@ body[data-theme="dark"] .user-item:hover {
     }
 }
 
-/* Dark mode is now handled by CSS variables in the :root selector */
+/* --- Toggle Button --- */
+.toggle {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    height: 50px;
+    width: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background-color: var(--main-button);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    margin: 0;
+    box-shadow: var(--box-shadow);
+    z-index: 101;
+    cursor: pointer;
+    border: none;
+}
+
+.toggle img {
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    transition: opacity 0.3s ease;
+}
+
+.toggle img:last-child {
+    opacity: 0;
+}
+
+.darkmode .toggle img:first-child,
+body[data-theme="dark"] .toggle img:first-child {
+    opacity: 0;
+}
+
+.darkmode .toggle img:last-child,
+body[data-theme="dark"] .toggle img:last-child {
+    opacity: 1;
+}
+
+.darkmode .toggle,
+body[data-theme="dark"] .toggle {
+    background-color: var(--main-button);
+}

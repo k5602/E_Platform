@@ -18,6 +18,11 @@
     </div>
 </section>
 
+<button class="toggle" id="toggle">
+    <img src="{% static 'authentication/images/lightoff.svg' %}" alt="lightoff">
+    <img src="{% static 'authentication/images/lighton.svg' %}" alt="lighton">
+</button>
+
 <div class="chat-wrapper">
     {% block chat_content %}{% endblock %}
 </div>
@@ -25,6 +30,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'chatting/js/darkmode.js' %}"></script>
 <script src="{% static 'chatting/js/chat.js' %}"></script>
 {% block chat_js %}{% endblock %}
 {% endblock %}
