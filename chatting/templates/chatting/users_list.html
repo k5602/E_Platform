@@ -1,18 +1,14 @@
-{% extends 'base.html' %}
+{% extends 'chatting/base_chat.html' %}
 {% load static %}
 
 {% block title %}Find People to Chat{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
-{% endblock %}
-
-{% block content %}
+{% block chat_content %}
 <div class="users-container" role="main">
     <div class="users-header">
         <h1>Find People to Chat</h1>
         <a href="{% url 'chatting:chat_home' %}" class="back-btn" aria-label="Back to conversations">
-            <i class="material-icons" aria-hidden="true">arrow_back</i>
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
             <span>Back to Conversations</span>
         </a>
     </div>
@@ -20,10 +16,10 @@
     <div class="search-container">
         <form method="get" action="{% url 'chatting:users_list' %}" role="search">
             <div class="search-input-wrapper">
-                <i class="material-icons search-icon" aria-hidden="true">search</i>
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
                 <input type="text" id="user-search" name="q" placeholder="Search users..." value="{{ search_query }}" aria-label="Search users">
                 <button type="submit" class="search-btn" aria-label="Submit search">
-                    <i class="material-icons" aria-hidden="true">search</i>
+                    <i class="fas fa-search" aria-hidden="true"></i>
                 </button>
             </div>
         </form>
@@ -52,11 +48,11 @@
 
                     <div class="user-actions">
                         <a href="{% url 'chatting:start_conversation' user.id %}" class="chat-action-btn" aria-label="Message {{ user.first_name }}">
-                            <i class="material-icons" aria-hidden="true">chat</i>
+                            <i class="fas fa-comment" aria-hidden="true"></i>
                             <span>Message</span>
                         </a>
                         <a href="{% url 'home:public_profile' user.username %}" class="profile-action-btn" aria-label="View {{ user.first_name }}'s profile">
-                            <i class="material-icons" aria-hidden="true">person</i>
+                            <i class="fas fa-user" aria-hidden="true"></i>
                             <span>Profile</span>
                         </a>
                     </div>
@@ -64,7 +60,7 @@
             {% endfor %}
         {% else %}
             <div class="empty-users" role="status">
-                <i class="material-icons" aria-hidden="true">people_outline</i>
+                <i class="fas fa-users-slash" aria-hidden="true"></i>
                 <p>No users found matching your search.</p>
                 {% if search_query %}
                     <a href="{% url 'chatting:users_list' %}" class="clear-search-btn">Clear search</a>
@@ -75,12 +71,21 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'chatting/js/chat.js' %}"></script>
+{% block chat_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the WebSocket connection for online status updates
-        initializeChatWebsocket();
+        if (typeof initializeChatWebsocket === 'function') {
+            initializeChatWebsocket();
+        }
+
+        // Highlight the active menu item
+        const contactsMenuItem = document.querySelector('a[href="{% url "chatting:users_list" %}"]');
+        if (contactsMenuItem) {
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+            contactsMenuItem.classList.add('active');
+        }
     });
 </script>
 {% endblock %}

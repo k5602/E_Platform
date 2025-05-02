@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create WebSocket manager
         window.wsManager = new WebSocketManager(userId);
         window.wsManager.connect();
+
+        // Add page visibility change handler to reconnect when page becomes visible again
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && window.wsManager) {
+                // Check if connection is not active and reconnect
+                if (window.wsManager.socket === null ||
+                    window.wsManager.socket.readyState === WebSocket.CLOSED ||
+                    window.wsManager.socket.readyState === WebSocket.CLOSING) {
+                    console.log('Page became visible, attempting to reconnect WebSocket');
+                    window.wsManager.reconnect();
+                }
+            }
+        });
     }
 });
 
@@ -35,6 +48,12 @@ class WebSocketManager {
         this.pollingActive = false;
         this.pollingInterval = null;
 
+        // Heartbeat mechanism to detect connection issues
+        this.heartbeatInterval = null;
+        this.heartbeatMissed = 0;
+        this.maxHeartbeatMisses = 3;
+        this.heartbeatDelay = 30000; // 30 seconds
+
         // Create WebSocket URL
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const host = window.location.host;
@@ -50,6 +69,9 @@ class WebSocketManager {
         this.handleError = this.handleError.bind(this);
         this.startPolling = this.startPolling.bind(this);
         this.stopPolling = this.stopPolling.bind(this);
+        this.startHeartbeat = this.startHeartbeat.bind(this);
+        this.stopHeartbeat = this.stopHeartbeat.bind(this);
+        this.checkHeartbeat = this.checkHeartbeat.bind(this);
 
         // Log initialization
         console.log(`WebSocket manager initialized for user ${userId}`);
@@ -105,7 +127,12 @@ class WebSocketManager {
             this.socket = null;
         }
 
+        // Stop heartbeat
+        this.stopHeartbeat();
+
+        // Clear reconnect timer
         this.clearReconnectTimer();
+
         this.connectionStatus = 'disconnected';
         this.updateConnectionStatusUI();
     }
@@ -122,11 +149,17 @@ class WebSocketManager {
             return;
         }
 
-        // Calculate delay with exponential backoff and some randomness
-        const delay = Math.min(
-            30000, // Max 30 seconds
-            this.baseReconnectDelay * Math.pow(1.5, this.reconnectAttempts) * (1 + Math.random() * 0.1)
-        );
+        // For first attempt, use a fixed short delay to improve user experience
+        let delay;
+        if (this.reconnectAttempts === 0) {
+            delay = 1000; // 1 second for first attempt
+        } else {
+            // Calculate delay with exponential backoff and some randomness for subsequent attempts
+            delay = Math.min(
+                30000, // Max 30 seconds
+                this.baseReconnectDelay * Math.pow(1.5, this.reconnectAttempts) * (1 + Math.random() * 0.1)
+            );
+        }
 
         this.reconnectAttempts++;
         this.connectionStatus = 'reconnecting';
@@ -141,7 +174,19 @@ class WebSocketManager {
 
         this.clearReconnectTimer();
         this.reconnectTimer = setTimeout(() => {
-            this.connect();
+            // Check if the page is still active before attempting to reconnect
+            if (!document.hidden) {
+                this.connect();
+            } else {
+                // If page is hidden, wait until it becomes visible again
+                const visibilityHandler = () => {
+                    if (!document.hidden) {
+                        document.removeEventListener('visibilitychange', visibilityHandler);
+                        this.connect();
+                    }
+                };
+                document.addEventListener('visibilitychange', visibilityHandler);
+            }
         }, delay);
     }
 
@@ -157,21 +202,106 @@ class WebSocketManager {
 
     /**
      * Handle WebSocket open event
-     * @param {Event} event - The open event
      */
-    handleOpen(event) {
+    handleOpen() {
         console.log('WebSocket connection established');
         this.isConnecting = false;
         this.connectionStatus = 'connected';
-        this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+
+        // Store the reconnect attempts before resetting
+        const wasReconnecting = this.reconnectAttempts > 0;
+
+        // Reset reconnect attempts on successful connection
+        this.reconnectAttempts = 0;
         this.updateConnectionStatusUI();
 
         // Stop polling if it was active
         this.stopPolling();
 
-        // Show connection success toast if available
-        if (typeof window.showToast === 'function' && this.reconnectAttempts > 0) {
+        // Start heartbeat to detect connection issues
+        this.startHeartbeat();
+
+        // Show connection success toast if available and this was a reconnection
+        if (typeof window.showToast === 'function' && wasReconnecting) {
             window.showToast('Notification connection restored', 'success');
+        }
+    }
+
+    /**
+     * Start the heartbeat mechanism to detect connection issues
+     */
+    startHeartbeat() {
+        this.stopHeartbeat(); // Clear any existing heartbeat
+        this.heartbeatMissed = 0;
+
+        // Set up heartbeat interval
+        this.heartbeatInterval = setInterval(() => {
+            this.checkHeartbeat();
+        }, this.heartbeatDelay);
+
+        console.log(`Heartbeat started with interval of ${this.heartbeatDelay}ms`);
+    }
+
+    /**
+     * Stop the heartbeat mechanism
+     */
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+            console.log('Heartbeat stopped');
+        }
+    }
+
+    /**
+     * Check connection status with heartbeat
+     */
+    checkHeartbeat() {
+        // Only check if we have an active socket
+        if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            console.log('Heartbeat check: WebSocket not connected');
+            this.heartbeatMissed++;
+
+            if (this.heartbeatMissed >= this.maxHeartbeatMisses) {
+                console.log(`Heartbeat failed ${this.heartbeatMissed} times, reconnecting...`);
+                this.stopHeartbeat();
+
+                // Force close and reconnect
+                if (this.socket) {
+                    this.socket.close();
+                }
+
+                this.reconnect();
+            }
+            return;
+        }
+
+        // If connected, try to send a ping
+        try {
+            // Send a ping message to check connection
+            if (this.sendMessage({ type: 'ping' })) {
+                // Reset missed heartbeats if we successfully sent a message
+                this.heartbeatMissed = 0;
+            } else {
+                this.heartbeatMissed++;
+                console.log(`Heartbeat message failed to send, missed: ${this.heartbeatMissed}/${this.maxHeartbeatMisses}`);
+            }
+        } catch (error) {
+            this.heartbeatMissed++;
+            console.error('Error during heartbeat check:', error);
+        }
+
+        // If we've missed too many heartbeats, reconnect
+        if (this.heartbeatMissed >= this.maxHeartbeatMisses) {
+            console.log(`Heartbeat failed ${this.heartbeatMissed} times, reconnecting...`);
+            this.stopHeartbeat();
+
+            // Force close and reconnect
+            if (this.socket) {
+                this.socket.close();
+            }
+
+            this.reconnect();
         }
     }
 
@@ -203,6 +333,12 @@ class WebSocketManager {
                     updateNotificationCount(data.count);
                     break;
 
+                case 'pong':
+                    // Server responded to our ping, connection is healthy
+                    console.log('Received pong from server, connection is healthy');
+                    this.heartbeatMissed = 0;
+                    break;
+
                 case 'error':
                     console.error('WebSocket error:', data.message);
                     break;
@@ -221,14 +357,32 @@ class WebSocketManager {
      */
     handleClose(event) {
         this.isConnecting = false;
-        console.log(`WebSocket connection closed with code: ${event.code}, reason: ${event.reason}`);
+        console.log(`WebSocket connection closed with code: ${event.code}, reason: ${event.reason || 'No reason provided'}`);
 
-        // Only try to reconnect if not a normal closure
-        if (event.code !== 1000) {
-            this.reconnect();
-        } else {
+        // Stop heartbeat when connection is closed
+        this.stopHeartbeat();
+
+        // Check if this is a normal closure or abnormal
+        if (event.code === 1000) {
+            // Normal closure - user initiated or server clean shutdown
             this.connectionStatus = 'disconnected';
             this.updateConnectionStatusUI();
+            console.log('Normal WebSocket closure, not attempting to reconnect');
+        } else if (event.code === 1001) {
+            // Going away - page is being unloaded
+            this.connectionStatus = 'disconnected';
+            this.updateConnectionStatusUI();
+            console.log('Page is unloading, not attempting to reconnect');
+        } else if (event.code === 1006) {
+            // Abnormal closure - likely network issue
+            console.log('Abnormal closure detected, attempting to reconnect...');
+            // Use a shorter delay for network issues
+            this.reconnectAttempts = 0; // Reset to ensure we start with a short delay
+            this.reconnect();
+        } else {
+            // Other closure codes
+            console.log(`WebSocket closed with code ${event.code}, attempting to reconnect...`);
+            this.reconnect();
         }
     }
 
