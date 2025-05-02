@@ -1,14 +1,14 @@
-{% extends 'chatting/base_chat.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Chat with {{ other_user.first_name }} {{ other_user.last_name }}{% endblock %}
 
 {% block extra_css %}
-{{ block.super }}
 <link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
 {% endblock %}
 
-{% block chat_content %}
+{% block content %}
+<div class="chat-wrapper">
 <div class="chat-container" role="main">
     <!-- Sidebar - Conversation List -->
     <div class="chat-sidebar" role="navigation" aria-label="Conversations">
@@ -157,7 +157,7 @@
 </div>
 {% endblock %}
 
-{% block chat_js %}
+{% block extra_js %}
 <script src="{% static 'chatting/js/chat.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -176,4 +176,6 @@
         messageList.scrollTop = messageList.scrollHeight;
     }
 </script>
+{% endblock %}
+</div>
 {% endblock %}

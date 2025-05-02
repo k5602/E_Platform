@@ -1,14 +1,16 @@
-{% extends 'chatting/base_chat.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Messages | E-Platform{% endblock %}
 
 {% block extra_css %}
-{{ block.super }}
 <link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
 {% endblock %}
 
-{% block chat_content %}
+{% block content %}
+<div class="chat-wrapper">
+
+
 <div class="chat-container" role="main">
     <!-- Sidebar with conversation list -->
     <div class="chat-sidebar" role="navigation" aria-label="Conversations">
@@ -94,9 +96,8 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block chat_js %}
+{% block extra_js %}
 <script src="{% static 'chatting/js/chat.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -124,4 +125,6 @@
         }
     });
 </script>
+{% endblock %}
+</div>
 {% endblock %}

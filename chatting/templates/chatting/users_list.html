@@ -1,9 +1,15 @@
-{% extends 'chatting/base_chat.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Find People to Chat{% endblock %}
 
-{% block chat_content %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-wrapper">
 <div class="users-container" role="main">
     <div class="users-header">
         <h1>Find People to Chat</h1>
@@ -71,7 +77,8 @@
 </div>
 {% endblock %}
 
-{% block chat_js %}
+{% block extra_js %}
+<script src="{% static 'chatting/js/chat.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the WebSocket connection for online status updates
@@ -88,4 +95,6 @@
         }
     });
 </script>
+{% endblock %}
+</div>
 {% endblock %}
