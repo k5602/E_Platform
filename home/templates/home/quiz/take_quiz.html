@@ -5,15 +5,42 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
 <link rel="stylesheet" href="{% static 'home/css/responsive_quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/home_S.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/post-enhancements.css' %}">
+<style>
+    .question-card {
+            border: 2px solid var(--border-color, #ccc);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: var(--bg-color, white);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .question-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .question-header {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .question-text {
+        margin-bottom: 15px;
+    }
+
+    .answer-options {
+        margin-top: 10px;
+    }
+</style>
 {% endblock %}
 
 {% block home_content %}
-<div class="monster-quiz-container">
-    <div class="monster-quiz-header">
-        <div class="monster-eyes">
-            <div class="monster-eye"><div class="pupil"></div></div>
-            <div class="monster-eye"><div class="pupil"></div></div>
-        </div>
+<div class="post-container">
+    <div class="quiz-header">
         <h1 class="quiz-title">{{ quiz.title }}</h1>
         <div class="quiz-meta">
             <span class="quiz-subject"><i class="material-icons">school</i> {{ quiz.subject.name }}</span>
@@ -21,7 +48,7 @@
         </div>
     </div>
 
-    <div class="quiz-instructions">
+    <div class="quiz-instructions post">
         <p><strong>Instructions:</strong> Answer all questions. Progress is auto-saved.</p>
         <div class="quiz-progress-bar">
             <div class="progress" style="width: {{ progress_percent }}%"></div>
@@ -33,7 +60,7 @@
         
         <div class="questions-list">
             {% for question in questions %}
-            <div class="question-card">
+            <div class="question-card post">
                 <div class="question-header">
                     <span class="question-number">#{{ forloop.counter }}</span>
                     <span class="question-marks">{{ question.marks }} pt{{ question.marks|pluralize }}</span>
@@ -44,38 +71,38 @@
                 {% endif %}
                 <div class="answer-options">
                     {% if question.question_type == 'mcq' %}
-                    <div class="mcq-options monster-options">
+                    <div class="mcq-options">
                         {% for answer in question.answers.all %}
-                        <div class="mcq-option monster-option">
+                        <div class="mcq-option">
                             <input type="radio" 
                                    name="question_{{ question.id }}" 
                                    id="answer_{{ answer.id }}" 
                                    value="{{ answer.id }}"
                                    {% if user_answers.question.id.selected_answer.id == answer.id %}checked{% endif %}>
-                            <label for="answer_{{ answer.id }}" class="monster-option-label">{{ answer.text }}</label>
+                            <label for="answer_{{ answer.id }}" class="option-label">{{ answer.text }}</label>
                         </div>
                         {% endfor %}
                     </div>
                     
                     {% elif question.question_type == 'true_false' %}
-                    <div class="true-false-options monster-options">
+                    <div class="true-false-options">
                         {% for answer in question.answers.all %}
-                        <div class="true-false-option monster-option">
+                        <div class="true-false-option">
                             <input type="radio" 
                                    name="question_{{ question.id }}" 
                                    id="answer_{{ answer.id }}" 
                                    value="{{ answer.id }}"
                                    {% if user_answers.question.id.selected_answer.id == answer.id %}checked{% endif %}>
-                            <label for="answer_{{ answer.id }}" class="monster-option-label">{{ answer.text }}</label>
+                            <label for="answer_{{ answer.id }}" class="option-label">{{ answer.text }}</label>
                         </div>
                         {% endfor %}
                     </div>
                     
                     {% elif question.question_type == 'short_answer' %}
-                    <div class="short-answer monster-short-answer">
+                    <div class="short-answer">
                         <textarea name="question_{{ question.id }}" 
                                   placeholder="Type your solution here..."
-                                  rows="4" class="monster-textarea">{% if user_answers.question.id.text_answer %}{{ user_answers.question.id.text_answer }}{% endif %}</textarea>
+                                  rows="4" class="form-control">{% if user_answers.question.id.text_answer %}{{ user_answers.question.id.text_answer }}{% endif %}</textarea>
                     </div>
                     {% endif %}
                 </div>
@@ -83,36 +110,32 @@
             {% endfor %}
         </div>
         
-        <div class="quiz-nav-bar">
+        <div class="quiz-nav-bar post">
             <button class="btn btn-secondary" type="submit" name="save_progress"><i class="material-icons">save</i> Save</button>
-            <button class="btn btn-primary" type="submit" name="submit_quiz"><i class="material-icons">done_all</i> Submit</button>
+            <button class="btn btn-primary" id="submit-quiz" type="button"><i class="material-icons">done_all</i> Submit</button>
         </div>
     </form>
     
-    <div id="timeout-warning" class="monster-timeout-warning hidden">
+    <div id="timeout-warning" class="timeout-warning hidden">
         <div class="timeout-content">
-            <div class="monster-warning-eyes">
-                <div class="monster-warning-eye"></div>
-                <div class="monster-warning-eye"></div>
-            </div>
-            <h3><i class="material-icons">warning</i> The Monster Grows Impatient!</h3>
+            <h3><i class="material-icons">warning</i> Time Warning!</h3>
             <p>You have less than <span id="warning-time">2</span> minutes remaining!</p>
-            <button id="dismiss-warning" class="monster-btn monster-btn-warning">Continue Challenge</button>
+            <button id="dismiss-warning" class="btn btn-warning">Continue</button>
         </div>
     </div>
     
-    <div id="confirm-submit" class="monster-confirm-dialog hidden">
+    <div id="confirm-submit" class="confirm-dialog hidden">
         <div class="confirm-content">
-            <h3>Finish Monster Challenge?</h3>
+            <h3>Submit Quiz?</h3>
             <p>Are you sure you want to submit your answers? This action cannot be undone.</p>
             <div class="confirm-buttons">
-                <button id="cancel-submit" class="monster-btn monster-btn-secondary">Cancel</button>
-                <button id="confirm-submit-btn" class="monster-btn monster-btn-primary">Submit</button>
+                <button id="cancel-submit" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-submit-btn" class="btn btn-primary">Submit</button>
             </div>
         </div>
     </div>
     
-    <div id="quiz-overlay" class="monster-quiz-overlay hidden"></div>
+    <div id="quiz-overlay" class="quiz-overlay hidden"></div>
 </div>
 {% endblock %}
 
@@ -162,7 +185,7 @@
                 warningShown = true;
                 
                 // Add pulsing animation to timer
-                timerDisplay.classList.add('monster-timer-warning');
+                timerDisplay.classList.add('timer-warning');
             }
         }
         
@@ -204,7 +227,7 @@
         
         // Prevent accidental navigation away
         window.addEventListener('beforeunload', function(e) {
-            const confirmationMessage = 'Your monster challenge progress will be saved, but you will need to resume later. Are you sure you want to leave?';
+            const confirmationMessage = 'Your quiz progress will be saved, but you will need to resume later. Are you sure you want to leave?';
             e.returnValue = confirmationMessage;
             return confirmationMessage;
         });
@@ -227,37 +250,10 @@
                 console.error('Error saving progress:', error);
             });
         }, 30000);
-        
-        // Monster theme animations
-        const monsterEyes = document.querySelectorAll('.monster-eye');
-        
-        // Add eye movement animations
-        document.addEventListener('mousemove', function(e) {
-            const mouseX = e.clientX;
-            const mouseY = e.clientY;
-            
-            monsterEyes.forEach(eye => {
-                const eyeRect = eye.getBoundingClientRect();
-                const eyeCenterX = eyeRect.left + eyeRect.width/2;
-                const eyeCenterY = eyeRect.top + eyeRect.height/2;
-                
-                // Calculate distance from eye to mouse
-                const deltaX = mouseX - eyeCenterX;
-                const deltaY = mouseY - eyeCenterY;
-                
-                // Limit the movement
-                const maxMove = 3;
-                const moveX = Math.min(Math.max(deltaX / 20, -maxMove), maxMove);
-                const moveY = Math.min(Math.max(deltaY / 20, -maxMove), maxMove);
-                
-                // Apply the transform
-                eye.querySelector('.pupil')?.style.transform = `translate(${moveX}px, ${moveY}px)`;
-            });
-        });
 
         // Ensure responsiveness for mobile devices
         const adjustLayout = () => {
-            const container = document.querySelector('.monster-quiz-container');
+            const container = document.querySelector('.post-container');
             if (window.innerWidth < 768) {
                 container.classList.add('mobile-layout');
             } else {

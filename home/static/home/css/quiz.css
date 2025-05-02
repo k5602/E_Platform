@@ -25,7 +25,7 @@
     /* Neutral colors */
     --quiz-dark: #073b4c;
     --quiz-light: #f8f9fa;
-    --quiz-border: #e0e0e0;
+    --quiz-border: #8b8b8b;
     --quiz-text: #2b2d42;
     --quiz-text-light: #6c757d;
 
@@ -923,6 +923,52 @@
     --danger-hover-color: #b71c1c;
     --hover-color: var(--quiz-dark-hover);
     --box-shadow: var(--quiz-dark-shadow);
+
+    /* Fix for question text visibility in dark mode */
+    .question-text {
+        color: #ff0000;
+        background-color: rgba(40, 40, 40, 0.8);
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+    }
+    
+    .quiz-card {
+        background-color: var(--quiz-dark-card);
+    }
+    
+    .quiz-option-label,
+    .mcq-option label, 
+    .option-label {
+        background-color: #2a2a2a;
+  #000000olor: #3b3838;
+        border-color: #444;
+    }
+    
+    .mcq-option input[type="radio"]:checked + label,
+    .mcq-option input[type="radio"]:checked + .option-label {
+        background-color: rgba(67, 97, 238, 0.3);
+        
+        border-color: var(--quiz-primary);
+        color: #ffffff;
+    }
+
+    /* Fix for text visibility in dark mode on quiz detail page */
+    .quiz-detail-meta-value,
+    .quiz-detail-meta-label,
+    .quiz-detail-description,
+    .quiz-card p {
+        color: #1a1818 !important; /* Light color for dark background */
+    }
+    
+    .quiz-card {
+        background-color: var(--quiz-dark-card);
+    }
+    
+    .quiz-detail-meta-item {
+        background-color: #2a2a2a;
+        border-color: #444;
+    }
 }
 
 /* Quiz Decorations */
@@ -1170,12 +1216,15 @@
     font-size: 0.8rem;
     font-weight: 500;
     padding: 5px 12px;
+    margin: 0 5px;
+    display: inline-block;
 }
 
 .quiz-status-active {
     background-color: rgba(46, 204, 113, 0.15);
     border: 1px solid #2ecc71;
     color: #2ecc71;
+    margin: 5px;
 }
 
 .quiz-status-draft {
@@ -1630,4 +1679,225 @@
     color: var(--text-color);
     font-size: 0.95rem;
     line-height: 1.6;
+}
+
+/* Multiple choice question styles */
+.mcq-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.mcq-option {
+    position: relative;
+    margin-bottom: 5px;
+}
+
+.mcq-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.mcq-option label, .option-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--bg-color, #f9f9f9);
+    border: 2px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-color, #333);
+    position: relative;
+}
+
+.mcq-option input[type="radio"]:checked + label,
+.mcq-option input[type="radio"]:checked + .option-label {
+    background-color: var(--quiz-primary-light);
+    border-color: var(--quiz-primary);
+    box-shadow: 0 2px 6px rgba(67, 97, 238, 0.2);
+}
+
+.mcq-option label:hover,
+.option-label:hover {
+    background-color: var(--hover-color, #f1f1f1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.mcq-option input[type="radio"]:focus + label,
+.mcq-option input[type="radio"]:focus + .option-label {
+    outline: 2px solid var(--quiz-primary);
+    outline-offset: 2px;
+}
+
+/* True/False question styles */
+.true-false-options {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.true-false-option {
+    position: relative;
+    flex: 1;
+    min-width: 120px;
+}
+
+.true-false-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.true-false-option label,
+.true-false-option .option-label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-color, #f9f9f9);
+    border: 2px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color, #333);
+    text-align: center;
+    height: 100%;
+}
+
+.true-false-option input[type="radio"]:checked + label,
+.true-false-option input[type="radio"]:checked + .option-label {
+    background-color: var(--quiz-primary-light);
+    border-color: var(--quiz-primary);
+    box-shadow: 0 2px 6px rgba(67, 97, 238, 0.2);
+}
+
+.true-false-option label:hover,
+.true-false-option .option-label:hover {
+    background-color: var(--hover-color, #f1f1f1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.true-false-option input[type="radio"]:focus + label,
+.true-false-option input[type="radio"]:focus + .option-label {
+    outline: 2px solid var(--quiz-primary);
+    outline-offset: 2px;
+}
+
+/* Quiz pages consistent font color override */
+.quiz-container,
+.quiz-detail-container,
+.quiz-result-container,
+.my-quizzes-container,
+.quiz-form-container,
+.monster-quiz-container,
+.post-container {
+    /* Force consistent text color */
+    --text-color: #333 !important;
+    --secondary-text-color: #555 !important;
+    color: #333 !important;
+}
+
+/* Override specific elements on quiz pages */
+.quiz-container *,
+.quiz-detail-container *,
+.quiz-result-container *,
+.my-quizzes-container *,
+.quiz-form-container *,
+.monster-quiz-container *,
+.post-container * {
+    color: inherit;
+}
+
+/* Ensure proper contrast for specific elements */
+.quiz-title,
+.quiz-detail-title,
+.quiz-card-title,
+.quiz-results-title,
+.question-text,
+.quiz-detail-meta-value,
+.quiz-detail-meta-label,
+.quiz-detail-description,
+.feature-list li,
+.quiz-meta-item,
+.stats-label,
+.stats-value,
+.question-number,
+.quiz-instructions p,
+.mcq-option label,
+.option-label,
+.quiz-btn-outline {
+    color: #333 !important;
+}
+
+/* Exception for buttons that need light text */
+.quiz-btn-primary,
+.quiz-btn-secondary,
+.quiz-btn-info,
+.quiz-btn-success,
+.quiz-results-badge {
+    color: white !important;
+}
+
+/* Override dark mode to use light backgrounds with dark text */
+[data-theme="dark"] .quiz-container,
+[data-theme="dark"] .quiz-detail-container,
+[data-theme="dark"] .quiz-result-container,
+[data-theme="dark"] .my-quizzes-container,
+[data-theme="dark"] .quiz-form-container,
+[data-theme="dark"] .monster-quiz-container,
+[data-theme="dark"] .post-container {
+    --bg-color: #f5f5f5 !important;
+    --light-bg-color: #ffffff !important;
+    --border-color: #dddddd !important;
+    background-color: #f5f5f5 !important;
+}
+
+/* Style quiz cards and containers in dark mode for better contrast */
+[data-theme="dark"] .quiz-card,
+[data-theme="dark"] .question-card,
+[data-theme="dark"] .quiz-detail-meta-item,
+[data-theme="dark"] .question-box {
+    background-color: #ffffff !important;
+    border-color: #dddddd !important;
+}
+
+/* Set the link colors in dark mode */
+[data-theme="dark"] .quiz-container a,
+[data-theme="dark"] .quiz-detail-container a,
+[data-theme="dark"] .quiz-result-container a,
+[data-theme="dark"] .my-quizzes-container a {
+    color: var(--quiz-primary) !important;
+}
+
+[data-theme="dark"] .quiz-container a:hover,
+[data-theme="dark"] .quiz-detail-container a:hover,
+[data-theme="dark"] .quiz-result-container a:hover,
+[data-theme="dark"] .my-quizzes-container a:hover {
+    color: var(--quiz-secondary) !important;
+}
+
+/* Fix for button styling in dark mode */
+[data-theme="dark"] .quiz-btn-outline {
+    border-color: #ccc !important;
+    background-color: transparent !important;
+}
+
+[data-theme="dark"] .quiz-btn-outline:hover {
+    border-color: var(--quiz-primary) !important;
+    background-color: rgba(67, 97, 238, 0.05) !important;
 }

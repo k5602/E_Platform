@@ -432,7 +432,7 @@
 }
 
 .subject-description {
-    background: var(--subject-card-bg);
+    background: #1e1f26;
     border-radius: 15px;
     padding: 25px;
     box-shadow: var(--box_shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
@@ -440,14 +440,14 @@
 }
 
 .subject-description h2 {
-    color: var(--text_color);
+    color:  #1e1f26;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--header_color);
 }
 
 .subject-description p {
-    color: var(--text_color);
+    color:  #1e1f26;
     line-height: 1.6;
 }
 
@@ -460,7 +460,7 @@
 }
 
 .subject-materials h2 {
-    color: var(--text_color);
+    color:  #1e1f26;
     margin-bottom: 20px;
     padding-bottom: 10px;
     border-bottom: 2px solid var(--header_color);

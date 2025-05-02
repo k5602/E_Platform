@@ -4,6 +4,8 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'home/css/quiz.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/home_S.css' %}">
+<link rel="stylesheet" href="{% static 'home/css/post-enhancements.css' %}">
 {% endblock %}
 
 {% block home_content %}
@@ -22,7 +24,7 @@
     <div class="created-quizzes-list">
         {% if quizzes %}
             {% for quiz in quizzes %}
-            <div class="quiz-card">
+            <div class="post">
                 <div class="quiz-card-header">
                     <h2>{{ quiz.title }}</h2>
                     <div class="quiz-status">
@@ -70,42 +72,42 @@
                     </div>
                 </div>
                 
-                <div class="quiz-card-footer">
-                    <div class="quiz-dates">
-                        <div class="date-item">
-                            <i class="material-icons">event</i>
-                            <span>Created: {{ quiz.created_at|date:"M d, Y" }}</span>
-                        </div>
-                        {% if quiz.created_at != quiz.updated_at %}
-                        <div class="date-item">
-                            <i class="material-icons">update</i>
-                            <span>Updated: {{ quiz.updated_at|date:"M d, Y" }}</span>
-                        </div>
-                        {% endif %}
+                <div class="quiz-dates">
+                    <div class="date-item">
+                        <i class="material-icons">event</i>
+                        <span>Created: {{ quiz.created_at|date:"M d, Y" }}</span>
                     </div>
-                    
-                    <div class="quiz-actions">
-                        <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="quiz-btn view">
-                            <i class="material-icons">visibility</i> View
-                        </a>
-                        <a href="{% url 'home:quiz_edit' quiz_id=quiz.id %}" class="quiz-btn edit">
-                            <i class="material-icons">edit</i> Edit
-                        </a>
-                        <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="quiz-btn questions">
-                            <i class="material-icons">list</i> Questions
-                        </a>
-                        <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="quiz-btn analytics">
-                            <i class="material-icons">bar_chart</i> Analytics
-                        </a>
+                    {% if quiz.created_at != quiz.updated_at %}
+                    <div class="date-item">
+                        <i class="material-icons">update</i>
+                        <span>Updated: {{ quiz.updated_at|date:"M d, Y" }}</span>
                     </div>
+                    {% endif %}
+                </div>
+                
+                <div class="post-actions">
+                    <a href="{% url 'home:quiz_detail' quiz_id=quiz.id %}" class="quiz-btn view">
+                        <i class="material-icons">visibility</i> View
+                    </a>
+                    <a href="{% url 'home:quiz_edit' quiz_id=quiz.id %}" class="quiz-btn edit">
+                        <i class="material-icons">edit</i> Edit
+                    </a>
+                    <a href="{% url 'home:manage_questions' quiz_id=quiz.id %}" class="quiz-btn questions">
+                        <i class="material-icons">list</i> Questions
+                    </a>
+                    <a href="{% url 'home:quiz_analytics' quiz_id=quiz.id %}" class="quiz-btn analytics">
+                        <i class="material-icons">bar_chart</i> Analytics
+                    </a>
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <div class="no-quizzes">
-                <i class="material-icons">sentiment_dissatisfied</i>
-                <p>You haven't created any quizzes yet.</p>
-                <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">Create Your First Quiz</a>
+            <div class="post">
+                <div class="no-quizzes">
+                    <i class="material-icons">sentiment_dissatisfied</i>
+                    <p>You haven't created any quizzes yet.</p>
+                    <a href="{% url 'home:create_quiz' %}" class="btn btn-primary">Create Your First Quiz</a>
+                </div>
             </div>
         {% endif %}
     </div>
