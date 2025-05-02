@@ -1,5 +1,6 @@
 /**
  * Chat functionality for real-time messaging
+ * Enhanced with improved UI/UX and dark mode support
  */
 
 let chatSocket = null;
@@ -695,5 +696,36 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check initial network status
     if (!navigator.onLine) {
         showToast('You are currently offline. Messages will be sent when you reconnect.', 'warning');
+    }
+
+    // Initialize mobile menu toggle for chat sidebar
+    const menuToggle = document.querySelector('.menu-toggle');
+    const chatSidebar = document.querySelector('.chat-sidebar');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+    if (menuToggle && chatSidebar) {
+        menuToggle.addEventListener('click', function() {
+            chatSidebar.classList.toggle('active');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('active');
+            }
+        });
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function() {
+                chatSidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            });
+        }
+    }
+
+    // Add animation classes to message items
+    const messageItems = document.querySelectorAll('.message-item');
+    if (messageItems.length > 0) {
+        messageItems.forEach(function(item, index) {
+            setTimeout(function() {
+                item.classList.add('visible');
+            }, index * 100); // Stagger the animations
+        });
     }
 });

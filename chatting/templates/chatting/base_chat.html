@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'home/base_home.html' %}
 {% load static %}
 
 {% block title %}Chat | E-Platform{% endblock %}
@@ -6,31 +6,17 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
+<link rel="stylesheet" href="{% static 'chatting/css/chat_unified.css' %}">
 {% endblock %}
 
-{% block content %}
-<section class="animated-background">
-    <div class="wave">
-        <span></span>
-        <span></span>
-        <span></span>
-    </div>
-</section>
-
-<button class="toggle" id="toggle">
-    <img src="{% static 'authentication/images/lightoff.svg' %}" alt="lightoff">
-    <img src="{% static 'authentication/images/lighton.svg' %}" alt="lighton">
-</button>
-
+{% block home_content %}
 <div class="chat-wrapper">
     {% block chat_content %}{% endblock %}
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 </div>
-
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'chatting/js/darkmode.js' %}"></script>
+{% block page_js %}
 <script src="{% static 'chatting/js/chat.js' %}"></script>
 {% block chat_js %}{% endblock %}
 {% endblock %}
