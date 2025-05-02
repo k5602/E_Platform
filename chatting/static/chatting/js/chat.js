@@ -8,6 +8,11 @@ let currentUserId = null;
 let otherUserId = null;
 let typingTimeout = null;
 
+// Track reconnection attempts
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 10;
+const baseReconnectDelay = 1000; // 1 second
+
 /**
  * Initialize the WebSocket connection for chat
  */
@@ -21,50 +26,81 @@ function initializeChatWebsocket() {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/`;
 
-    chatSocket = new WebSocket(wsUrl);
+    try {
+        chatSocket = new WebSocket(wsUrl);
 
-    // WebSocket event handlers
-    chatSocket.onopen = function() {
-        console.log('Chat WebSocket connection established');
+        // WebSocket event handlers
+        chatSocket.onopen = function() {
+            console.log('Chat WebSocket connection established');
 
-        // Show connection status
-        showConnectionStatus('connected');
+            // Reset reconnect attempts on successful connection
+            reconnectAttempts = 0;
 
-        // If we were reconnecting, send any pending messages
-        sendPendingMessages();
-    };
+            // Show connection status
+            showConnectionStatus('connected');
 
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        handleWebSocketMessage(data);
-    };
+            // If we were reconnecting, send any pending messages
+            sendPendingMessages();
+        };
 
-    chatSocket.onclose = function() {
-        console.log('Chat WebSocket connection closed');
+        chatSocket.onmessage = function(e) {
+            try {
+                const data = JSON.parse(e.data);
+                handleWebSocketMessage(data);
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
 
-        // Show disconnected status
-        showConnectionStatus('disconnected');
+        chatSocket.onclose = function(event) {
+            // Check if the close was clean (code 1000 or 1001)
+            const wasClean = event.code === 1000 || event.code === 1001;
 
-        // Try to reconnect after a delay
-        setTimeout(function() {
-            initializeChatWebsocket();
-        }, 3000);
-    };
+            console.log(`Chat WebSocket connection closed. Code: ${event.code}, Clean: ${wasClean}`);
 
-    chatSocket.onerror = function(e) {
-        console.error('Chat WebSocket error:', e);
+            // Show disconnected status
+            showConnectionStatus('disconnected');
 
-        // Show error status
-        showConnectionStatus('error');
+            // Only attempt to reconnect if it wasn't a clean close and we haven't exceeded max attempts
+            if (!wasClean && reconnectAttempts < maxReconnectAttempts) {
+                // Use exponential backoff for reconnection
+                const delay = Math.min(baseReconnectDelay * Math.pow(1.5, reconnectAttempts), 30000);
+                reconnectAttempts++;
 
-        // Show toast notification
-        showToast('Connection error. Trying to reconnect...', 'error');
+                console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms`);
 
-        // Try to reconnect after a delay
-        setTimeout(function() {
-            initializeChatWebsocket();
-        }, 5000);
-    };
+                setTimeout(function() {
+                    initializeChatWebsocket();
+                }, delay);
+            } else if (reconnectAttempts >= maxReconnectAttempts) {
+                showToast('Unable to reconnect after multiple attempts. Please refresh the page.', 'error');
+            }
+        };
+
+        chatSocket.onerror = function(e) {
+            console.error('Chat WebSocket error:', e);
+
+            // Show error status
+            showConnectionStatus('error');
+
+            // Show toast notification
+            showToast('Connection error. Trying to reconnect...', 'error');
+
+            // Note: We don't need to manually reconnect here as the onclose handler will be called after an error
+        };
+    } catch (error) {
+        console.error('Error creating WebSocket connection:', error);
+
+        // Attempt to reconnect with exponential backoff
+        if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(baseReconnectDelay * Math.pow(1.5, reconnectAttempts), 30000);
+            reconnectAttempts++;
+
+            setTimeout(function() {
+                initializeChatWebsocket();
+            }, delay);
+        }
+    }
 
     return chatSocket;
 }

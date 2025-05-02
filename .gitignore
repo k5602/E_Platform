@@ -230,3 +230,8 @@ home/migrations/0004_question_image_question_marks_question_question_type.py
 Ai_prototype/migrations/__init__.py
 chatting/migrations/__init__.py
 chatting/migrations/0001_initial.py
+authentication/migrations/0002_customuser_profile_picture.py
+authentication/migrations/0002_customuser_profile_picture.py
+authentication/migrations/0002_customuser_profile_picture.py
+home/migrations/0002_add_technologies_to_profileproject.py
+authentication/migrations/0002_customuser_profile_picture.py

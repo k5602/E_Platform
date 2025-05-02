@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chat | E-Platform{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-wrapper">
+    {% block chat_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% block chat_js %}{% endblock %}
+{% endblock %}

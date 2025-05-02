@@ -30,7 +30,7 @@
         <div class="conversation-list" id="conversation-list" role="list">
             {% if conversations %}
                 {% for conversation in conversations %}
-                    {% with other_user=conversation.get_other_participant user %}
+                    {% with other_user=conversation.other_user %}
                     <a href="{% url 'chatting:conversation_detail' conversation_id=conversation.id %}"
                        class="conversation-item {% if conversation.id == active_conversation_id %}active{% endif %}"
                        role="listitem"
@@ -57,10 +57,10 @@
                             <div class="conversation-preview">
                                 {% with last_message=conversation.messages.last %}
                                     {% if last_message %}
-                                        <span class="{% if last_message.sender == user %}outgoing{% endif %}">
-                                            {% if last_message.sender == user %}You: {% endif %}{{ last_message.content|truncatechars:30 }}
+                                        <span class="{% if last_message.sender == request.user %}outgoing{% endif %}">
+                                            {% if last_message.sender == request.user %}You: {% endif %}{{ last_message.content|truncatechars:30 }}
                                         </span>
-                                        {% if not last_message.is_read and last_message.sender != user %}
+                                        {% if not last_message.is_read and last_message.sender != request.user %}
                                             <span class="unread-badge" aria-label="{{ conversation.messages.filter.count }} unread messages">
                                                 {{ conversation.messages.filter.count }}
                                             </span>

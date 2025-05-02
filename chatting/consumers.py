@@ -38,16 +38,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-        # Broadcast user online status to all connected clients
-        await self.channel_layer.group_send(
-            "online_users",
-            {
-                "type": "user_status",
-                "user_id": self.user.id,
-                "status": True
-            }
-        )
-
         # Add user to specific conversation groups
         user_conversations = await self.get_user_conversations(self.user.id)
         for conversation_id in user_conversations:
@@ -57,13 +47,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
 
-        # Add user to online status group
-        await self.channel_layer.group_add(
-            "online_users",
-            self.channel_name
-        )
-
-        # Broadcast user online status
+        # Broadcast user online status to all connected clients
         await self.channel_layer.group_send(
             "online_users",
             {
@@ -117,15 +101,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Handle incoming WebSocket messages.
         """
-        text_data_json = json.loads(text_data)
-        message_type = text_data_json.get('type', '')
+        try:
+            text_data_json = json.loads(text_data)
+            message_type = text_data_json.get('type', '')
 
-        if message_type == 'chat_message':
-            await self.handle_chat_message(text_data_json)
-        elif message_type == 'read_messages':
-            await self.handle_read_messages(text_data_json)
-        elif message_type == 'typing':
-            await self.handle_typing(text_data_json)
+            if message_type == 'chat_message':
+                await self.handle_chat_message(text_data_json)
+            elif message_type == 'read_messages':
+                await self.handle_read_messages(text_data_json)
+            elif message_type == 'typing':
+                await self.handle_typing(text_data_json)
+            else:
+                print(f"Unknown message type: {message_type}")
+        except json.JSONDecodeError:
+            print(f"Invalid JSON received: {text_data}")
+        except Exception as e:
+            print(f"Error processing WebSocket message: {str(e)}")
 
     async def handle_chat_message(self, data):
         """
@@ -142,11 +133,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not is_participant:
             return
 
-        # Create the message in the database
+        # Create the message in the database (this also updates the conversation timestamp)
         message = await self.create_message(conversation_id, self.user.id, content)
-
-        # Update conversation timestamp
-        await self.update_conversation_timestamp(conversation_id)
 
         # Get the other participant in the conversation
         other_participant = await self.get_other_participant(conversation_id, self.user.id)
@@ -328,11 +316,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Create a new message in the database.
         """
-        message = Message.objects.create(
-            conversation_id=conversation_id,
-            sender_id=user_id,
-            content=content
-        )
+        from django.db import transaction
+
+        with transaction.atomic():
+            message = Message.objects.create(
+                conversation_id=conversation_id,
+                sender_id=user_id,
+                content=content
+            )
+
+            # Update conversation timestamp within the same transaction
+            conversation = Conversation.objects.get(id=conversation_id)
+            conversation.update_timestamp()
+
         return message
 
     @database_sync_to_async
@@ -340,8 +336,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Update the conversation's timestamp.
         """
-        conversation = Conversation.objects.get(id=conversation_id)
-        conversation.update_timestamp()
+        from django.db import transaction
+
+        with transaction.atomic():
+            conversation = Conversation.objects.get(id=conversation_id)
+            conversation.update_timestamp()
+
         return conversation
 
     @database_sync_to_async
@@ -358,13 +358,24 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Mark all messages in a conversation as read for a user.
         """
-        messages = Message.objects.filter(
-            conversation_id=conversation_id,
-            is_read=False
-        ).exclude(sender_id=user_id)
+        from django.db import transaction
 
-        for message in messages:
-            message.is_read = True
-            message.save()
+        try:
+            with transaction.atomic():
+                messages = Message.objects.filter(
+                    conversation_id=conversation_id,
+                    is_read=False
+                ).exclude(sender_id=user_id)
 
-        return messages.count()
+                # Use bulk update for better performance
+                message_list = list(messages)
+                for message in message_list:
+                    message.is_read = True
+
+                if message_list:
+                    Message.objects.bulk_update(message_list, ['is_read'])
+
+                return len(message_list)
+        except Exception as e:
+            print(f"Error marking messages as read: {str(e)}")
+            return 0
