@@ -1,0 +1,79 @@
+{% extends 'chatting/base_chat.html' %}
+{% load static %}
+
+{% block title %}Chat Users | E-Platform{% endblock %}
+
+{% block chat_content %}
+<div class="container">
+    <div class="contacts">
+        <h3>
+            <a href="{% url 'chatting:chat_home' %}" class="back-to-chats">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            Users
+        </h3>
+        
+        <div class="search-container">
+            <form method="get" action="{% url 'chatting:users_list' %}">
+                <div class="search-input">
+                    <input type="text" name="q" placeholder="Search users..." value="{{ search_query }}">
+                    <button type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="available-users">
+            {% if users %}
+                {% for user in users %}
+                <a href="{% url 'chatting:start_conversation' user.id %}" class="contact-link">
+                    <div class="contact">
+                        <div class="contact-header">
+                            <span>{{ user.username }}</span>
+                            <span class="status-indicator {% if user.chat_status.is_online %}online{% else %}offline{% endif %}" 
+                                  data-user-id="{{ user.id }}" 
+                                  title="{{ user.chat_status.is_online|yesno:'Online,Offline' }}">
+                            </span>
+                        </div>
+                        <div class="user-info">
+                            <span>{{ user.get_full_name }}</span>
+                            <span class="user-type">{{ user.get_user_type_display }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="no-contacts">
+                    <p>No users found</p>
+                    {% if search_query %}
+                        <p>Try a different search term</p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="messages-container">
+        <div class="empty-state">
+            <div class="empty-state-content">
+                <div class="empty-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h3>Start a new conversation</h3>
+                <p>Select a user from the list to start chatting</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block chat_js %}
+<script src="{% static 'chatting/js/chat.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize WebSocket connection
+        window.chatSocket = initializeChatWebsocket();
+    });
+</script>
+{% endblock %}

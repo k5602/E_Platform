@@ -1,0 +1,74 @@
+{% extends 'chatting/base_chat.html' %}
+{% load static %}
+
+{% block title %}Chat Home | E-Platform{% endblock %}
+
+{% block chat_content %}
+<div class="container">
+    <div class="contacts">
+        <h3>Conversations</h3>
+        <div id="contacts-list">
+            {% if conversations %}
+                {% for conversation in conversations %}
+                <a href="{% url 'chatting:conversation_detail' conversation.id %}" class="contact-link">
+                    <div class="contact {% if conversation.unread_count > 0 %}has-unread{% endif %}">
+                        <div class="contact-header">
+                            <span>{{ conversation.other_user.username }}</span>
+                            <span class="status-indicator {% if conversation.other_user.chat_status.is_online %}online{% else %}offline{% endif %}" 
+                                  data-user-id="{{ conversation.other_user.id }}" 
+                                  title="{{ conversation.other_user.chat_status.is_online|yesno:'Online,Offline' }}">
+                            </span>
+                        </div>
+                        <div class="conversation-preview">
+                            <span>
+                                {% if conversation.messages.last %}
+                                    {{ conversation.messages.last.content|truncatechars:30 }}
+                                {% else %}
+                                    Start a conversation
+                                {% endif %}
+                            </span>
+                            {% if conversation.unread_count > 0 %}
+                                <span class="unread-badge">{{ conversation.unread_count }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="no-contacts">
+                    <p>No conversations yet</p>
+                    <p>Start a new conversation by visiting the <a href="{% url 'chatting:users_list' %}">Users</a> page</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="contacts-footer">
+            <a href="{% url 'chatting:users_list' %}" class="new-chat-btn">
+                <i class="fas fa-plus"></i> New Chat
+            </a>
+        </div>
+    </div>
+    
+    <div class="messages-container">
+        <div class="empty-state">
+            <div class="empty-state-content">
+                <div class="empty-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h3>Select a conversation</h3>
+                <p>Choose a conversation from the list or start a new one</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block chat_js %}
+<script src="{% static 'chatting/js/chat.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize WebSocket connection
+        window.chatSocket = initializeChatWebsocket();
+    });
+</script>
+{% endblock %}

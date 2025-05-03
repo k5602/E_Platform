@@ -5,14 +5,20 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
 <div class="chat-wrapper">
+    <div class="sidebar-overlay"></div>
     {% block chat_content %}{% endblock %}
+    <button id="toggle" aria-label="Toggle dark mode">
+        <i class="fas fa-moon"></i>
+    </button>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'chatting/js/darkmode.js' %}"></script>
 {% block chat_js %}{% endblock %}
 {% endblock %}

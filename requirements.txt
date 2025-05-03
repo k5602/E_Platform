@@ -12,6 +12,7 @@ django-cors-headers==4.3.1
 djangorestframework-simplejwt==5.3.1
 
 # WebSocket dependencies
+daphne
 channels==4.2.2
 channels-redis==4.2.1
 redis==5.2.1

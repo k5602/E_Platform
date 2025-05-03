@@ -15,4 +15,7 @@ urlpatterns = [
     path('users/', views.UserListView.as_view(), name='user_list'),
     path('users/<int:pk>/status/', views.UserStatusView.as_view(), name='user_status'),
     path('users/status/update/', views.UpdateUserStatusView.as_view(), name='update_user_status'),
+
+    # Message count API
+    path('unread-count/', views.UnreadMessageCountView.as_view(), name='unread_count'),
 ]

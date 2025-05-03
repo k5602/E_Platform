@@ -25,9 +25,27 @@ function initializeChatWebsocket() {
 
     // Create a new WebSocket connection
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/`;
+
+    // In development mode, we use a dual-server setup:
+    // - Django development server on port 8000 for HTTP and static files
+    // - Daphne server on port 8001 for WebSockets only
+    let wsHost = window.location.host;
+    if (wsHost.includes('127.0.0.1:8000') || wsHost.includes('localhost:8000')) {
+        // In development, use port 8001 for WebSockets
+        wsHost = wsHost.replace(':8000', ':8001');
+        console.log('Development mode detected, using WebSocket host:', wsHost);
+        console.log('IMPORTANT: Make sure both servers are running:');
+        console.log('1. Django server on port 8000 for HTTP and static files');
+        console.log('2. Daphne server on port 8001 for WebSockets');
+        console.log('Run ./run_servers.sh to start both servers together');
+    }
+
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/`;
 
     console.log('Attempting to connect to WebSocket at:', wsUrl);
+
+    // Log the current URL for debugging
+    console.log('Current page URL:', window.location.href);
 
     try {
         chatSocket = new WebSocket(wsUrl);
@@ -73,13 +91,32 @@ function initializeChatWebsocket() {
                 console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms`);
 
                 // Show toast notification
-                showToast(`Connection lost. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+                if (event.code === 1006) {
+                    // Code 1006 is "Abnormal Closure" which often means the server is not available
+                    showToast(`WebSocket server not available. Make sure Daphne is running on port 8001. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
+
+                    // Add a more detailed message to the console
+                    console.error(`
+                        WebSocket connection failed with code 1006 (Abnormal Closure).
+                        This usually means the WebSocket server (Daphne) is not running.
+
+                        To fix this issue:
+                        1. Open a terminal
+                        2. Navigate to your project directory
+                        3. Activate your virtual environment
+                        4. Run: daphne -p 8001 E_Platform.asgi:application
+
+                        Keep the Django development server running on port 8000 for regular HTTP requests.
+                    `);
+                } else {
+                    showToast(`Connection lost. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+                }
 
                 setTimeout(function() {
                     initializeChatWebsocket();
                 }, delay);
             } else if (reconnectAttempts >= maxReconnectAttempts) {
-                showToast('Unable to reconnect after multiple attempts. Please refresh the page.', 'error');
+                showToast('Unable to reconnect after multiple attempts. Please refresh the page or check if the WebSocket server is running.', 'error');
             }
         };
 
@@ -188,29 +225,46 @@ function initializeConversation(conversationId, userId, otherUser) {
     currentUserId = userId;
     otherUserId = otherUser;
 
+    console.log(`Initializing conversation: ${conversationId} between user ${userId} and ${otherUser}`);
+
     // Hide typing indicator initially
-    document.getElementById('typing-indicator').style.display = 'none';
+    const typingIndicator = document.getElementById('typing-indicator');
+    if (typingIndicator) {
+        typingIndicator.style.display = 'none';
+    } else {
+        console.warn('Typing indicator element not found');
+    }
 
     // Form submission event
-    document.getElementById('message-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        sendMessage();
-    });
+    const messageForm = document.getElementById('message-form');
+    if (messageForm) {
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+    } else {
+        console.warn('Message form element not found');
+    }
 
     // Typing indicator
-    document.getElementById('message-input').addEventListener('input', function() {
-        sendTypingIndicator(true);
+    const messageInput = document.getElementById('message-input');
+    if (messageInput) {
+        messageInput.addEventListener('input', function() {
+            sendTypingIndicator(true);
 
-        // Clear existing timeout
-        if (typingTimeout) {
-            clearTimeout(typingTimeout);
-        }
+            // Clear existing timeout
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
 
-        // Set a new timeout to stop typing
-        typingTimeout = setTimeout(function() {
-            sendTypingIndicator(false);
-        }, 3000);
-    });
+            // Set a new timeout to stop typing
+            typingTimeout = setTimeout(function() {
+                sendTypingIndicator(false);
+            }, 3000);
+        });
+    } else {
+        console.warn('Message input element not found');
+    }
 
     // Mark messages as read when the page loads
     markMessagesAsRead();
@@ -396,7 +450,19 @@ function handleUserStatusUpdate(data) {
  */
 function sendMessage() {
     const messageInput = document.getElementById('message-input');
+    if (!messageInput) {
+        console.error('Message input element not found');
+        showToast('Error: Could not find message input', 'error');
+        return;
+    }
+
     const content = messageInput.value.trim();
+
+    if (!currentConversationId) {
+        console.error('No conversation ID set');
+        showToast('Error: No active conversation', 'error');
+        return;
+    }
 
     if (content) {
         const messageData = {
@@ -407,18 +473,25 @@ function sendMessage() {
 
         // Check if we're connected
         if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-            // Send the message through WebSocket
-            chatSocket.send(JSON.stringify(messageData));
+            try {
+                // Send the message through WebSocket
+                chatSocket.send(JSON.stringify(messageData));
+                console.log('Message sent:', messageData);
 
-            // Add a temporary message to the UI
-            const tempMessage = {
-                sender_id: currentUserId,
-                content: content,
-                timestamp: new Date().toISOString(),
-                is_read: false
-            };
-            addMessageToChat(tempMessage);
+                // Add a temporary message to the UI
+                const tempMessage = {
+                    sender_id: currentUserId,
+                    content: content,
+                    timestamp: new Date().toISOString(),
+                    is_read: false
+                };
+                addMessageToChat(tempMessage);
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showToast('Error sending message. Please try again.', 'error');
+            }
         } else {
+            console.log('WebSocket not connected, storing message for later');
             // We're offline, store the message to send later
             pendingMessages.push(messageData);
 
@@ -454,12 +527,16 @@ function sendMessage() {
  * Show a toast notification
  */
 function showToast(message, type = 'info') {
+    console.log(`Toast: ${type} - ${message}`);
+
     // Check if the global showToastNotification function exists (from main site)
     if (typeof window.showToastNotification === 'function') {
         // Use the global toast function
         window.showToastNotification(message, type);
         return;
     }
+
+    // If we're here, the global function doesn't exist, so we'll use our own implementation
 
     // Fallback implementation if global function doesn't exist
     // Check if toast container exists, create if not
@@ -579,94 +656,121 @@ function markMessagesAsRead() {
  * Add a message to the chat UI
  */
 function addMessageToChat(message) {
-    const messageList = document.getElementById('message-list');
-    if (!messageList) return;
-
-    const isOutgoing = message.sender_id === currentUserId;
-
-    // Create the message element
-    const messageElement = document.createElement('div');
-    messageElement.className = `message-item ${isOutgoing ? 'outgoing' : 'incoming'}`;
-
-    // Add data attributes for potential future reference
-    if (message.id) {
-        messageElement.dataset.messageId = message.id;
-    }
-
-    // Create the message content
-    const contentElement = document.createElement('div');
-    contentElement.className = 'message-content';
-    contentElement.textContent = message.content;
-
-    // Create the message meta information
-    const metaElement = document.createElement('div');
-    metaElement.className = 'message-meta';
-
-    // Add timestamp
-    const timeElement = document.createElement('span');
-    timeElement.className = 'message-time';
-
-    // Format the timestamp
-    const timestamp = new Date(message.timestamp);
-    const hours = timestamp.getHours();
-    const minutes = timestamp.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12;
-    const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-    timeElement.textContent = `${formattedHours}:${formattedMinutes} ${ampm}`;
-
-    // Add read status for outgoing messages
-    if (isOutgoing) {
-        const statusElement = document.createElement('span');
-        statusElement.className = 'message-status';
-
-        const statusIcon = document.createElement('i');
-
-        if (message.is_pending) {
-            // Show clock icon for pending messages
-            statusIcon.className = 'fas fa-clock pending-indicator';
-            statusElement.setAttribute('aria-label', 'Pending');
-
-            // Add a tooltip
-            statusElement.title = 'Message will be sent when you are back online';
-        } else if (message.is_read) {
-            statusIcon.className = 'fas fa-check-double read-indicator';
-            statusElement.setAttribute('aria-label', 'Read');
-        } else {
-            statusIcon.className = 'fas fa-check';
-            statusElement.setAttribute('aria-label', 'Sent');
+    try {
+        const messageList = document.getElementById('message-list');
+        if (!messageList) {
+            console.error('Message list element not found');
+            return;
         }
 
-        statusElement.appendChild(statusIcon);
-        metaElement.appendChild(statusElement);
+        if (!message) {
+            console.error('No message data provided');
+            return;
+        }
+
+        if (!message.content) {
+            console.warn('Message has no content');
+            return;
+        }
+
+        if (!currentUserId) {
+            console.warn('Current user ID not set');
+        }
+
+        const isOutgoing = message.sender_id === currentUserId;
+        console.log(`Adding ${isOutgoing ? 'outgoing' : 'incoming'} message:`, message);
+
+        // Create the message element
+        const messageElement = document.createElement('div');
+        messageElement.className = `message-item ${isOutgoing ? 'outgoing' : 'incoming'}`;
+
+        // Add data attributes for potential future reference
+        if (message.id) {
+            messageElement.dataset.messageId = message.id;
+        }
+
+        // Create the message content
+        const contentElement = document.createElement('div');
+        contentElement.className = 'message-content';
+        contentElement.textContent = message.content;
+
+        // Create the message meta information
+        const metaElement = document.createElement('div');
+        metaElement.className = 'message-meta';
+
+        // Add timestamp
+        const timeElement = document.createElement('span');
+        timeElement.className = 'message-time';
+
+        // Format the timestamp
+        try {
+            const timestamp = new Date(message.timestamp);
+            const hours = timestamp.getHours();
+            const minutes = timestamp.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+            timeElement.textContent = `${formattedHours}:${formattedMinutes} ${ampm}`;
+        } catch (error) {
+            console.warn('Error formatting timestamp:', error);
+            timeElement.textContent = 'Just now';
+        }
+
+        // Add read status for outgoing messages
+        if (isOutgoing) {
+            const statusElement = document.createElement('span');
+            statusElement.className = 'message-status';
+
+            const statusIcon = document.createElement('i');
+
+            if (message.is_pending) {
+                // Show clock icon for pending messages
+                statusIcon.className = 'fas fa-clock pending-indicator';
+                statusElement.setAttribute('aria-label', 'Pending');
+
+                // Add a tooltip
+                statusElement.title = 'Message will be sent when you are back online';
+            } else if (message.is_read) {
+                statusIcon.className = 'fas fa-check-double read-indicator';
+                statusElement.setAttribute('aria-label', 'Read');
+            } else {
+                statusIcon.className = 'fas fa-check';
+                statusElement.setAttribute('aria-label', 'Sent');
+            }
+
+            statusElement.appendChild(statusIcon);
+            metaElement.appendChild(statusElement);
+        }
+
+        // Assemble the message element
+        metaElement.prepend(timeElement);
+        messageElement.appendChild(contentElement);
+        messageElement.appendChild(metaElement);
+
+        // Add ARIA attributes for accessibility
+        messageElement.setAttribute('role', 'article');
+        messageElement.setAttribute('aria-label',
+            `${isOutgoing ? 'You' : 'Other user'} at ${timeElement.textContent}`);
+
+        // Check if we need to remove the empty message placeholder
+        const emptyMessages = messageList.querySelector('.empty-messages');
+        if (emptyMessages) {
+            emptyMessages.remove();
+        }
+
+        // Add the message to the chat
+        messageList.appendChild(messageElement);
+
+        // Scroll to the new message
+        messageList.scrollTop = messageList.scrollHeight;
+
+        // Add animation class after a small delay (for better animation)
+        setTimeout(() => {
+            messageElement.classList.add('visible');
+        }, 10);
+    } catch (error) {
+        console.error('Error adding message to chat:', error);
     }
-
-    // Assemble the message element
-    metaElement.prepend(timeElement);
-    messageElement.appendChild(contentElement);
-    messageElement.appendChild(metaElement);
-
-    // Add ARIA attributes for accessibility
-    messageElement.setAttribute('role', 'article');
-    messageElement.setAttribute('aria-label',
-        `${isOutgoing ? 'You' : 'Other user'} at ${formattedHours}:${formattedMinutes} ${ampm}`);
-
-    // Check if we need to remove the empty message placeholder
-    const emptyMessages = messageList.querySelector('.empty-messages');
-    if (emptyMessages) {
-        emptyMessages.remove();
-    }
-
-    // Add the message to the chat
-    messageList.appendChild(messageElement);
-
-    // Scroll to the new message
-    messageList.scrollTop = messageList.scrollHeight;
-
-    // Add animation class after a small delay (for better animation)
-    setTimeout(() => {
-        messageElement.classList.add('visible');
-    }, 10);
 }
 
 // Handle network status changes
@@ -700,10 +804,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize mobile menu toggle for chat sidebar
     const menuToggle = document.querySelector('.menu-toggle');
-    const chatSidebar = document.querySelector('.chat-sidebar');
+    const chatSidebar = document.querySelector('.contacts');
     const sidebarOverlay = document.querySelector('.sidebar-overlay');
 
     if (menuToggle && chatSidebar) {
+        console.log('Found menu toggle and chat sidebar');
         menuToggle.addEventListener('click', function() {
             chatSidebar.classList.toggle('active');
             if (sidebarOverlay) {
@@ -717,6 +822,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 sidebarOverlay.classList.remove('active');
             });
         }
+    } else {
+        console.log('Mobile menu elements not found:', {
+            menuToggle: !!menuToggle,
+            chatSidebar: !!chatSidebar,
+            sidebarOverlay: !!sidebarOverlay
+        });
     }
 
     // Add animation classes to message items
