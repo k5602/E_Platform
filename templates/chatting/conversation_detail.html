@@ -1,159 +1,504 @@
 {% extends 'chatting/base_chat.html' %}
 {% load static %}
 
-{% block title %}Chat with {{ other_user.username }} | E-Platform{% endblock %}
+{% block title %}Chat with {{ other_user.first_name }} {{ other_user.last_name }}{% endblock %}
 
 {% block chat_content %}
-<div class="container">
-    <div class="contacts">
-        <h3>
-            <a href="{% url 'chatting:chat_home' %}" class="back-to-chats">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            Conversations
-        </h3>
-        <div id="contacts-list">
-            {% if conversations %}
-                {% for conv in conversations %}
-                <a href="{% url 'chatting:conversation_detail' conv.id %}" class="contact-link">
-                    <div class="contact {% if conv.id == conversation.id %}active{% endif %} {% if conv.unread_count > 0 %}has-unread{% endif %}">
-                        <div class="contact-header">
-                            <span>{{ conv.other_user.username }}</span>
-                            <span class="status-indicator {% if conv.other_user.chat_status.is_online %}online{% else %}offline{% endif %}"
-                                  data-user-id="{{ conv.other_user.id }}"
-                                  title="{{ conv.other_user.chat_status.is_online|yesno:'Online,Offline' }}">
-                            </span>
-                        </div>
-                        <div class="conversation-preview">
-                            <span>
-                                {% if conv.messages.last %}
-                                    {{ conv.messages.last.content|truncatechars:30 }}
-                                {% else %}
-                                    Start a conversation
-                                {% endif %}
-                            </span>
-                            {% if conv.unread_count > 0 %}
-                                <span class="unread-badge">{{ conv.unread_count }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            {% else %}
-                <div class="no-contacts">
-                    <p>No conversations yet</p>
-                    <p>Start a new conversation by visiting the <a href="{% url 'chatting:users_list' %}">Users</a> page</p>
-                </div>
-            {% endif %}
-        </div>
+<div class="chat-container" role="main">
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" aria-hidden="true"></div>
 
-        <div class="contacts-footer">
-            <a href="{% url 'chatting:users_list' %}" class="new-chat-btn">
-                <i class="fas fa-plus"></i> New Chat
+    <!-- Sidebar - Conversation List -->
+    <div class="chat-sidebar" role="navigation" aria-label="Conversations">
+        <div class="sidebar-header">
+            <h1>Conversations</h1>
+            <a href="{% url 'chatting:users_list' %}" class="new-chat-btn" aria-label="Start a new chat">
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                <span>New Chat</span>
             </a>
         </div>
-    </div>
 
-    <div class="messages-container">
-        <div class="chat-header">
-            <button class="menu-toggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="current-chat-user">
-                <div class="profile-image">
-                    {% if other_user.profile_picture %}
-                        <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}" class="user-img">
-                    {% else %}
-                        <img src="{% static 'chatting/images/default_avatar.svg' %}" alt="{{ other_user.username }}" class="user-img">
-                    {% endif %}
-                    <span class="status-indicator {% if other_user.chat_status.is_online %}online{% else %}offline{% endif %}"
-                          data-user-id="{{ other_user.id }}">
-                    </span>
-                </div>
-                <div class="user-info">
-                    <h4>{{ other_user.get_full_name|default:other_user.username }}</h4>
-                    <div class="user-status">
-                        <span class="status-text">
-                            {% if other_user.chat_status.is_online %}
-                                Online
-                            {% else %}
-                                {% if other_user.chat_status.last_active %}
-                                    Last seen {{ other_user.chat_status.last_active|timesince }} ago
-                                {% else %}
-                                    Offline
-                                {% endif %}
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
+        <div class="search-container">
+            <div class="search-input-wrapper">
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                <input type="text" id="conversation-search" placeholder="Search conversations..." aria-label="Search conversations">
             </div>
         </div>
 
-        <div id="message-list" class="message-list">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="message-item {% if message.sender == request.user %}outgoing{% else %}incoming{% endif %}">
-                        <div class="message-content">
-                            {{ message.content }}
+        <div class="conversation-list" id="conversation-list" role="list">
+            {% if conversations %}
+                {% for conv in conversations %}
+                    <a href="{% url 'chatting:conversation_detail' conv.id %}" class="conversation-item{% if conv.id == conversation.id %} active{% endif %}" role="listitem" aria-current="{% if conv.id == conversation.id %}page{% endif %}">
+                        <div class="conversation-avatar">
+                            {% if conv.other_user.profile_picture %}
+                                <img src="{{ conv.other_user.profile_picture.url }}" alt="{{ conv.other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
+                            {% else %}
+                                <div class="default-avatar" aria-hidden="true">{{ conv.other_user.username|slice:":1"|upper }}</div>
+                            {% endif %}
+                            <span class="status-indicator {% if conv.other_user.chat_status.is_online %}online{% else %}offline{% endif %}" aria-hidden="true" data-user-id="{{ conv.other_user.id }}"></span>
                         </div>
-                        <div class="message-meta">
-                            <span class="message-time">{{ message.timestamp|time:"g:i A" }}</span>
-                            {% if message.sender == request.user %}
-                                <span class="message-status">
-                                    <i class="fas fa-{% if message.is_read %}check-double read-indicator{% else %}check{% endif %}"></i>
+                        <div class="conversation-info">
+                            <div class="conversation-name">
+                                {{ conv.other_user.first_name }} {{ conv.other_user.last_name }}
+                                <span class="conversation-time">
+                                    {% if conv.updated_at %}
+                                        {{ conv.updated_at|date:"h:i A" }}
+                                    {% endif %}
                                 </span>
+                            </div>
+                            <div class="conversation-preview">
+                                {% if conv.messages.last %}
+                                    <span class="{% if conv.messages.last.sender == request.user %}outgoing{% endif %}">
+                                        {{ conv.messages.last.content|truncatechars:30 }}
+                                    </span>
+                                {% else %}
+                                    <span class="no-messages">No messages yet</span>
+                                {% endif %}
+                                {% if conv.unread_count > 0 %}
+                                    <span class="unread-badge" aria-label="{{ conv.unread_count }} unread messages">{{ conv.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                <div class="no-conversations">
+                    <i class="fas fa-comments" aria-hidden="true"></i>
+                    <p>No conversations yet</p>
+                    <a href="{% url 'chatting:users_list' %}" class="start-chat-btn">Start a new chat</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content - Conversation Detail -->
+    <div class="chat-main" role="region" aria-label="Chat with {{ other_user.first_name }} {{ other_user.last_name }}">
+        <!-- Conversation Header -->
+        <div class="conversation-header">
+            <button class="menu-toggle" aria-label="Toggle sidebar menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+
+            <div class="conversation-user">
+                <div class="conversation-avatar">
+                    {% if other_user.profile_picture %}
+                        <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
+                    {% else %}
+                        <div class="default-avatar" aria-hidden="true">{{ other_user.username|slice:":1"|upper }}</div>
+                    {% endif %}
+                    <span class="status-indicator {% if other_user.chat_status.is_online %}online{% else %}offline{% endif %}"
+                          aria-hidden="true"
+                          data-user-id="{{ other_user.id }}"></span>
+                </div>
+                <div class="conversation-info">
+                    <h2>{{ other_user.first_name }} {{ other_user.last_name }}</h2>
+                    <p class="status-text" aria-live="polite">
+                        {% if other_user.chat_status.is_online %}
+                            Online
+                        {% else %}
+                            Last seen {{ other_user.chat_status.last_active|date:"M d, h:i A" }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="conversation-actions">
+                <button class="action-btn" id="info-btn" aria-label="View conversation information">
+                    <i class="fas fa-info-circle" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Message List -->
+        <div class="message-list" id="message-list" role="log" aria-label="Message history" aria-live="polite">
+            {% if messages|length > 0 %}
+                {% for message in messages %}
+                    <div class="message-item {% if message.sender == request.user %}outgoing{% else %}incoming{% endif %}"
+                         role="article"
+                         data-message-id="{{ message.id }}"
+                         aria-label="{% if message.sender == request.user %}You{% else %}{{ message.sender.first_name }}{% endif %} at {{ message.timestamp|date:'h:i A' }}">
+                        <div class="message-content">{{ message.content }}</div>
+                        <div class="message-meta">
+                            <span class="message-time">{{ message.timestamp|date:"h:i A" }}</span>
+                            {% if message.sender == request.user %}
+                                <span class="message-status" aria-label="{% if message.is_read %}Read{% else %}Sent{% endif %}">
+                                    {% if message.is_read %}
+                                        <i class="fas fa-check-double read-indicator" aria-hidden="true"></i>
+                                    {% else %}
+                                        <i class="fas fa-check" aria-hidden="true"></i>
+                                    {% endif %}
+                                </span>
+                                <div class="message-actions-toggle">
+                                    <button type="button" class="message-action-toggle" aria-label="Message options">
+                                        <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="message-actions-menu">
+                                        <button type="button" class="edit-message" aria-label="Edit message">
+                                            <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                                            <span class="feature-badge">Beta</span>
+                                        </button>
+                                        <button type="button" class="delete-message" aria-label="Delete message">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
+                                            <span class="feature-badge">Beta</span>
+                                        </button>
+                                    </div>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
                 {% endfor %}
             {% else %}
                 <div class="empty-messages">
+                    <div class="empty-message-icon">
+                        <i class="fas fa-comment-alt" aria-hidden="true"></i>
+                    </div>
                     <p>No messages yet. Start the conversation!</p>
                 </div>
             {% endif %}
-
-            <div id="typing-indicator" class="typing-indicator" style="display: none;">
-                {{ other_user.username }} is typing...
-            </div>
         </div>
 
-        <form id="message-form" class="message-input">
-            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
-            <button type="submit">Send</button>
-        </form>
+        <!-- Message Input -->
+        <div class="message-input-container">
+            <div class="typing-indicator" id="typing-indicator" aria-live="polite">
+                <span class="user-name">{{ other_user.first_name }}</span>
+                <div class="typing-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+            </div>
+            <form id="message-form" aria-label="Message form">
+                <div class="message-input-wrapper">
+                    <button type="button" id="emoji-button" class="message-action-btn" aria-label="Add emoji">
+                        <i class="far fa-smile" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="attachment-button" class="message-action-btn" aria-label="Add attachment" title="File attachment (Coming soon)">
+                        <i class="fas fa-paperclip" aria-hidden="true"></i>
+                        <span class="feature-badge-small">Soon</span>
+                    </button>
+                    <input type="text" id="message-input" placeholder="Type a message to {{ other_user.first_name }}..." autocomplete="off" aria-label="Type a message" autofocus>
+                    <button type="submit" id="send-button" aria-label="Send message">
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div id="emoji-picker" class="emoji-picker">
+                    <div class="emoji-picker-header">
+                        <span>Emojis</span>
+                        <button type="button" id="close-emoji" aria-label="Close emoji picker">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="emoji-container">
+                        <div class="emoji-category">
+                            <span class="emoji" data-emoji="😀">😀</span>
+                            <span class="emoji" data-emoji="😁">😁</span>
+                            <span class="emoji" data-emoji="😂">😂</span>
+                            <span class="emoji" data-emoji="🤣">🤣</span>
+                            <span class="emoji" data-emoji="😊">😊</span>
+                            <span class="emoji" data-emoji="😍">😍</span>
+                            <span class="emoji" data-emoji="🥰">🥰</span>
+                            <span class="emoji" data-emoji="😘">😘</span>
+                            <span class="emoji" data-emoji="👍">👍</span>
+                            <span class="emoji" data-emoji="👎">👎</span>
+                            <span class="emoji" data-emoji="❤️">❤️</span>
+                            <span class="emoji" data-emoji="🔥">🔥</span>
+                            <span class="emoji" data-emoji="👋">👋</span>
+                            <span class="emoji" data-emoji="👏">👏</span>
+                            <span class="emoji" data-emoji="🙏">🙏</span>
+                            <span class="emoji" data-emoji="🤔">🤔</span>
+                            <span class="emoji" data-emoji="😎">😎</span>
+                            <span class="emoji" data-emoji="🥳">🥳</span>
+                            <span class="emoji" data-emoji="😢">😢</span>
+                            <span class="emoji" data-emoji="😭">😭</span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block chat_js %}
-<script src="{% static 'chatting/js/chat.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize WebSocket connection
-        window.chatSocket = initializeChatWebsocket();
+        // Initialize the WebSocket connection
+        const chatSocket = initializeChatWebsocket();
 
-        // Initialize conversation
-        initializeConversation(
-            {{ conversation.id }},
-            {{ request.user.id }},
-            {{ other_user.id }}
-        );
+        // Initialize the conversation
+        initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});
 
         // Scroll to the bottom of the message list
-        const messageList = document.getElementById('message-list');
-        if (messageList) {
-            messageList.scrollTop = messageList.scrollHeight;
-        }
+        scrollToBottom();
 
-        // Add animation classes to message items
-        const messageItems = document.querySelectorAll('.message-item');
-        if (messageItems.length > 0) {
-            messageItems.forEach(function(item, index) {
-                setTimeout(function() {
-                    item.classList.add('visible');
-                }, index * 50); // Stagger the animations
-            });
-        }
+        // Initialize emoji picker
+        initializeEmojiPicker();
+
+        // Initialize file attachment
+        initializeFileAttachment();
+
+        // Initialize message actions (edit, delete)
+        initializeMessageActions();
     });
+
+    function scrollToBottom() {
+        const messageList = document.getElementById('message-list');
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    function initializeEmojiPicker() {
+        const emojiButton = document.getElementById('emoji-button');
+        const emojiPicker = document.getElementById('emoji-picker');
+        const closeEmojiButton = document.getElementById('close-emoji');
+        const emojis = document.querySelectorAll('.emoji');
+        const messageInput = document.getElementById('message-input');
+
+        // Toggle emoji picker
+        emojiButton.addEventListener('click', function() {
+            emojiPicker.classList.toggle('active');
+        });
+
+        // Close emoji picker
+        closeEmojiButton.addEventListener('click', function() {
+            emojiPicker.classList.remove('active');
+        });
+
+        // Add emoji to message input
+        emojis.forEach(function(emoji) {
+            emoji.addEventListener('click', function() {
+                const emojiChar = this.getAttribute('data-emoji');
+                const cursorPos = messageInput.selectionStart;
+                const textBefore = messageInput.value.substring(0, cursorPos);
+                const textAfter = messageInput.value.substring(cursorPos);
+
+                messageInput.value = textBefore + emojiChar + textAfter;
+                messageInput.focus();
+                messageInput.selectionStart = cursorPos + emojiChar.length;
+                messageInput.selectionEnd = cursorPos + emojiChar.length;
+
+                // Close emoji picker
+                emojiPicker.classList.remove('active');
+            });
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!emojiPicker.contains(e.target) && e.target !== emojiButton) {
+                emojiPicker.classList.remove('active');
+            }
+        });
+    }
+
+    function initializeFileAttachment() {
+        const attachmentButton = document.getElementById('attachment-button');
+        const messageForm = document.getElementById('message-form');
+
+        attachmentButton.addEventListener('click', function() {
+            // Create a file input element
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+            fileInput.style.display = 'none';
+
+            // Add file input to form
+            messageForm.appendChild(fileInput);
+
+            // Trigger file selection
+            fileInput.click();
+
+            // Handle file selection
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+
+                    // Check file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showToast('File size exceeds 5MB limit', 'error');
+                        return;
+                    }
+
+                    // Create attachment preview
+                    const attachmentPreview = document.createElement('div');
+                    attachmentPreview.className = 'attachment-preview';
+
+                    // Determine file icon based on type
+                    let fileIcon = 'fa-file';
+                    if (file.type.startsWith('image/')) {
+                        fileIcon = 'fa-file-image';
+                    } else if (file.type === 'application/pdf') {
+                        fileIcon = 'fa-file-pdf';
+                    } else if (file.type.includes('word') || file.type.includes('doc')) {
+                        fileIcon = 'fa-file-word';
+                    } else if (file.type === 'text/plain') {
+                        fileIcon = 'fa-file-alt';
+                    }
+
+                    // Format file size
+                    const fileSize = file.size < 1024 * 1024 
+                        ? Math.round(file.size / 1024) + ' KB' 
+                        : Math.round(file.size / (1024 * 1024) * 10) / 10 + ' MB';
+
+                    // Set preview content
+                    attachmentPreview.innerHTML = `
+                        <div class="file-icon">
+                            <i class="fas ${fileIcon}"></i>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${fileSize}</div>
+                        </div>
+                        <button type="button" class="remove-file" aria-label="Remove file">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+
+                    // Add preview before message input
+                    const messageInputContainer = document.querySelector('.message-input-container');
+                    messageInputContainer.insertBefore(attachmentPreview, messageForm);
+
+                    // Handle remove button
+                    const removeButton = attachmentPreview.querySelector('.remove-file');
+                    removeButton.addEventListener('click', function() {
+                        attachmentPreview.remove();
+                        fileInput.value = '';
+                    });
+
+                    // For now, just show a toast notification
+                    // In a real implementation, you would upload the file to the server
+                    showToast('File attachment feature is coming soon! Your files will be securely shared in the next update.', 'info');
+                }
+
+                // Remove the file input from the form
+                setTimeout(() => {
+                    fileInput.remove();
+                }, 1000);
+            });
+        });
+    }
+
+    function initializeMessageActions() {
+        const messageList = document.getElementById('message-list');
+
+        // Delegate event listener for message action toggles
+        messageList.addEventListener('click', function(e) {
+            // Handle action toggle button clicks
+            if (e.target.closest('.message-action-toggle')) {
+                const toggle = e.target.closest('.message-action-toggle');
+                const menu = toggle.nextElementSibling;
+
+                // Close all other open menus
+                document.querySelectorAll('.message-actions-menu.active').forEach(function(openMenu) {
+                    if (openMenu !== menu) {
+                        openMenu.classList.remove('active');
+                    }
+                });
+
+                // Toggle this menu
+                menu.classList.toggle('active');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle edit button clicks
+            if (e.target.closest('.edit-message')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageContent = messageItem.querySelector('.message-content');
+                const originalText = messageContent.textContent;
+                const messageId = messageItem.dataset.messageId;
+
+                // Add editing class to message
+                messageItem.classList.add('editing');
+
+                // Replace content with editable input
+                messageContent.innerHTML = `
+                    <textarea class="edit-textarea">${originalText}</textarea>
+                    <div class="edit-actions">
+                        <button type="button" class="cancel-edit">Cancel</button>
+                        <button type="button" class="save-edit">Save</button>
+                    </div>
+                `;
+
+                // Focus the textarea
+                const textarea = messageContent.querySelector('.edit-textarea');
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+                // Close the menu
+                e.target.closest('.message-actions-menu').classList.remove('active');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle delete button clicks
+            if (e.target.closest('.delete-message')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageId = messageItem.dataset.messageId;
+
+                // Show confirmation dialog
+                if (confirm('Are you sure you want to delete this message?')) {
+                    // For now, just remove the message from the UI
+                    // In a real implementation, you would send a delete request to the server
+                    messageItem.style.opacity = '0.5';
+                    setTimeout(() => {
+                        messageItem.remove();
+                    }, 300);
+
+                    showToast('Message deleted locally. Server-side deletion coming in the next update!', 'info');
+                }
+
+                // Close the menu
+                e.target.closest('.message-actions-menu').classList.remove('active');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle save edit button clicks
+            if (e.target.closest('.save-edit')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageContent = messageItem.querySelector('.message-content');
+                const textarea = messageContent.querySelector('.edit-textarea');
+                const newText = textarea.value.trim();
+                const messageId = messageItem.dataset.messageId;
+
+                if (newText) {
+                    // For now, just update the UI
+                    // In a real implementation, you would send an update request to the server
+                    messageContent.innerHTML = newText;
+                    messageItem.classList.remove('editing');
+
+                    showToast('Message updated locally. Server-side editing coming in the next update!', 'info');
+                } else {
+                    showToast('Message cannot be empty', 'error');
+                }
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle cancel edit button clicks
+            if (e.target.closest('.cancel-edit')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageContent = messageItem.querySelector('.message-content');
+                const originalText = messageContent.querySelector('.edit-textarea').value;
+
+                // Restore original content
+                messageContent.innerHTML = originalText;
+                messageItem.classList.remove('editing');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+        });
+
+        // Close menus when clicking outside
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.message-actions-menu.active').forEach(function(menu) {
+                menu.classList.remove('active');
+            });
+        });
+    }
 </script>
 {% endblock %}

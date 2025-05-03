@@ -365,9 +365,22 @@ function handleTypingIndicator(data) {
         const typingIndicator = document.getElementById('typing-indicator');
 
         if (data.is_typing) {
-            typingIndicator.style.display = 'block';
+            typingIndicator.classList.add('active');
+
+            // Auto-hide after 10 seconds in case we don't get the "stopped typing" event
+            if (window.typingTimeout) {
+                clearTimeout(window.typingTimeout);
+            }
+
+            window.typingTimeout = setTimeout(() => {
+                typingIndicator.classList.remove('active');
+            }, 10000);
         } else {
-            typingIndicator.style.display = 'none';
+            typingIndicator.classList.remove('active');
+
+            if (window.typingTimeout) {
+                clearTimeout(window.typingTimeout);
+            }
         }
     }
 }
@@ -806,7 +819,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize mobile menu toggle for chat sidebar
     const menuToggle = document.querySelector('.menu-toggle');
-    const chatSidebar = document.querySelector('.contacts');
+    const chatSidebar = document.querySelector('.chat-sidebar');
     const sidebarOverlay = document.querySelector('.sidebar-overlay');
 
     if (menuToggle && chatSidebar) {

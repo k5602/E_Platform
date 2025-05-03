@@ -5,6 +5,9 @@
 
 {% block chat_content %}
 <div class="chat-container" role="main">
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" aria-hidden="true"></div>
+
     <!-- Sidebar - Conversation List -->
     <div class="chat-sidebar" role="navigation" aria-label="Conversations">
         <div class="sidebar-header">
@@ -112,6 +115,7 @@
                 {% for message in messages %}
                     <div class="message-item {% if message.sender == request.user %}outgoing{% else %}incoming{% endif %}"
                          role="article"
+                         data-message-id="{{ message.id }}"
                          aria-label="{% if message.sender == request.user %}You{% else %}{{ message.sender.first_name }}{% endif %} at {{ message.timestamp|date:'h:i A' }}">
                         <div class="message-content">{{ message.content }}</div>
                         <div class="message-meta">
@@ -124,6 +128,21 @@
                                         <i class="fas fa-check" aria-hidden="true"></i>
                                     {% endif %}
                                 </span>
+                                <div class="message-actions-toggle">
+                                    <button type="button" class="message-action-toggle" aria-label="Message options">
+                                        <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="message-actions-menu">
+                                        <button type="button" class="edit-message" aria-label="Edit message">
+                                            <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                                            <span class="feature-badge">Beta</span>
+                                        </button>
+                                        <button type="button" class="delete-message" aria-label="Delete message">
+                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
+                                            <span class="feature-badge">Beta</span>
+                                        </button>
+                                    </div>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
@@ -141,14 +160,58 @@
         <!-- Message Input -->
         <div class="message-input-container">
             <div class="typing-indicator" id="typing-indicator" aria-live="polite">
-                <span>{{ other_user.first_name }} is typing...</span>
+                <span class="user-name">{{ other_user.first_name }}</span>
+                <div class="typing-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
             </div>
             <form id="message-form" aria-label="Message form">
                 <div class="message-input-wrapper">
-                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" aria-label="Type a message">
+                    <button type="button" id="emoji-button" class="message-action-btn" aria-label="Add emoji">
+                        <i class="far fa-smile" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" id="attachment-button" class="message-action-btn" aria-label="Add attachment" title="File attachment (Coming soon)">
+                        <i class="fas fa-paperclip" aria-hidden="true"></i>
+                        <span class="feature-badge-small">Soon</span>
+                    </button>
+                    <input type="text" id="message-input" placeholder="Type a message to {{ other_user.first_name }}..." autocomplete="off" aria-label="Type a message" autofocus>
                     <button type="submit" id="send-button" aria-label="Send message">
                         <i class="fas fa-paper-plane" aria-hidden="true"></i>
                     </button>
+                </div>
+                <div id="emoji-picker" class="emoji-picker">
+                    <div class="emoji-picker-header">
+                        <span>Emojis</span>
+                        <button type="button" id="close-emoji" aria-label="Close emoji picker">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="emoji-container">
+                        <div class="emoji-category">
+                            <span class="emoji" data-emoji="😀">😀</span>
+                            <span class="emoji" data-emoji="😁">😁</span>
+                            <span class="emoji" data-emoji="😂">😂</span>
+                            <span class="emoji" data-emoji="🤣">🤣</span>
+                            <span class="emoji" data-emoji="😊">😊</span>
+                            <span class="emoji" data-emoji="😍">😍</span>
+                            <span class="emoji" data-emoji="🥰">🥰</span>
+                            <span class="emoji" data-emoji="😘">😘</span>
+                            <span class="emoji" data-emoji="👍">👍</span>
+                            <span class="emoji" data-emoji="👎">👎</span>
+                            <span class="emoji" data-emoji="❤️">❤️</span>
+                            <span class="emoji" data-emoji="🔥">🔥</span>
+                            <span class="emoji" data-emoji="👋">👋</span>
+                            <span class="emoji" data-emoji="👏">👏</span>
+                            <span class="emoji" data-emoji="🙏">🙏</span>
+                            <span class="emoji" data-emoji="🤔">🤔</span>
+                            <span class="emoji" data-emoji="😎">😎</span>
+                            <span class="emoji" data-emoji="🥳">🥳</span>
+                            <span class="emoji" data-emoji="😢">😢</span>
+                            <span class="emoji" data-emoji="😭">😭</span>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -167,11 +230,275 @@
 
         // Scroll to the bottom of the message list
         scrollToBottom();
+
+        // Initialize emoji picker
+        initializeEmojiPicker();
+
+        // Initialize file attachment
+        initializeFileAttachment();
+
+        // Initialize message actions (edit, delete)
+        initializeMessageActions();
     });
 
     function scrollToBottom() {
         const messageList = document.getElementById('message-list');
         messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    function initializeEmojiPicker() {
+        const emojiButton = document.getElementById('emoji-button');
+        const emojiPicker = document.getElementById('emoji-picker');
+        const closeEmojiButton = document.getElementById('close-emoji');
+        const emojis = document.querySelectorAll('.emoji');
+        const messageInput = document.getElementById('message-input');
+
+        // Toggle emoji picker
+        emojiButton.addEventListener('click', function() {
+            emojiPicker.classList.toggle('active');
+        });
+
+        // Close emoji picker
+        closeEmojiButton.addEventListener('click', function() {
+            emojiPicker.classList.remove('active');
+        });
+
+        // Add emoji to message input
+        emojis.forEach(function(emoji) {
+            emoji.addEventListener('click', function() {
+                const emojiChar = this.getAttribute('data-emoji');
+                const cursorPos = messageInput.selectionStart;
+                const textBefore = messageInput.value.substring(0, cursorPos);
+                const textAfter = messageInput.value.substring(cursorPos);
+
+                messageInput.value = textBefore + emojiChar + textAfter;
+                messageInput.focus();
+                messageInput.selectionStart = cursorPos + emojiChar.length;
+                messageInput.selectionEnd = cursorPos + emojiChar.length;
+
+                // Close emoji picker
+                emojiPicker.classList.remove('active');
+            });
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!emojiPicker.contains(e.target) && e.target !== emojiButton) {
+                emojiPicker.classList.remove('active');
+            }
+        });
+    }
+
+    function initializeFileAttachment() {
+        const attachmentButton = document.getElementById('attachment-button');
+        const messageForm = document.getElementById('message-form');
+
+        attachmentButton.addEventListener('click', function() {
+            // Create a file input element
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+            fileInput.style.display = 'none';
+
+            // Add file input to form
+            messageForm.appendChild(fileInput);
+
+            // Trigger file selection
+            fileInput.click();
+
+            // Handle file selection
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+
+                    // Check file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showToast('File size exceeds 5MB limit', 'error');
+                        return;
+                    }
+
+                    // Create attachment preview
+                    const attachmentPreview = document.createElement('div');
+                    attachmentPreview.className = 'attachment-preview';
+
+                    // Determine file icon based on type
+                    let fileIcon = 'fa-file';
+                    if (file.type.startsWith('image/')) {
+                        fileIcon = 'fa-file-image';
+                    } else if (file.type === 'application/pdf') {
+                        fileIcon = 'fa-file-pdf';
+                    } else if (file.type.includes('word') || file.type.includes('doc')) {
+                        fileIcon = 'fa-file-word';
+                    } else if (file.type === 'text/plain') {
+                        fileIcon = 'fa-file-alt';
+                    }
+
+                    // Format file size
+                    const fileSize = file.size < 1024 * 1024 
+                        ? Math.round(file.size / 1024) + ' KB' 
+                        : Math.round(file.size / (1024 * 1024) * 10) / 10 + ' MB';
+
+                    // Set preview content
+                    attachmentPreview.innerHTML = `
+                        <div class="file-icon">
+                            <i class="fas ${fileIcon}"></i>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${fileSize}</div>
+                        </div>
+                        <button type="button" class="remove-file" aria-label="Remove file">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+
+                    // Add preview before message input
+                    const messageInputContainer = document.querySelector('.message-input-container');
+                    messageInputContainer.insertBefore(attachmentPreview, messageForm);
+
+                    // Handle remove button
+                    const removeButton = attachmentPreview.querySelector('.remove-file');
+                    removeButton.addEventListener('click', function() {
+                        attachmentPreview.remove();
+                        fileInput.value = '';
+                    });
+
+                    // For now, just show a toast notification
+                    // In a real implementation, you would upload the file to the server
+                    showToast('File attachment feature is coming soon! Your files will be securely shared in the next update.', 'info');
+                }
+
+                // Remove the file input from the form
+                setTimeout(() => {
+                    fileInput.remove();
+                }, 1000);
+            });
+        });
+    }
+
+    function initializeMessageActions() {
+        const messageList = document.getElementById('message-list');
+
+        // Delegate event listener for message action toggles
+        messageList.addEventListener('click', function(e) {
+            // Handle action toggle button clicks
+            if (e.target.closest('.message-action-toggle')) {
+                const toggle = e.target.closest('.message-action-toggle');
+                const menu = toggle.nextElementSibling;
+
+                // Close all other open menus
+                document.querySelectorAll('.message-actions-menu.active').forEach(function(openMenu) {
+                    if (openMenu !== menu) {
+                        openMenu.classList.remove('active');
+                    }
+                });
+
+                // Toggle this menu
+                menu.classList.toggle('active');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle edit button clicks
+            if (e.target.closest('.edit-message')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageContent = messageItem.querySelector('.message-content');
+                const originalText = messageContent.textContent;
+                const messageId = messageItem.dataset.messageId;
+
+                // Add editing class to message
+                messageItem.classList.add('editing');
+
+                // Replace content with editable input
+                messageContent.innerHTML = `
+                    <textarea class="edit-textarea">${originalText}</textarea>
+                    <div class="edit-actions">
+                        <button type="button" class="cancel-edit">Cancel</button>
+                        <button type="button" class="save-edit">Save</button>
+                    </div>
+                `;
+
+                // Focus the textarea
+                const textarea = messageContent.querySelector('.edit-textarea');
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+                // Close the menu
+                e.target.closest('.message-actions-menu').classList.remove('active');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle delete button clicks
+            if (e.target.closest('.delete-message')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageId = messageItem.dataset.messageId;
+
+                // Show confirmation dialog
+                if (confirm('Are you sure you want to delete this message?')) {
+                    // For now, just remove the message from the UI
+                    // In a real implementation, you would send a delete request to the server
+                    messageItem.style.opacity = '0.5';
+                    setTimeout(() => {
+                        messageItem.remove();
+                    }, 300);
+
+                    showToast('Message deleted locally. Server-side deletion coming in the next update!', 'info');
+                }
+
+                // Close the menu
+                e.target.closest('.message-actions-menu').classList.remove('active');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle save edit button clicks
+            if (e.target.closest('.save-edit')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageContent = messageItem.querySelector('.message-content');
+                const textarea = messageContent.querySelector('.edit-textarea');
+                const newText = textarea.value.trim();
+                const messageId = messageItem.dataset.messageId;
+
+                if (newText) {
+                    // For now, just update the UI
+                    // In a real implementation, you would send an update request to the server
+                    messageContent.innerHTML = newText;
+                    messageItem.classList.remove('editing');
+
+                    showToast('Message updated locally. Server-side editing coming in the next update!', 'info');
+                } else {
+                    showToast('Message cannot be empty', 'error');
+                }
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+
+            // Handle cancel edit button clicks
+            if (e.target.closest('.cancel-edit')) {
+                const messageItem = e.target.closest('.message-item');
+                const messageContent = messageItem.querySelector('.message-content');
+                const originalText = messageContent.querySelector('.edit-textarea').value;
+
+                // Restore original content
+                messageContent.innerHTML = originalText;
+                messageItem.classList.remove('editing');
+
+                // Prevent event from bubbling up
+                e.stopPropagation();
+            }
+        });
+
+        // Close menus when clicking outside
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.message-actions-menu.active').forEach(function(menu) {
+                menu.classList.remove('active');
+            });
+        });
     }
 </script>
 {% endblock %}
