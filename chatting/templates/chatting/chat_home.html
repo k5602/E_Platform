@@ -56,8 +56,8 @@
                                             {% if last_message.sender == request.user %}You: {% endif %}{{ last_message.content|truncatechars:30 }}
                                         </span>
                                         {% if not last_message.is_read and last_message.sender != request.user %}
-                                            <span class="unread-badge" aria-label="{{ conversation.messages.filter.count }} unread messages">
-                                                {{ conversation.messages.filter.count }}
+                                            <span class="unread-badge" aria-label="{{ conversation.unread_count }} unread messages">
+                                                {{ conversation.unread_count }}
                                             </span>
                                         {% endif %}
                                     {% endif %}

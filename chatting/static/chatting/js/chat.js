@@ -39,7 +39,7 @@ function initializeChatWebsocket() {
         console.log('IMPORTANT: Make sure both servers are running:');
         console.log('1. Django server on port 8000 for HTTP and static files');
         console.log('2. Daphne server on port 8001 for WebSockets');
-        console.log('Run ./run_servers.sh to start both servers together');
+        console.log('Run ./run_network_servers.sh to start both servers together');
     }
 
     const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/`;
