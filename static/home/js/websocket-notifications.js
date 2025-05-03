@@ -37,7 +37,9 @@ function initializeNotificationWebsocket(userId) {
     // - Django development server on port 8000 for HTTP and static files
     // - Daphne server on port 8001 for WebSockets only
     let wsHost = window.location.host;
-    if (wsHost.includes('127.0.0.1:8000') || wsHost.includes('localhost:8000')) {
+
+    // Handle local development and network testing
+    if (wsHost.includes(':8000')) {
         // In development, use port 8001 for WebSockets
         wsHost = wsHost.replace(':8000', ':8001');
         console.log('Development mode detected, using WebSocket host:', wsHost);

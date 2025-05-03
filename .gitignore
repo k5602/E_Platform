@@ -236,3 +236,4 @@ authentication/migrations/0002_customuser_profile_picture.py
 home/migrations/0002_add_technologies_to_profileproject.py
 authentication/migrations/0002_customuser_profile_picture.py
 run_servers.sh
+TESTING_CHAT_NETWORK.md
