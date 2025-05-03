@@ -268,22 +268,48 @@ The platform's modular architecture allows for continuous improvement and featur
 
    **Option 1: Use PostgreSQL (default)**
 
+   ```bash
+   sudo -u postgres psql
+   ```
    - Ensure PostgreSQL is installed and running
    - Create a PostgreSQL database named `e_platform_db`
    - Create a user with username `zero` and password `82821931003`
-   - Grant all privileges on the database to the user
+   - Set up proper schema permissions to avoid "permission denied for schema public" errors:
 
    ```sql
+   -- Create database and user
    CREATE DATABASE e_platform_db;
    CREATE USER zero WITH PASSWORD '82821931003';
+   
+   -- Make the user the owner of the database
+   ALTER DATABASE e_platform_db OWNER TO zero;
+   
+   -- Connect to the database to set schema permissions
+   \c e_platform_db
+   
+   -- Grant necessary schema permissions
+   GRANT ALL ON SCHEMA public TO zero;
    GRANT ALL PRIVILEGES ON DATABASE e_platform_db TO zero;
+   
+   -- Grant privileges on all tables (existing and future)
+   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO zero;
+   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO zero;
+   GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO zero;
+   
+   -- Set default privileges for future tables
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO zero;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO zero;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO zero;
    ```
 
-   - Use the provided script to run the application with PostgreSQL:
+    - Use the provided script to run the application with PostgreSQL (recommended):
 
    ```bash
+   chmod +x run_with_postgresql.sh  # Make the script executable
    ./run_with_postgresql.sh
    ```
+
+   This script automatically sets up all necessary database permissions and initializes the application.
 
    - Alternatively, you can set the environment variables manually:
 
@@ -310,9 +336,11 @@ The platform's modular architecture allows for continuous improvement and featur
 
    No additional setup is required for SQLite.
 
-6. **Apply migrations**
+6. **Initialize migrations**
 
    ```bash
+   python samples/initialize_migrations.py
+   python manage.py makemigrations
    python manage.py migrate
    ```
 
@@ -331,6 +359,59 @@ The platform's modular architecture allows for continuous improvement and featur
 9. **Access the application**
 
    Open your browser and navigate to `http://127.0.0.1:8000/`
+
+## Troubleshooting
+
+### PostgreSQL Permission Issues
+
+If you encounter permission errors when running migrations, such as "permission denied for schema public", follow these
+steps:
+
+1. Access PostgreSQL as a superuser:
+   ```bash
+   sudo -u postgres psql
+   ```
+
+2. Fix schema permissions:
+   ```sql
+   -- Connect to your database
+   \c e_platform_db
+   
+   -- Grant schema permissions
+   GRANT USAGE ON SCHEMA public TO zero;
+   GRANT CREATE ON SCHEMA public TO zero;
+   GRANT ALL PRIVILEGES ON SCHEMA public TO zero;
+   
+   -- Grant privileges on all tables (existing and future)
+   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO zero;
+   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO zero;
+   GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO zero;
+   
+   -- Set default privileges for future tables
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO zero;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO zero;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO zero;
+   ```
+
+3. If you're still experiencing issues, you may need to reset database ownership:
+   ```sql
+   ALTER DATABASE e_platform_db OWNER TO zero;
+   ```
+
+4. If all else fails, you can recreate the database:
+   ```sql
+   DROP DATABASE e_platform_db;
+   CREATE DATABASE e_platform_db;
+   ALTER DATABASE e_platform_db OWNER TO zero;
+   \c e_platform_db
+   GRANT ALL ON SCHEMA public TO zero;
+   ```
+
+### Other Common Issues
+
+- **Missing Dependencies**: Ensure all required packages are installed with `pip install -r requirements.txt`
+- **Migration Conflicts**: If you encounter migration conflicts, try `python manage.py migrate --fake-initial`
+- **Environment Variables**: Check that all environment variables are correctly set
 
 ## License
 
