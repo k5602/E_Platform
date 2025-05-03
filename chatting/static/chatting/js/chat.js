@@ -3,7 +3,8 @@
  * Enhanced with improved UI/UX and dark mode support
  */
 
-let chatSocket = null;
+// Define chatSocket as a global variable
+window.chatSocket = null;
 let currentConversationId = null;
 let currentUserId = null;
 let otherUserId = null;
@@ -18,9 +19,11 @@ const baseReconnectDelay = 1000; // 1 second
  * Initialize the WebSocket connection for chat
  */
 function initializeChatWebsocket() {
+    console.log('Initializing WebSocket connection...');
     // Close any existing connection
-    if (chatSocket !== null) {
-        chatSocket.close();
+    if (window.chatSocket !== null) {
+        window.chatSocket.close();
+        console.log('Closed existing WebSocket connection');
     }
 
     // Create a new WebSocket connection
@@ -50,11 +53,13 @@ function initializeChatWebsocket() {
     console.log('Current page URL:', window.location.href);
 
     try {
-        chatSocket = new WebSocket(wsUrl);
+        // Make sure we're using the global chatSocket variable
+        window.chatSocket = new WebSocket(wsUrl);
 
         // WebSocket event handlers
-        chatSocket.onopen = function() {
+        window.chatSocket.onopen = function() {
             console.log('Chat WebSocket connection established');
+            console.log('WebSocket readyState:', window.chatSocket.readyState);
 
             // Reset reconnect attempts on successful connection
             reconnectAttempts = 0;
@@ -66,7 +71,7 @@ function initializeChatWebsocket() {
             sendPendingMessages();
         };
 
-        chatSocket.onmessage = function(e) {
+        window.chatSocket.onmessage = function(e) {
             try {
                 const data = JSON.parse(e.data);
                 handleWebSocketMessage(data);
@@ -75,7 +80,7 @@ function initializeChatWebsocket() {
             }
         };
 
-        chatSocket.onclose = function(event) {
+        window.chatSocket.onclose = function(event) {
             // Check if the close was clean (code 1000 or 1001)
             const wasClean = event.code === 1000 || event.code === 1001;
 
@@ -122,11 +127,11 @@ function initializeChatWebsocket() {
             }
         };
 
-        chatSocket.onerror = function(e) {
+        window.chatSocket.onerror = function(e) {
             console.error('Chat WebSocket error:', e);
 
             // Log more detailed information
-            console.log('WebSocket readyState:', chatSocket.readyState);
+            console.log('WebSocket readyState:', window.chatSocket.readyState);
             console.log('WebSocket URL:', wsUrl);
 
             // Show error status
@@ -151,7 +156,7 @@ function initializeChatWebsocket() {
         }
     }
 
-    return chatSocket;
+    return window.chatSocket;
 }
 
 /**
@@ -207,11 +212,11 @@ function showConnectionStatus(status) {
 let pendingMessages = [];
 
 function sendPendingMessages() {
-    if (pendingMessages.length > 0 && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+    if (pendingMessages.length > 0 && window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
         console.log(`Sending ${pendingMessages.length} pending messages`);
 
         pendingMessages.forEach(message => {
-            chatSocket.send(JSON.stringify(message));
+            window.chatSocket.send(JSON.stringify(message));
         });
 
         // Clear the pending messages
@@ -241,8 +246,11 @@ function initializeConversation(conversationId, userId, otherUser) {
     const messageForm = document.getElementById('message-form');
     if (messageForm) {
         messageForm.addEventListener('submit', function(e) {
+            console.log('Form submitted');
             e.preventDefault();
             sendMessage();
+            console.log('Form submission prevented');
+            return false;
         });
     } else {
         console.warn('Message form element not found');
@@ -251,6 +259,7 @@ function initializeConversation(conversationId, userId, otherUser) {
     // Typing indicator
     const messageInput = document.getElementById('message-input');
     if (messageInput) {
+        // Add input event listener for typing indicator
         messageInput.addEventListener('input', function() {
             sendTypingIndicator(true);
 
@@ -263,6 +272,16 @@ function initializeConversation(conversationId, userId, otherUser) {
             typingTimeout = setTimeout(function() {
                 sendTypingIndicator(false);
             }, 3000);
+        });
+
+        // Add keypress event listener for Enter key
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                console.log('Enter key pressed');
+                e.preventDefault();
+                sendMessage();
+                console.log('Enter key press prevented');
+            }
         });
     } else {
         console.warn('Message input element not found');
@@ -464,6 +483,7 @@ function handleUserStatusUpdate(data) {
  * Send a new message
  */
 function sendMessage() {
+    console.log('sendMessage function called');
     const messageInput = document.getElementById('message-input');
     if (!messageInput) {
         console.error('Message input element not found');
@@ -486,11 +506,14 @@ function sendMessage() {
             'content': content
         };
 
-        // Check if we're connected
-        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+        // Check if we're connected - use window.chatSocket to ensure we're using the global variable
+        console.log('Checking WebSocket connection:', window.chatSocket ? 'exists' : 'null');
+        console.log('WebSocket readyState:', window.chatSocket ? window.chatSocket.readyState : 'N/A');
+        if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
+            console.log('WebSocket is open, sending message');
             try {
-                // Send the message through WebSocket
-                chatSocket.send(JSON.stringify(messageData));
+                // Send the message through WebSocket - use window.chatSocket to ensure we're using the global variable
+                window.chatSocket.send(JSON.stringify(messageData));
                 console.log('Message sent:', messageData);
 
                 // Add a temporary message to the UI
@@ -637,8 +660,8 @@ function showToast(message, type = 'info') {
  * Send a typing indicator update
  */
 function sendTypingIndicator(isTyping) {
-    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-        chatSocket.send(JSON.stringify({
+    if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
+        window.chatSocket.send(JSON.stringify({
             'type': 'typing',
             'conversation_id': currentConversationId,
             'is_typing': isTyping
@@ -650,8 +673,8 @@ function sendTypingIndicator(isTyping) {
  * Mark messages as read
  */
 function markMessagesAsRead() {
-    if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-        chatSocket.send(JSON.stringify({
+    if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
+        window.chatSocket.send(JSON.stringify({
             'type': 'read_messages',
             'conversation_id': currentConversationId
         }));
@@ -794,7 +817,7 @@ window.addEventListener('online', function() {
     showToast('You are back online', 'success');
 
     // Reconnect WebSocket if needed
-    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+    if (!window.chatSocket || window.chatSocket.readyState !== WebSocket.OPEN) {
         initializeChatWebsocket();
     }
 

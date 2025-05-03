@@ -167,7 +167,7 @@
                     <span class="typing-dot"></span>
                 </div>
             </div>
-            <form id="message-form" method="post" action="javascript:void(0);" aria-label="Message form">
+            <form id="message-form" method="post" action="#" onsubmit="return false;" aria-label="Message form">
                 <div class="message-input-wrapper">
                     <button type="button" id="emoji-button" class="message-action-btn" aria-label="Add emoji">
                         <i class="far fa-smile" aria-hidden="true"></i>
@@ -223,7 +223,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize the WebSocket connection
-        const chatSocket = initializeChatWebsocket();
+        initializeChatWebsocket();
 
         // Initialize the conversation
         initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});

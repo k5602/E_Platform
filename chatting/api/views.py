@@ -154,7 +154,8 @@ class AddMessageView(APIView):
         message = Message.objects.create(
             conversation=conversation,
             sender=request.user,
-            content=content
+            content=content,
+            is_read=True  # Messages are always read by the sender
         )
 
         # Update the conversation timestamp

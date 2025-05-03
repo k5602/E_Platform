@@ -322,7 +322,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message = Message.objects.create(
                 conversation_id=conversation_id,
                 sender_id=user_id,
-                content=content
+                content=content,
+                is_read=True  # Messages are always read by the sender
             )
 
             # Update conversation timestamp within the same transaction
