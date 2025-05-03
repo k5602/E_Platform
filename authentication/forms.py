@@ -72,7 +72,7 @@ class CustomUserCreationForm(UserCreationForm):
     )
     birthdate = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'input', 'type': 'date'}),
-        help_text='You must be between 17 and 40 years old to register.'
+        help_text='Students must be between 17 and 40 years old to register.'
     )
 
     class Meta:
@@ -92,17 +92,18 @@ class CustomUserCreationForm(UserCreationForm):
         if user_type == 'instructor' and instructor_access_code != settings.INSTRUCTOR_ACCESS_CODE:
             raise ValidationError('Instructor access code is incorrect')
 
-        # Age validation
-        if not birthdate:
-            raise ValidationError('Birthdate is required.')
+        # Age validation only for students
+        if user_type == 'student':
+            if not birthdate:
+                raise ValidationError('Birthdate is required for students.')
 
-        today = date.today()
-        age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+            today = date.today()
+            age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
-        if age < 17:
-            raise ValidationError('You must be at least 17 years old to register.')
+            if age < 17:
+                raise ValidationError('Students must be at least 17 years old to register.')
 
-        if age > 40:
-            raise ValidationError('You must be no older than 40 years old to register.')
+            if age > 40:
+                raise ValidationError('Students must be no older than 40 years old to register.')
 
         return cleaned_data
