@@ -262,8 +262,13 @@ The platform's modular architecture allows for continuous improvement and featur
    pip install -r requirements.txt
    ```
 
-5. **Set up PostgreSQL database**
+5. **Database Setup**
 
+   The application can work with either PostgreSQL or SQLite. By default, it uses PostgreSQL.
+
+   **Option 1: Use PostgreSQL (default)**
+
+   - Ensure PostgreSQL is installed and running
    - Create a PostgreSQL database named `e_platform_db`
    - Create a user with username `zero` and password `82821931003`
    - Grant all privileges on the database to the user
@@ -273,6 +278,37 @@ The platform's modular architecture allows for continuous improvement and featur
    CREATE USER zero WITH PASSWORD '82821931003';
    GRANT ALL PRIVILEGES ON DATABASE e_platform_db TO zero;
    ```
+
+   - Use the provided script to run the application with PostgreSQL:
+
+   ```bash
+   ./run_with_postgresql.sh
+   ```
+
+   - Alternatively, you can set the environment variables manually:
+
+   ```bash
+   export DB_ENGINE=postgresql
+   export DB_NAME=e_platform_db
+   export DB_USER=zero
+   export DB_PASSWORD=82821931003
+   export DB_HOST=localhost
+   export DB_PORT=5432
+   python manage.py migrate
+   python manage.py runserver
+   ```
+
+   **Option 2: Use SQLite**
+
+   To use SQLite instead of PostgreSQL, set the DB_ENGINE environment variable to 'sqlite3':
+
+   ```bash
+   export DB_ENGINE=sqlite3
+   python manage.py migrate
+   python manage.py runserver
+   ```
+
+   No additional setup is required for SQLite.
 
 6. **Apply migrations**
 

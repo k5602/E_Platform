@@ -93,16 +93,60 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'e_platform_db',
-        'USER': 'zero',
-        'PASSWORD': '82821931003',
-        'HOST': 'localhost',
-        'PORT': '5432',
+import os
+import sys
+
+# Database configuration
+# Use environment variables if available, otherwise use default values
+DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql')  # 'postgresql' or 'sqlite3'
+DB_NAME = os.environ.get('DB_NAME', 'e_platform_db')
+DB_USER = os.environ.get('DB_USER', 'zero')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '82821931003')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', '5432')
+
+# Configure database based on engine
+if DB_ENGINE == 'postgresql':
+    try:
+        import psycopg2
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': DB_NAME,
+                'USER': DB_USER,
+                'PASSWORD': DB_PASSWORD,
+                'HOST': DB_HOST,
+                'PORT': DB_PORT,
+                'CONN_MAX_AGE': 600,
+            }
+        }
+        # Test the connection
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port=DB_PORT
+        )
+        conn.close()
+        print("PostgreSQL connection successful")
+    except (ImportError, psycopg2.OperationalError) as e:
+        print(f"PostgreSQL connection failed: {e}")
+        print("Falling back to SQLite")
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+else:
+    # Use SQLite by default
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

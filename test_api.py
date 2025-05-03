@@ -4,17 +4,20 @@ Test script for the E-Platform REST API.
 This script tests the main API endpoints to ensure they are working correctly.
 """
 
-import requests
+import os
+import django
 import json
 import sys
 
-# Base URL for the API
-BASE_URL = 'http://localhost:8000'
+# Set up Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'E_Platform.settings')
+django.setup()
 
-# Headers for API requests
-headers = {
-    'Content-Type': 'application/json',
-}
+from django.test import Client
+from rest_framework.test import APIClient
+
+# Client for API requests
+client = APIClient()
 
 # Authentication token
 auth_token = None
@@ -27,9 +30,12 @@ def print_response(response, label=None):
 
     print(f"Status Code: {response.status_code}")
     try:
-        print(f"Response: {json.dumps(response.json(), indent=2)}")
-    except json.JSONDecodeError:
-        print(f"Response: {response.text}")
+        if hasattr(response, 'json'):
+            print(f"Response: {json.dumps(response.json(), indent=2)}")
+        else:
+            print(f"Response: {json.dumps(response.data, indent=2)}")
+    except (json.JSONDecodeError, AttributeError):
+        print(f"Response: {response.content.decode('utf-8')}")
 
 
 def test_register():
@@ -49,10 +55,10 @@ def test_register():
     }
 
     # Send registration request
-    response = requests.post(
-        f"{BASE_URL}/api/auth/register/",
-        headers=headers,
-        data=json.dumps(register_data)
+    response = client.post(
+        "/api/auth/register/",
+        data=json.dumps(register_data),
+        content_type='application/json'
     )
 
     print_response(response)
@@ -76,10 +82,10 @@ def test_login():
     }
 
     # Send login request
-    response = requests.post(
-        f"{BASE_URL}/api/auth/login/",
-        headers=headers,
-        data=json.dumps(login_data)
+    response = client.post(
+        "/api/auth/login/",
+        data=json.dumps(login_data),
+        content_type='application/json'
     )
 
     print_response(response)
@@ -96,15 +102,11 @@ def test_profile(token):
     """Test retrieving user profile."""
     print("\n=== Testing User Profile ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Send profile request
-    response = requests.get(
-        f"{BASE_URL}/api/auth/profile/",
-        headers=auth_headers
-    )
+    response = client.get("/api/auth/profile/")
 
     print_response(response)
 
@@ -113,14 +115,16 @@ def test_profile(token):
     else:
         print("Profile retrieval failed!")
 
+    # Clear credentials
+    client.credentials()
+
 
 def test_create_post(token):
     """Test creating a post."""
     print("\n=== Testing Post Creation ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Test data for post creation
     post_data = {
@@ -128,13 +132,16 @@ def test_create_post(token):
     }
 
     # Send post creation request
-    response = requests.post(
-        f"{BASE_URL}/api/posts/",
-        headers=auth_headers,
-        data=json.dumps(post_data)
+    response = client.post(
+        "/api/posts/",
+        data=json.dumps(post_data),
+        content_type='application/json'
     )
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 201:
         print("Post creation successful!")
@@ -148,17 +155,16 @@ def test_get_posts(token):
     """Test retrieving posts."""
     print("\n=== Testing Post Retrieval ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Send post retrieval request
-    response = requests.get(
-        f"{BASE_URL}/api/posts/",
-        headers=auth_headers
-    )
+    response = client.get("/api/posts/")
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 200:
         print("Post retrieval successful!")
@@ -170,9 +176,8 @@ def test_add_comment(token, post_id):
     """Test adding a comment to a post."""
     print("\n=== Testing Comment Creation ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Test data for comment creation
     comment_data = {
@@ -181,13 +186,16 @@ def test_add_comment(token, post_id):
     }
 
     # Send comment creation request
-    response = requests.post(
-        f"{BASE_URL}/api/comments/",
-        headers=auth_headers,
-        data=json.dumps(comment_data)
+    response = client.post(
+        "/api/comments/",
+        data=json.dumps(comment_data),
+        content_type='application/json'
     )
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 201:
         print("Comment creation successful!")
@@ -201,17 +209,16 @@ def test_like_post(token, post_id):
     """Test liking a post."""
     print("\n=== Testing Post Like ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Send like request
-    response = requests.post(
-        f"{BASE_URL}/api/posts/{post_id}/like/",
-        headers=auth_headers
-    )
+    response = client.post(f"/api/posts/{post_id}/like/")
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 200:
         print("Post like successful!")
@@ -223,17 +230,16 @@ def test_get_notifications(token):
     """Test retrieving notifications."""
     print("\n=== Testing Notification Retrieval ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Send notification retrieval request
-    response = requests.get(
-        f"{BASE_URL}/api/notifications/",
-        headers=auth_headers
-    )
+    response = client.get("/api/notifications/")
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 200:
         print("Notification retrieval successful!")
@@ -245,17 +251,16 @@ def test_mark_notification_read(token):
     """Test marking all notifications as read."""
     print("\n=== Testing Mark All Notifications as Read ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Send mark all read request
-    response = requests.post(
-        f"{BASE_URL}/api/notifications/mark_all_read/",
-        headers=auth_headers
-    )
+    response = client.post("/api/notifications/mark_all_read/")
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 200:
         print("Mark all notifications as read successful!")
@@ -267,17 +272,16 @@ def test_search_users(token):
     """Test searching for users."""
     print("\n=== Testing User Search ===")
 
-    # Update headers with authentication token
-    auth_headers = headers.copy()
-    auth_headers['Authorization'] = f"Bearer {token}"
+    # Set authentication token
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
 
     # Send user search request
-    response = requests.get(
-        f"{BASE_URL}/api/users/search/?q=test",
-        headers=auth_headers
-    )
+    response = client.get("/api/users/search/?q=test")
 
     print_response(response)
+
+    # Clear credentials
+    client.credentials()
 
     if response.status_code == 200:
         print("User search successful!")
