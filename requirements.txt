@@ -16,3 +16,7 @@ daphne
 channels==4.2.2
 channels-redis==4.2.1
 redis==5.2.1
+argon2-cffi>=21.3.0
+# Celery dependencies
+celery==5.3.0
+django-celery-beat

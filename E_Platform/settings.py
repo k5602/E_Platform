@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'home.middleware.GlobalErrorMiddleware',  # Custom middleware to handle various errors
+    'authentication.middleware.LoginRateLimitMiddleware',  # Rate limiting for login attempts
 ]
 
 ROOT_URLCONF = 'E_Platform.urls'
@@ -154,9 +155,16 @@ else:
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'OPTIONS': {
+            'user_attributes': ['username', 'first_name', 'last_name', 'email'],
+            'max_similarity': 0.7,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 10,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -164,6 +172,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+# Password Hashers
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
 
 
@@ -205,6 +221,45 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
+# Security settings
+# Always enable these security settings regardless of environment
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SAMESITE = 'Lax'  # Restrict cookie sending to same-site requests
+CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookie
+SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS protection
+SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking by denying framing
+
+# HTTPS-related settings - only enable in production
+if not DEBUG:  # Production environment
+    SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
+    CSRF_COOKIE_SECURE = True  # Only send CSRF cookie over HTTPS
+    SECURE_HSTS_SECONDS = 31536000  # Enable HSTS for 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Apply HSTS to subdomains
+    SECURE_HSTS_PRELOAD = True  # Allow preloading of HSTS settings
+    SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
+else:  # Development environment
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
+    # Disable HSTS in development
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+
+# Access codes for user types (should be stored in environment variables in production)
+ADMIN_ACCESS_CODE = os.environ.get('ADMIN_ACCESS_CODE', 'KFS2025')
+INSTRUCTOR_ACCESS_CODE = os.environ.get('INSTRUCTOR_ACCESS_CODE', 'INS2025')
+
+# Email settings for password reset
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@eplatform.com')
+
 # Django REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -225,11 +280,11 @@ REST_FRAMEWORK = {
 # JWT settings
 from datetime import timedelta
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': False,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Reduced from 1 day to 30 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Reduced from 7 days to 1 day
+    'ROTATE_REFRESH_TOKENS': True,  # Enable refresh token rotation
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
+    'UPDATE_LAST_LOGIN': True,  # Update last login timestamp
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
@@ -238,6 +293,7 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',  # JWT ID claim
 }
 
 # CORS settings

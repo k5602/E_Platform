@@ -173,6 +173,10 @@ Real-time features are implemented using Django Channels:
 - Password validation and secure storage
 - Permission-based access control
 - CSRF protection for web forms
+- HTTPS configuration with secure cookies
+- HTTP Strict Transport Security (HSTS)
+- Protection against XSS and content type sniffing
+- Clickjacking prevention with X-Frame-Options
 
 ## Development & Deployment
 
@@ -182,6 +186,36 @@ Real-time features are implemented using Django Channels:
 - PostgreSQL database
 - Required dependencies in requirements.txt
 - Development server with Django's runserver
+
+### SSL/HTTPS Configuration
+
+The application includes security settings for both development and production environments:
+
+#### Development Mode (DEBUG = True)
+
+In development mode, HTTPS-related security settings are automatically disabled to allow the application to run without
+SSL:
+
+- `SECURE_SSL_REDIRECT = False` - HTTP requests are not redirected to HTTPS
+- `SESSION_COOKIE_SECURE = False` - Cookies can be sent over HTTP
+- `CSRF_COOKIE_SECURE = False` - CSRF cookies can be sent over HTTP
+- HSTS settings are disabled
+
+This configuration allows you to run the application locally without SSL certificates.
+
+#### Production Mode (DEBUG = False)
+
+In production, all security settings are enabled by default:
+
+- `SECURE_SSL_REDIRECT = True` - All HTTP requests are redirected to HTTPS
+- `SESSION_COOKIE_SECURE = True` - Cookies are only sent over HTTPS
+- `CSRF_COOKIE_SECURE = True` - CSRF cookies are only sent over HTTPS
+- `SECURE_HSTS_SECONDS = 31536000` - HSTS is enabled for 1 year
+- `SECURE_HSTS_INCLUDE_SUBDOMAINS = True` - HSTS applies to subdomains
+- `SECURE_HSTS_PRELOAD = True` - HSTS preloading is enabled
+
+For production deployment, you must configure your web server (e.g., Nginx) with valid SSL certificates. Without proper
+SSL configuration, the application will show "connection secure failed" errors in browsers.
 
 ### Testing
 
@@ -196,6 +230,11 @@ Real-time features are implemented using Django Channels:
 - Database optimization and indexing
 - Web server (Gunicorn) with reverse proxy (Nginx)
 - Redis for production WebSocket channel layer
+- SSL certificate configuration:
+    - Obtain valid SSL certificates (e.g., Let's Encrypt)
+    - Configure Nginx to serve HTTPS traffic
+    - Set up proper SSL certificate renewal
+    - Ensure all security headers are properly set
 
 ## Future Roadmap
 
@@ -267,49 +306,26 @@ The platform's modular architecture allows for continuous improvement and featur
    The application can work with either PostgreSQL or SQLite. By default, it uses PostgreSQL.
 
    **Option 1: Use PostgreSQL (default)**
-
-   ```bash
-   sudo -u postgres psql
-   ```
+6.
+```bash
+sudo -u postgres psql
+```
    - Ensure PostgreSQL is installed and running
    - Create a PostgreSQL database named `e_platform_db`
    - Create a user with username `zero` and password `82821931003`
-   - Set up proper schema permissions to avoid "permission denied for schema public" errors:
+   - Grant all privileges on the database to the user
 
    ```sql
-   -- Create database and user
    CREATE DATABASE e_platform_db;
    CREATE USER zero WITH PASSWORD '82821931003';
-   
-   -- Make the user the owner of the database
-   ALTER DATABASE e_platform_db OWNER TO zero;
-   
-   -- Connect to the database to set schema permissions
-   \c e_platform_db
-   
-   -- Grant necessary schema permissions
-   GRANT ALL ON SCHEMA public TO zero;
    GRANT ALL PRIVILEGES ON DATABASE e_platform_db TO zero;
-   
-   -- Grant privileges on all tables (existing and future)
-   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO zero;
-   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO zero;
-   GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO zero;
-   
-   -- Set default privileges for future tables
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO zero;
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO zero;
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO zero;
    ```
 
-    - Use the provided script to run the application with PostgreSQL (recommended):
+    - Use the provided script to run the application with PostgreSQL:
 
    ```bash
-   chmod +x run_with_postgresql.sh  # Make the script executable
    ./run_with_postgresql.sh
    ```
-
-   This script automatically sets up all necessary database permissions and initializes the application.
 
    - Alternatively, you can set the environment variables manually:
 
@@ -339,7 +355,7 @@ The platform's modular architecture allows for continuous improvement and featur
 6. **Initialize migrations**
 
    ```bash
-   python samples/initialize_migrations.py
+   python initialize_migrations.py
    python manage.py makemigrations
    python manage.py migrate
    ```
@@ -360,58 +376,8 @@ The platform's modular architecture allows for continuous improvement and featur
 
    Open your browser and navigate to `http://127.0.0.1:8000/`
 
-## Troubleshooting
-
-### PostgreSQL Permission Issues
-
-If you encounter permission errors when running migrations, such as "permission denied for schema public", follow these
-steps:
-
-1. Access PostgreSQL as a superuser:
-   ```bash
-   sudo -u postgres psql
-   ```
-
-2. Fix schema permissions:
-   ```sql
-   -- Connect to your database
-   \c e_platform_db
-   
-   -- Grant schema permissions
-   GRANT USAGE ON SCHEMA public TO zero;
-   GRANT CREATE ON SCHEMA public TO zero;
-   GRANT ALL PRIVILEGES ON SCHEMA public TO zero;
-   
-   -- Grant privileges on all tables (existing and future)
-   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO zero;
-   GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO zero;
-   GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO zero;
-   
-   -- Set default privileges for future tables
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO zero;
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO zero;
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO zero;
-   ```
-
-3. If you're still experiencing issues, you may need to reset database ownership:
-   ```sql
-   ALTER DATABASE e_platform_db OWNER TO zero;
-   ```
-
-4. If all else fails, you can recreate the database:
-   ```sql
-   DROP DATABASE e_platform_db;
-   CREATE DATABASE e_platform_db;
-   ALTER DATABASE e_platform_db OWNER TO zero;
-   \c e_platform_db
-   GRANT ALL ON SCHEMA public TO zero;
-   ```
-
-### Other Common Issues
-
-- **Missing Dependencies**: Ensure all required packages are installed with `pip install -r requirements.txt`
-- **Migration Conflicts**: If you encounter migration conflicts, try `python manage.py migrate --fake-initial`
-- **Environment Variables**: Check that all environment variables are correctly set
+   Note: The application automatically disables HTTPS requirements in development mode (when DEBUG=True), allowing you
+   to access it via HTTP without SSL certificates.
 
 ## License
 

@@ -1,7 +1,10 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ValidationError
+
 from .models import CustomUser
+
 
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
@@ -24,26 +27,16 @@ class CustomAuthenticationForm(AuthenticationForm):
 
     def clean(self):
         """
-        Override the default clean method to provide more specific error messages.
+        Override the default clean method to provide generic error messages
+        that don't reveal whether a username exists or not.
         """
         try:
             return super().clean()
         except forms.ValidationError as e:
-            # Add more specific error messages
+            # Use a generic error message to prevent user enumeration
             if 'Please enter a correct username and password' in str(e):
-                # Check if username exists but password is wrong
-                username = self.cleaned_data.get('username')
-                if username and self.user_cache is None:
-                    try:
-                        from authentication.models import CustomUser
-                        user = CustomUser.objects.get(username=username)
-                        # User exists but password is wrong
-                        self.add_error('password', 'The password you entered is incorrect')
-                        return self.cleaned_data
-                    except CustomUser.DoesNotExist:
-                        # Username doesn't exist
-                        self.add_error('username', 'This username does not exist')
-                        return self.cleaned_data
+                self.add_error(None, 'Invalid username or password. Please try again.')
+                return self.cleaned_data
             # Re-raise the original error
             raise
 
@@ -89,10 +82,10 @@ class CustomUserCreationForm(UserCreationForm):
         admin_access_code = cleaned_data.get('admin_access_code')
         instructor_access_code = cleaned_data.get('instructor_access_code')
 
-        if user_type == 'admin' and admin_access_code != 'KFS2025':
+        if user_type == 'admin' and admin_access_code != settings.ADMIN_ACCESS_CODE:
             raise ValidationError('Admin access code is incorrect')
 
-        if user_type == 'instructor' and instructor_access_code != 'INS2025':
+        if user_type == 'instructor' and instructor_access_code != settings.INSTRUCTOR_ACCESS_CODE:
             raise ValidationError('Instructor access code is incorrect')
 
         return cleaned_data
