@@ -293,18 +293,20 @@ header{
 }
 
 .input-wrapper {
-  width: 100%;
-  max-width: 280px;
+  width: auto;
   position: relative;
   margin-bottom: 3px;
+  display: inline-block;
 }
 
 .username-wrapper {
   margin-bottom: 10px;
+  width: 100%;
 }
 
 .password-wrapper {
   margin-bottom: 3px;
+  width: 100%;
 }
 
 .input-wrapper .input {
@@ -314,7 +316,7 @@ header{
 }
 
 .password-wrapper .input {
-  padding-right: 30px; /* Make room for potential password toggle icon */
+  padding-right: 40px; /* Make room for eye icon */
 }
 
 .input-wrapper .input:focus {
@@ -322,32 +324,47 @@ header{
   box-shadow: 0 0 0 2px rgba(100, 91, 255, 0.12);
 }
 
-.show-password-label {
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
-  font-size: calc(var(--font-size-small) - 0.1rem);
-  color: #555;
-  margin-top: 5px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: color var(--transition-time) var(--transition-timing);
+  justify-content: center;
+  pointer-events: auto;
 }
 
-.show-password-label:hover {
-  color: var(--main_button);
+.eye-icon {
+  width: 18px;
+  height: 18px;
+  position: absolute;
+  transition: opacity var(--transition-time) var(--transition-timing),
+  transform var(--transition-time) var(--transition-timing);
 }
 
-.show-password-checkbox {
-  margin-right: 6px;
-  width: 14px;
-  height: 14px;
-  accent-color: var(--main_button);
-  cursor: pointer;
-  transition: all var(--transition-time) var(--transition-timing);
+.eye-open {
+  opacity: 0;
 }
 
-.show-password-checkbox:checked {
-  transform: scale(1.05);
+.eye-closed {
+  opacity: 1;
+}
+
+.password-visible .eye-open {
+  opacity: 1;
+}
+
+.password-visible .eye-closed {
+  opacity: 0;
+}
+
+.password-toggle:hover .eye-icon {
+  transform: scale(1.1);
 }
 
 /* forgot password */
@@ -605,10 +622,15 @@ button:hover .arrow:before {
     font-size: var(--font-size-medium);
   }
 
-  .input, .input-wrapper {
+  .input {
     max-width: 100%;
     padding: 0.55rem 0.7rem;
     font-size: calc(var(--font-size-small) - 0.1rem);
+    margin: 2px 0;
+  }
+
+  .input-wrapper {
+    max-width: 100%;
     margin: 2px 0;
   }
 
@@ -709,10 +731,14 @@ button:hover .arrow:before {
     font-size: calc(var(--font-size-large) + 0.4rem);
   }
 
-  .input, .input-wrapper {
+  .input {
     max-width: 320px;
     padding: 0.7rem 1rem;
     font-size: var(--font-size-small);
+  }
+
+  .input-wrapper {
+    max-width: 320px;
   }
 
   button {

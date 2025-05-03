@@ -59,8 +59,11 @@
                 </div>
                 <div class="input-wrapper password-wrapper">
                     {{ form.password }}
-                    <label class="show-password-label">
-                        <input type="checkbox" class="show-password-checkbox" tabindex="0"> Show Password
+                    <label class="password-toggle">
+                        <img src="{% static 'authentication/images/eye-closed.svg' %}" alt="Show Password"
+                             class="eye-icon eye-closed">
+                        <img src="{% static 'authentication/images/eye-open.svg' %}" alt="Hide Password"
+                             class="eye-icon eye-open">
                     </label>
                 </div>
                 <div class="forgot-password-container">

@@ -28,23 +28,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Show/hide password logic
-    const showPasswordCheckboxes = document.querySelectorAll('.show-password-checkbox');
-    showPasswordCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+    // Show/hide password logic with eye icon
+    const passwordToggles = document.querySelectorAll('.password-toggle');
+    passwordToggles.forEach(toggle => {
+        toggle.addEventListener('click', function () {
             // Find the closest password-wrapper parent and then find the input inside it
             const passwordWrapper = this.closest('.password-wrapper');
             if (passwordWrapper) {
                 const passwordInput = passwordWrapper.querySelector('input[type="password"], input[type="text"]');
                 if (passwordInput) {
-                    passwordInput.type = this.checked ? 'text' : 'password';
+                    // Toggle password visibility
+                    const isVisible = passwordInput.type === 'text';
+                    passwordInput.type = isVisible ? 'password' : 'text';
+
+                    // Toggle the password-visible class for styling
+                    passwordWrapper.classList.toggle('password-visible', !isVisible);
                 }
             }
         });
     });
 
     // Password strength evaluation
-    const passwordInput = document.getElementById('id_password1');
+    const passwordInput = document.querySelector('.password-field[name="password1"]');
     const strengthMeter = document.getElementById('password-strength-meter');
     const feedbackElement = document.getElementById('password-feedback');
 

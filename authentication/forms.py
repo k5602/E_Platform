@@ -1,3 +1,5 @@
+from datetime import date
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
@@ -12,7 +14,7 @@ class CustomAuthenticationForm(AuthenticationForm):
         error_messages={'required': 'Please enter your username'}
     )
     password = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'input', 'placeholder': 'Password'}),
+        widget=forms.PasswordInput(attrs={'class': 'input password-field', 'placeholder': 'Password'}),
         error_messages={'required': 'Please enter your password'}
     )
     remember_me = forms.BooleanField(
@@ -51,10 +53,10 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.TextInput(attrs={'class': 'input', 'placeholder': 'Username'})
     )
     password1 = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'input', 'placeholder': 'Password'})
+        widget=forms.PasswordInput(attrs={'class': 'input password-field', 'placeholder': 'Password'})
     )
     password2 = forms.CharField(
-        widget=forms.PasswordInput(attrs={'class': 'input', 'placeholder': 'Confirm Password'})
+        widget=forms.PasswordInput(attrs={'class': 'input password-field', 'placeholder': 'Confirm Password'})
     )
     user_type = forms.ChoiceField(
         choices=CustomUser.USER_TYPE_CHOICES,
@@ -69,7 +71,8 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.PasswordInput(attrs={'class': 'input', 'placeholder': 'Instructor Access Code'})
     )
     birthdate = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'input', 'type': 'date'})
+        widget=forms.DateInput(attrs={'class': 'input', 'type': 'date'}),
+        help_text='You must be between 17 and 40 years old to register.'
     )
 
     class Meta:
@@ -81,11 +84,25 @@ class CustomUserCreationForm(UserCreationForm):
         user_type = cleaned_data.get('user_type')
         admin_access_code = cleaned_data.get('admin_access_code')
         instructor_access_code = cleaned_data.get('instructor_access_code')
+        birthdate = cleaned_data.get('birthdate')
 
         if user_type == 'admin' and admin_access_code != settings.ADMIN_ACCESS_CODE:
             raise ValidationError('Admin access code is incorrect')
 
         if user_type == 'instructor' and instructor_access_code != settings.INSTRUCTOR_ACCESS_CODE:
             raise ValidationError('Instructor access code is incorrect')
+
+        # Age validation
+        if not birthdate:
+            raise ValidationError('Birthdate is required.')
+
+        today = date.today()
+        age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+
+        if age < 17:
+            raise ValidationError('You must be at least 17 years old to register.')
+
+        if age > 40:
+            raise ValidationError('You must be no older than 40 years old to register.')
 
         return cleaned_data

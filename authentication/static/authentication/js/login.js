@@ -57,18 +57,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { once: true });
     }
 
-    // Show/hide password logic
-    const showPasswordCheckbox = document.querySelector('.show-password-checkbox');
-    if (showPasswordCheckbox) {
-        showPasswordCheckbox.addEventListener('change', function() {
+    // Show/hide password logic with eye icon
+    const passwordToggles = document.querySelectorAll('.password-toggle');
+    passwordToggles.forEach(toggle => {
+        toggle.addEventListener('click', function () {
             // Find the closest password-wrapper parent and then find the input inside it
             const passwordWrapper = this.closest('.password-wrapper');
             if (passwordWrapper) {
                 const passwordInput = passwordWrapper.querySelector('input[type="password"], input[type="text"]');
                 if (passwordInput) {
-                    passwordInput.type = this.checked ? 'text' : 'password';
+                    // Toggle password visibility
+                    const isVisible = passwordInput.type === 'text';
+                    passwordInput.type = isVisible ? 'password' : 'text';
+
+                    // Toggle the password-visible class for styling
+                    passwordWrapper.classList.toggle('password-visible', !isVisible);
                 }
             }
         });
-    }
+    });
 });

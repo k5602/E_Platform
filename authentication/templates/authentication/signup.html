@@ -61,18 +61,24 @@
                 </div>
                 <div class="password-wrapper">
                     {{ form.password1 }}
+                    <label class="password-toggle">
+                        <img src="{% static 'authentication/images/eye-closed.svg' %}" alt="Show Password"
+                             class="eye-icon eye-closed">
+                        <img src="{% static 'authentication/images/eye-open.svg' %}" alt="Hide Password"
+                             class="eye-icon eye-open">
+                    </label>
                     <div class="password-strength">
                         <meter id="password-strength-meter" min="0" max="6" value="0" aria-label="Password strength"></meter>
                         <p id="password-feedback" class="mt-1"></p>
                     </div>
-                    <label class="show-password-label">
-                        <input type="checkbox" class="show-password-checkbox" tabindex="0"> Show Password
-                    </label>
                 </div>
                 <div class="password-wrapper">
                     {{ form.password2 }}
-                    <label class="show-password-label">
-                        <input type="checkbox" class="show-password-checkbox" tabindex="0"> Show Password
+                    <label class="password-toggle">
+                        <img src="{% static 'authentication/images/eye-closed.svg' %}" alt="Show Password"
+                             class="eye-icon eye-closed">
+                        <img src="{% static 'authentication/images/eye-open.svg' %}" alt="Hide Password"
+                             class="eye-icon eye-open">
                     </label>
                 </div>
                 {{ form.birthdate }}
