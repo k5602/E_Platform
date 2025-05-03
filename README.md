@@ -386,3 +386,7 @@ sudo -u postgres psql
 ## Credits
 
 Developed as an educational platform prototype with AI augmentation capabilities.
+
+## Dedication
+
+For My Love Sara.
