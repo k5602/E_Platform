@@ -21,12 +21,16 @@ const baseReconnectDelay = 1000; // 1 second
 function initializeChatWebsocket() {
     console.log('Initializing WebSocket connection...');
     // Close any existing connection
-    if (window.chatSocket !== null) {
-        window.chatSocket.close();
-        console.log('Closed existing WebSocket connection');
+    if (window.chatSocket !== null && window.chatSocket !== undefined) {
+        try {
+            window.chatSocket.close();
+            console.log('Closed existing WebSocket connection');
+        } catch (error) {
+            console.error('Error closing existing WebSocket connection:', error);
+        }
     }
 
-    // Create a new WebSocket connection
+    // Create a new WebSocket connection with CSRF protection
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
     // In development mode, we use a dual-server setup:
@@ -45,7 +49,31 @@ function initializeChatWebsocket() {
         console.log('Run ./run_network_servers.sh to start both servers together');
     }
 
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/`;
+    // Get CSRF token from cookie or Django's csrftoken input
+    function getCSRFToken() {
+        // Try to get from cookie first
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+
+        if (cookieValue) {
+            return cookieValue;
+        }
+
+        // If not in cookie, try to get from hidden input
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+
+        console.error('CSRF token not found. WebSocket connection may fail.');
+        return '';
+    }
+
+    // Add CSRF token to WebSocket URL as a query parameter
+    const csrfToken = getCSRFToken();
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/?csrf_token=${csrfToken}`;
 
     console.log('Attempting to connect to WebSocket at:', wsUrl);
 
@@ -55,6 +83,7 @@ function initializeChatWebsocket() {
     try {
         // Make sure we're using the global chatSocket variable
         window.chatSocket = new WebSocket(wsUrl);
+        console.log('WebSocket created:', window.chatSocket);
 
         // WebSocket event handlers
         window.chatSocket.onopen = function() {
@@ -131,7 +160,7 @@ function initializeChatWebsocket() {
             console.error('Chat WebSocket error:', e);
 
             // Log more detailed information
-            console.log('WebSocket readyState:', window.chatSocket.readyState);
+            console.log('WebSocket readyState:', window.chatSocket ? window.chatSocket.readyState : 'N/A');
             console.log('WebSocket URL:', wsUrl);
 
             // Show error status
@@ -144,11 +173,15 @@ function initializeChatWebsocket() {
         };
     } catch (error) {
         console.error('Error creating WebSocket connection:', error);
+        console.error('Error details:', error.message);
+        console.error('Stack trace:', error.stack);
 
         // Attempt to reconnect with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
             const delay = Math.min(baseReconnectDelay * Math.pow(1.5, reconnectAttempts), 30000);
             reconnectAttempts++;
+
+            showToast(`Error creating WebSocket connection. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
 
             setTimeout(function() {
                 initializeChatWebsocket();
@@ -212,15 +245,69 @@ function showConnectionStatus(status) {
 let pendingMessages = [];
 
 function sendPendingMessages() {
-    if (pendingMessages.length > 0 && window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
+    // Check if we have any pending messages
+    if (pendingMessages.length === 0) {
+        console.log('No pending messages to send');
+        return;
+    }
+
+    // Check WebSocket connection status
+    if (!window.chatSocket) {
+        console.warn('Cannot send pending messages: WebSocket not initialized');
+        // Try to initialize the WebSocket
+        window.chatSocket = initializeChatWebsocket();
+        return;
+    }
+
+    // Send pending messages if WebSocket is open
+    if (window.chatSocket.readyState === WebSocket.OPEN) {
         console.log(`Sending ${pendingMessages.length} pending messages`);
 
-        pendingMessages.forEach(message => {
-            window.chatSocket.send(JSON.stringify(message));
+        // Create a copy of the pending messages array
+        const messagesToSend = [...pendingMessages];
+
+        // Clear the pending messages array before sending
+        // This prevents messages from being added to the array while we're sending
+        pendingMessages = [];
+
+        // Send each message
+        messagesToSend.forEach(message => {
+            try {
+                window.chatSocket.send(JSON.stringify(message));
+                console.log('Pending message sent:', message);
+
+                // Update UI for this message if it's in the current conversation
+                if (message.type === 'chat_message' && message.conversation_id === currentConversationId) {
+                    // Find the pending message in the UI and update its status
+                    const messageElements = document.querySelectorAll('.message-item.outgoing.pending');
+                    messageElements.forEach(element => {
+                        const contentElement = element.querySelector('.message-content');
+                        if (contentElement && contentElement.textContent === message.content) {
+                            // Remove pending class and update status icon
+                            element.classList.remove('pending');
+                            const statusElement = element.querySelector('.message-status');
+                            if (statusElement) {
+                                statusElement.innerHTML = '<i class="fas fa-check"></i>';
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error sending pending message:', error);
+                // Add the message back to the pending messages array
+                pendingMessages.push(message);
+            }
         });
 
-        // Clear the pending messages
-        pendingMessages = [];
+        // Show success message if all messages were sent
+        if (pendingMessages.length === 0) {
+            console.log('All pending messages sent successfully');
+            showToast('Your offline messages have been sent', 'success');
+        } else {
+            console.warn(`${pendingMessages.length} messages could not be sent and will be retried later`);
+        }
+    } else {
+        console.warn('Cannot send pending messages: WebSocket not open (readyState:', window.chatSocket.readyState, ')');
     }
 }
 
@@ -228,11 +315,18 @@ function sendPendingMessages() {
  * Initialize a conversation and its event listeners
  */
 function initializeConversation(conversationId, userId, otherUser) {
+    // Store conversation information in global variables
     currentConversationId = conversationId;
     currentUserId = userId;
     otherUserId = otherUser;
 
     console.log(`Initializing conversation: ${conversationId} between user ${userId} and ${otherUser}`);
+
+    // Make sure WebSocket is initialized
+    if (!window.chatSocket || window.chatSocket.readyState === WebSocket.CLOSED) {
+        console.log('WebSocket not initialized or closed, initializing now');
+        window.chatSocket = initializeChatWebsocket();
+    }
 
     // Hide typing indicator initially
     const typingIndicator = document.getElementById('typing-indicator');
@@ -245,13 +339,21 @@ function initializeConversation(conversationId, userId, otherUser) {
     // Form submission event
     const messageForm = document.getElementById('message-form');
     if (messageForm) {
-        messageForm.addEventListener('submit', function(e) {
+        // Remove any existing event listeners to prevent duplicates
+        const newMessageForm = messageForm.cloneNode(true);
+        messageForm.parentNode.replaceChild(newMessageForm, messageForm);
+
+        // Add event listener to the new form
+        newMessageForm.addEventListener('submit', function (e) {
             console.log('Form submitted');
             e.preventDefault();
             sendMessage();
             console.log('Form submission prevented');
             return false;
         });
+
+        // Store reference to the new form
+        window.messageForm = newMessageForm;
     } else {
         console.warn('Message form element not found');
     }
@@ -259,8 +361,17 @@ function initializeConversation(conversationId, userId, otherUser) {
     // Typing indicator
     const messageInput = document.getElementById('message-input');
     if (messageInput) {
+        // Focus the input field
+        setTimeout(() => {
+            messageInput.focus();
+        }, 500);
+
+        // Remove any existing event listeners to prevent duplicates
+        const newMessageInput = messageInput.cloneNode(true);
+        messageInput.parentNode.replaceChild(newMessageInput, messageInput);
+
         // Add input event listener for typing indicator
-        messageInput.addEventListener('input', function() {
+        newMessageInput.addEventListener('input', function () {
             sendTypingIndicator(true);
 
             // Clear existing timeout
@@ -275,7 +386,7 @@ function initializeConversation(conversationId, userId, otherUser) {
         });
 
         // Add keypress event listener for Enter key
-        messageInput.addEventListener('keypress', function(e) {
+        newMessageInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 console.log('Enter key pressed');
                 e.preventDefault();
@@ -283,12 +394,35 @@ function initializeConversation(conversationId, userId, otherUser) {
                 console.log('Enter key press prevented');
             }
         });
+
+        // Store reference to the new input
+        window.messageInput = newMessageInput;
     } else {
         console.warn('Message input element not found');
     }
 
+    // Add send button click event
+    const sendButton = document.getElementById('send-button');
+    if (sendButton) {
+        // Remove any existing event listeners to prevent duplicates
+        const newSendButton = sendButton.cloneNode(true);
+        sendButton.parentNode.replaceChild(newSendButton, sendButton);
+
+        // Add event listener to the new button
+        newSendButton.addEventListener('click', function (e) {
+            console.log('Send button clicked');
+            e.preventDefault();
+            sendMessage();
+        });
+    }
+
     // Mark messages as read when the page loads
     markMessagesAsRead();
+
+    // Send any pending messages
+    sendPendingMessages();
+
+    console.log('Conversation initialization complete');
 }
 
 /**
@@ -509,6 +643,40 @@ function sendMessage() {
         // Check if we're connected - use window.chatSocket to ensure we're using the global variable
         console.log('Checking WebSocket connection:', window.chatSocket ? 'exists' : 'null');
         console.log('WebSocket readyState:', window.chatSocket ? window.chatSocket.readyState : 'N/A');
+
+        // If WebSocket is not initialized or closed, try to initialize it
+        if (!window.chatSocket || window.chatSocket.readyState === WebSocket.CLOSED) {
+            console.log('WebSocket not initialized or closed, initializing now');
+            window.chatSocket = initializeChatWebsocket();
+
+            // Store the message to send after connection is established
+            pendingMessages.push(messageData);
+
+            // Add a temporary message to the UI with pending indicator
+            const tempMessage = {
+                sender_id: currentUserId,
+                content: content,
+                timestamp: new Date().toISOString(),
+                is_read: false,
+                is_pending: true
+            };
+            addMessageToChat(tempMessage);
+
+            // Clear the input
+            messageInput.value = '';
+
+            // Reset typing indicator
+            if (typingTimeout) {
+                clearTimeout(typingTimeout);
+            }
+            sendTypingIndicator(false);
+
+            // Focus the input again
+            messageInput.focus();
+
+            return;
+        }
+
         if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
             console.log('WebSocket is open, sending message');
             try {
@@ -528,6 +696,23 @@ function sendMessage() {
                 console.error('Error sending message:', error);
                 showToast('Error sending message. Please try again.', 'error');
             }
+        } else if (window.chatSocket && window.chatSocket.readyState === WebSocket.CONNECTING) {
+            console.log('WebSocket is connecting, storing message for later');
+            // We're connecting, store the message to send later
+            pendingMessages.push(messageData);
+
+            // Add a temporary message to the UI with pending indicator
+            const tempMessage = {
+                sender_id: currentUserId,
+                content: content,
+                timestamp: new Date().toISOString(),
+                is_read: false,
+                is_pending: true
+            };
+            addMessageToChat(tempMessage);
+
+            // Show connecting toast
+            showToast('Connecting to chat server. Your message will be sent when connected.', 'info');
         } else {
             console.log('WebSocket not connected, storing message for later');
             // We're offline, store the message to send later
@@ -660,12 +845,37 @@ function showToast(message, type = 'info') {
  * Send a typing indicator update
  */
 function sendTypingIndicator(isTyping) {
-    if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
-        window.chatSocket.send(JSON.stringify({
-            'type': 'typing',
-            'conversation_id': currentConversationId,
-            'is_typing': isTyping
-        }));
+    // Only send typing indicator if we have a conversation ID
+    if (!currentConversationId) {
+        console.warn('Cannot send typing indicator: No conversation ID set');
+        return;
+    }
+
+    // Prepare the typing indicator data
+    const typingData = {
+        'type': 'typing',
+        'conversation_id': currentConversationId,
+        'is_typing': isTyping
+    };
+
+    // Check WebSocket connection status
+    if (!window.chatSocket) {
+        console.warn('Cannot send typing indicator: WebSocket not initialized');
+        // Try to initialize the WebSocket
+        window.chatSocket = initializeChatWebsocket();
+        return;
+    }
+
+    // Send typing indicator if WebSocket is open
+    if (window.chatSocket.readyState === WebSocket.OPEN) {
+        try {
+            window.chatSocket.send(JSON.stringify(typingData));
+            console.log('Typing indicator sent:', isTyping);
+        } catch (error) {
+            console.error('Error sending typing indicator:', error);
+        }
+    } else {
+        console.warn('Cannot send typing indicator: WebSocket not open (readyState:', window.chatSocket.readyState, ')');
     }
 }
 
@@ -673,20 +883,45 @@ function sendTypingIndicator(isTyping) {
  * Mark messages as read
  */
 function markMessagesAsRead() {
-    if (window.chatSocket && window.chatSocket.readyState === WebSocket.OPEN) {
-        window.chatSocket.send(JSON.stringify({
-            'type': 'read_messages',
-            'conversation_id': currentConversationId
-        }));
+    // Only mark messages as read if we have a conversation ID
+    if (!currentConversationId) {
+        console.warn('Cannot mark messages as read: No conversation ID set');
+        return;
+    }
 
-        // Remove unread badge from this conversation in the list
-        const conversationItem = document.querySelector(`.conversation-item[href*="${currentConversationId}"]`);
-        if (conversationItem) {
-            const unreadBadge = conversationItem.querySelector('.unread-badge');
-            if (unreadBadge) {
-                unreadBadge.remove();
+    // Prepare the read messages data
+    const readData = {
+        'type': 'read_messages',
+        'conversation_id': currentConversationId
+    };
+
+    // Check WebSocket connection status
+    if (!window.chatSocket) {
+        console.warn('Cannot mark messages as read: WebSocket not initialized');
+        // Try to initialize the WebSocket
+        window.chatSocket = initializeChatWebsocket();
+        return;
+    }
+
+    // Send read messages notification if WebSocket is open
+    if (window.chatSocket.readyState === WebSocket.OPEN) {
+        try {
+            window.chatSocket.send(JSON.stringify(readData));
+            console.log('Messages marked as read for conversation:', currentConversationId);
+
+            // Remove unread badge from this conversation in the list
+            const conversationItem = document.querySelector(`.conversation-item[href*="${currentConversationId}"]`);
+            if (conversationItem) {
+                const unreadBadge = conversationItem.querySelector('.unread-badge');
+                if (unreadBadge) {
+                    unreadBadge.remove();
+                }
             }
+        } catch (error) {
+            console.error('Error marking messages as read:', error);
         }
+    } else {
+        console.warn('Cannot mark messages as read: WebSocket not open (readyState:', window.chatSocket.readyState, ')');
     }
 }
 
@@ -730,7 +965,54 @@ function addMessageToChat(message) {
         // Create the message content
         const contentElement = document.createElement('div');
         contentElement.className = 'message-content';
+
+        // Use textContent instead of innerHTML to prevent XSS attacks
+        // The server should already sanitize content, but this is an additional safety measure
         contentElement.textContent = message.content;
+
+        // Apply simple text formatting (convert URLs to links)
+        if (message.content) {
+            // First create the text node safely
+            contentElement.textContent = message.content;
+
+            // Then find and replace URLs with actual links
+            const contentText = contentElement.textContent;
+            contentElement.innerHTML = '';  // Clear the element
+
+            // Use a safe URL regex pattern
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            let lastIndex = 0;
+            let match;
+
+            // Process each URL match
+            while ((match = urlRegex.exec(contentText)) !== null) {
+                // Add text before the URL
+                if (match.index > lastIndex) {
+                    contentElement.appendChild(
+                        document.createTextNode(contentText.substring(lastIndex, match.index))
+                    );
+                }
+
+                // Create a safe link element
+                const link = document.createElement('a');
+                link.href = match[0];
+                link.textContent = match[0];
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';  // Security best practice for external links
+
+                // Add the link
+                contentElement.appendChild(link);
+
+                lastIndex = match.index + match[0].length;
+            }
+
+            // Add any remaining text
+            if (lastIndex < contentText.length) {
+                contentElement.appendChild(
+                    document.createTextNode(contentText.substring(lastIndex))
+                );
+            }
+        }
 
         // Create the message meta information
         const metaElement = document.createElement('div');
@@ -878,3 +1160,284 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+/**
+ * Initialize emoji picker functionality
+ */
+function initializeEmojiPicker() {
+    const emojiButton = document.getElementById('emoji-button');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const closeEmojiButton = document.getElementById('close-emoji');
+    const emojis = document.querySelectorAll('.emoji');
+    const messageInput = document.getElementById('message-input');
+
+    if (!emojiButton || !emojiPicker) {
+        console.log('Emoji picker elements not found');
+        return;
+    }
+
+    // Toggle emoji picker
+    emojiButton.addEventListener('click', function () {
+        emojiPicker.classList.toggle('active');
+    });
+
+    // Close emoji picker
+    if (closeEmojiButton) {
+        closeEmojiButton.addEventListener('click', function () {
+            emojiPicker.classList.remove('active');
+        });
+    }
+
+    // Add emoji to message input
+    emojis.forEach(function (emoji) {
+        emoji.addEventListener('click', function () {
+            const emojiChar = this.getAttribute('data-emoji');
+            const cursorPos = messageInput.selectionStart;
+            const textBefore = messageInput.value.substring(0, cursorPos);
+            const textAfter = messageInput.value.substring(cursorPos);
+
+            messageInput.value = textBefore + emojiChar + textAfter;
+            messageInput.focus();
+            messageInput.selectionStart = cursorPos + emojiChar.length;
+            messageInput.selectionEnd = cursorPos + emojiChar.length;
+
+            // Close emoji picker
+            emojiPicker.classList.remove('active');
+        });
+    });
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', function (e) {
+        if (emojiPicker && !emojiPicker.contains(e.target) && e.target !== emojiButton) {
+            emojiPicker.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Initialize file attachment functionality
+ */
+function initializeFileAttachment() {
+    const attachmentButton = document.getElementById('attachment-button');
+    const messageForm = document.getElementById('message-form');
+
+    if (!attachmentButton || !messageForm) {
+        console.log('File attachment elements not found');
+        return;
+    }
+
+    attachmentButton.addEventListener('click', function () {
+        // Create a file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+        fileInput.style.display = 'none';
+
+        // Add file input to form
+        messageForm.appendChild(fileInput);
+
+        // Trigger file selection
+        fileInput.click();
+
+        // Handle file selection
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+
+                // Check file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('File size exceeds 5MB limit', 'error');
+                    return;
+                }
+
+                // Create attachment preview
+                const attachmentPreview = document.createElement('div');
+                attachmentPreview.className = 'attachment-preview';
+
+                // Determine file icon based on type
+                let fileIcon = 'fa-file';
+                if (file.type.startsWith('image/')) {
+                    fileIcon = 'fa-file-image';
+                } else if (file.type === 'application/pdf') {
+                    fileIcon = 'fa-file-pdf';
+                } else if (file.type.includes('word') || file.type.includes('doc')) {
+                    fileIcon = 'fa-file-word';
+                } else if (file.type === 'text/plain') {
+                    fileIcon = 'fa-file-alt';
+                }
+
+                // Format file size
+                const fileSize = file.size < 1024 * 1024
+                    ? Math.round(file.size / 1024) + ' KB'
+                    : Math.round(file.size / (1024 * 1024) * 10) / 10 + ' MB';
+
+                // Set preview content
+                attachmentPreview.innerHTML = `
+                    <div class="file-icon">
+                        <i class="fas ${fileIcon}"></i>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${fileSize}</div>
+                    </div>
+                    <button type="button" class="remove-file" aria-label="Remove file">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+
+                // Add preview before message input
+                const messageInputContainer = document.querySelector('.message-input-container');
+                messageInputContainer.insertBefore(attachmentPreview, messageForm);
+
+                // Handle remove button
+                const removeButton = attachmentPreview.querySelector('.remove-file');
+                removeButton.addEventListener('click', function () {
+                    attachmentPreview.remove();
+                    fileInput.value = '';
+                });
+
+                // For now, just show a toast notification
+                // In a real implementation, you would upload the file to the server
+                showToast('File attachment feature is coming soon! Your files will be securely shared in the next update.', 'info');
+            }
+
+            // Remove the file input from the form
+            setTimeout(() => {
+                fileInput.remove();
+            }, 1000);
+        });
+    });
+}
+
+/**
+ * Initialize message actions (edit, delete)
+ */
+function initializeMessageActions() {
+    const messageList = document.getElementById('message-list');
+
+    if (!messageList) {
+        console.log('Message list element not found');
+        return;
+    }
+
+    // Delegate event listener for message action toggles
+    messageList.addEventListener('click', function (e) {
+        // Handle action toggle button clicks
+        if (e.target.closest('.message-action-toggle')) {
+            const toggle = e.target.closest('.message-action-toggle');
+            const menu = toggle.nextElementSibling;
+
+            // Close all other open menus
+            document.querySelectorAll('.message-actions-menu.active').forEach(function (openMenu) {
+                if (openMenu !== menu) {
+                    openMenu.classList.remove('active');
+                }
+            });
+
+            // Toggle this menu
+            menu.classList.toggle('active');
+
+            // Prevent event from bubbling up
+            e.stopPropagation();
+        }
+
+        // Handle edit button clicks
+        if (e.target.closest('.edit-message')) {
+            const messageItem = e.target.closest('.message-item');
+            const messageContent = messageItem.querySelector('.message-content');
+            const originalText = messageContent.textContent;
+            const messageId = messageItem.dataset.messageId;
+
+            // Add editing class to message
+            messageItem.classList.add('editing');
+
+            // Replace content with editable input
+            messageContent.innerHTML = `
+                <textarea class="edit-textarea">${originalText}</textarea>
+                <div class="edit-actions">
+                    <button type="button" class="cancel-edit">Cancel</button>
+                    <button type="button" class="save-edit">Save</button>
+                </div>
+            `;
+
+            // Focus the textarea
+            const textarea = messageContent.querySelector('.edit-textarea');
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+            // Close the menu
+            e.target.closest('.message-actions-menu').classList.remove('active');
+
+            // Prevent event from bubbling up
+            e.stopPropagation();
+        }
+
+        // Handle delete button clicks
+        if (e.target.closest('.delete-message')) {
+            const messageItem = e.target.closest('.message-item');
+            const messageId = messageItem.dataset.messageId;
+
+            // Show confirmation dialog
+            if (confirm('Are you sure you want to delete this message?')) {
+                // For now, just remove the message from the UI
+                // In a real implementation, you would send a delete request to the server
+                messageItem.style.opacity = '0.5';
+                setTimeout(() => {
+                    messageItem.remove();
+                }, 300);
+
+                showToast('Message deleted locally. Server-side deletion coming in the next update!', 'info');
+            }
+
+            // Close the menu
+            e.target.closest('.message-actions-menu').classList.remove('active');
+
+            // Prevent event from bubbling up
+            e.stopPropagation();
+        }
+
+        // Handle save edit button clicks
+        if (e.target.closest('.save-edit')) {
+            const messageItem = e.target.closest('.message-item');
+            const messageContent = messageItem.querySelector('.message-content');
+            const textarea = messageContent.querySelector('.edit-textarea');
+            const newText = textarea.value.trim();
+            const messageId = messageItem.dataset.messageId;
+
+            if (newText) {
+                // For now, just update the UI
+                // In a real implementation, you would send an update request to the server
+                messageContent.innerHTML = newText;
+                messageItem.classList.remove('editing');
+
+                showToast('Message updated locally. Server-side editing coming in the next update!', 'info');
+            } else {
+                showToast('Message cannot be empty', 'error');
+            }
+
+            // Prevent event from bubbling up
+            e.stopPropagation();
+        }
+
+        // Handle cancel edit button clicks
+        if (e.target.closest('.cancel-edit')) {
+            const messageItem = e.target.closest('.message-item');
+            const messageContent = messageItem.querySelector('.message-content');
+            const originalText = messageContent.querySelector('.edit-textarea').value;
+
+            // Restore original content
+            messageContent.innerHTML = originalText;
+            messageItem.classList.remove('editing');
+
+            // Prevent event from bubbling up
+            e.stopPropagation();
+        }
+    });
+
+    // Close menus when clicking outside
+    document.addEventListener('click', function () {
+        document.querySelectorAll('.message-actions-menu.active').forEach(function (menu) {
+            menu.classList.remove('active');
+        });
+    });
+}

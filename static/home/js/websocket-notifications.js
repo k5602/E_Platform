@@ -49,7 +49,31 @@ function initializeNotificationWebsocket(userId) {
         console.log('Run ./run_servers.sh to start both servers together');
     }
 
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/notifications/${userId}/`;
+    // Get CSRF token from cookie or Django's csrftoken input
+    function getCSRFToken() {
+        // Try to get from cookie first
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+
+        if (cookieValue) {
+            return cookieValue;
+        }
+
+        // If not in cookie, try to get from hidden input
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+
+        console.error('CSRF token not found. WebSocket connection may fail.');
+        return '';
+    }
+
+    // Add CSRF token to WebSocket URL as a query parameter
+    const csrfToken = getCSRFToken();
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/notifications/${userId}/?csrf_token=${csrfToken}`;
 
     console.log('Attempting to connect to notification WebSocket at:', wsUrl);
 
