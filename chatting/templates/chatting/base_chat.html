@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block page_js %}
-    <!-- Load the chat.js script with an ID to prevent duplicate loading -->
-    <script id="chat-js-script" src="{% static 'chatting/js/chat.js' %}" defer></script>
+    <!-- Load the chat.js script with an ID for reference and onload handler -->
+    <script id="chat-js-script" src="{% static 'chatting/js/chat.js' %}" onload="this.setAttribute('data-loaded', 'true');"></script>
 {% block chat_js %}{% endblock %}
 {% endblock %}

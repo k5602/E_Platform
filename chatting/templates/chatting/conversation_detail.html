@@ -221,67 +221,91 @@
 
 {% block chat_js %}
 <script>
-    // Wait for the chat.js script to load before initializing
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get the chat.js script element
+    // More robust script loading check
+    function checkChatScriptLoaded() {
         const chatScript = document.getElementById('chat-js-script');
-
-        // Function to initialize everything once chat.js is loaded
-        function initializeChat() {
-            // Check if the required functions are available
-            if (typeof initializeChatWebsocket === 'function' &&
-                typeof initializeConversation === 'function') {
-
-                console.log('Chat.js loaded, initializing chat functions');
-
-                // Initialize the WebSocket connection
-                initializeChatWebsocket();
-
-                // Initialize the conversation
-                initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});
-
-                // Scroll to the bottom of the message list
-                scrollToBottom();
-
-                // Initialize emoji picker if available
-                if (typeof initializeEmojiPicker === 'function') {
-                    initializeEmojiPicker();
-                }
-
-                // Initialize file attachment if available
-                if (typeof initializeFileAttachment === 'function') {
-                    initializeFileAttachment();
-                }
-
-                // Initialize message actions (edit, delete) if available
-                if (typeof initializeMessageActions === 'function') {
-                    initializeMessageActions();
-                }
-            } else {
-                console.error('Chat functions not available yet, retrying in 100ms');
-                // Retry after a short delay
-                setTimeout(initializeChat, 100);
-            }
+        
+        // Check if window.initializeChatWebsocket function exists (direct method)
+        if (typeof window.initializeChatWebsocket === 'function') {
+            return true;
         }
+        
+        // Check if script has loaded via data attribute
+        if (chatScript && chatScript.getAttribute('data-loaded') === 'true') {
+            return true;
+        }
+        
+        return false;
+    }
 
-        // If the script is already loaded, initialize immediately
-        if (chatScript.loaded) {
+    // Function to initialize everything once chat.js is loaded
+    function initializeChat() {
+        // Check if the required functions are available
+        if (typeof window.initializeChatWebsocket === 'function' &&
+            typeof window.initializeConversation === 'function') {
+
+            console.log('Chat.js loaded, initializing chat functions');
+
+            // Initialize the WebSocket connection
+            window.initializeChatWebsocket();
+
+            // Initialize the conversation
+            window.initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});
+
+            // Scroll to the bottom of the message list
+            scrollToBottom();
+
+            // Initialize emoji picker if available
+            if (typeof window.initializeEmojiPicker === 'function') {
+                window.initializeEmojiPicker();
+            }
+
+            // Initialize file attachment if available
+            if (typeof window.initializeFileAttachment === 'function') {
+                window.initializeFileAttachment();
+            }
+
+            // Initialize message actions (edit, delete) if available
+            if (typeof window.initializeMessageActions === 'function') {
+                window.initializeMessageActions();
+            }
+        } else {
+            console.log('Chat functions not available yet, retrying in 100ms');
+            // Retry after a short delay
+            setTimeout(initializeChat, 100);
+        }
+    }
+
+    // Wait for the DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, checking for chat script');
+        
+        // If chat script is already loaded, initialize immediately
+        if (checkChatScriptLoaded()) {
+            console.log('Chat script detected as loaded');
             initializeChat();
         } else {
-            // Otherwise, wait for the script to load
-            chatScript.addEventListener('load', function () {
-                chatScript.loaded = true;
-                initializeChat();
-            });
-
-            // Fallback in case the load event doesn't fire
-            setTimeout(function () {
-                if (!chatScript.loaded) {
-                    console.log('Fallback: Initializing chat after timeout');
-                    chatScript.loaded = true;
+            console.log('Chat script not loaded yet, setting up load handler');
+            
+            // Try to attach onload handler to the script (if it hasn't loaded yet)
+            const chatScript = document.getElementById('chat-js-script');
+            if (chatScript) {
+                chatScript.addEventListener('load', function() {
+                    console.log('Chat script onload event fired');
                     initializeChat();
+                });
+            }
+            
+            // As a fallback, try again after a delay
+            setTimeout(function checkAndInitialize() {
+                if (checkChatScriptLoaded()) {
+                    console.log('Chat script detected as loaded (via timeout check)');
+                    initializeChat();
+                } else {
+                    console.log('Chat script still not loaded, retrying...');
+                    setTimeout(checkAndInitialize, 200);
                 }
-            }, 1000);
+            }, 300);
         }
     });
 

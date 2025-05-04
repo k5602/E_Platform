@@ -12,7 +12,7 @@ let typingTimeout = null;
 
 // Track reconnection attempts
 window.reconnectAttempts = 0;
-const maxReconnectAttempts = 10;
+window.maxReconnectAttempts = 10; // Make this a window property to avoid redeclaration conflicts
 // Use window property to avoid redeclaration conflicts with other scripts
 window.chatBaseReconnectDelay = 1000; // 1 second
 
@@ -137,17 +137,17 @@ function initializeChatWebsocket() {
             showConnectionStatus('disconnected');
 
             // Only attempt to reconnect if it wasn't a clean close and we haven't exceeded max attempts
-            if (!wasClean && window.reconnectAttempts < maxReconnectAttempts) {
+            if (!wasClean && window.reconnectAttempts < window.maxReconnectAttempts) {
                 // Use exponential backoff for reconnection
                 const delay = Math.min(window.chatBaseReconnectDelay * Math.pow(1.5, window.reconnectAttempts), 30000);
                 window.reconnectAttempts++;
 
-                console.log(`Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms`);
+                console.log(`Attempting to reconnect (${window.reconnectAttempts}/${window.maxReconnectAttempts}) in ${delay}ms`);
 
                 // Show toast notification
                 if (event.code === 1006) {
                     // Code 1006 is "Abnormal Closure" which often means the server is not available
-                    showToast(`WebSocket server not available. Make sure Daphne is running on port 8001. Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
+                    showToast(`WebSocket server not available. Make sure Daphne is running on port 8001. Attempting to reconnect (${window.reconnectAttempts}/${window.maxReconnectAttempts})...`, 'error');
 
                     // Add a more detailed message to the console
                     console.error(`
@@ -163,13 +163,13 @@ function initializeChatWebsocket() {
                         Keep the Django development server running on port 8000 for regular HTTP requests.
                     `);
                 } else {
-                    showToast(`Connection lost. Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+                    showToast(`Connection lost. Attempting to reconnect (${window.reconnectAttempts}/${window.maxReconnectAttempts})...`, 'warning');
                 }
 
                 setTimeout(function() {
                     initializeChatWebsocket();
                 }, delay);
-            } else if (window.reconnectAttempts >= maxReconnectAttempts) {
+            } else if (window.reconnectAttempts >= window.maxReconnectAttempts) {
                 showToast('Unable to reconnect after multiple attempts. Please refresh the page or check if the WebSocket server is running.', 'error');
             }
         };
@@ -195,11 +195,11 @@ function initializeChatWebsocket() {
         console.error('Stack trace:', error.stack);
 
         // Attempt to reconnect with exponential backoff
-        if (window.reconnectAttempts < maxReconnectAttempts) {
+        if (window.reconnectAttempts < window.maxReconnectAttempts) {
             const delay = Math.min(window.chatBaseReconnectDelay * Math.pow(1.5, window.reconnectAttempts), 30000);
             window.reconnectAttempts++;
 
-            showToast(`Error creating WebSocket connection. Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
+            showToast(`Error creating WebSocket connection. Attempting to reconnect (${window.reconnectAttempts}/${window.maxReconnectAttempts})...`, 'error');
 
             setTimeout(function() {
                 initializeChatWebsocket();
