@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Environment variables for WebSocket security configuration
+export WEBSOCKET_CSRF_EXEMPT=true
+export DJANGO_ALLOW_ASYNC_UNSAFE=true
 # Display help message
 show_help() {
     echo "Usage: $0 [options]"
@@ -75,6 +78,29 @@ print_links() {
 
 # Activate the virtual environment for the main script
 source .venv/bin/activate
+
+# Check for necessary commands and packages
+if ! command -v daphne &> /dev/null; then
+    echo "Daphne command not found. Checking if package is installed in virtual environment..."
+    
+    # Check if we can import daphne in Python
+    if ! python -c "import daphne" 2>/dev/null; then
+        echo "Daphne package not found. Installing it now..."
+        pip install daphne
+        
+        # Check if installation succeeded
+        if ! python -c "import daphne" 2>/dev/null; then
+            echo "Error: Failed to install daphne. Please install it manually with:"
+            echo "pip install daphne"
+            exit 1
+        fi
+        
+        echo "Daphne package installed successfully."
+    else
+        echo "Daphne package is installed but command is not in path."
+        echo "Will use Python module directly."
+    fi
+fi
 
 # Get the local IP address using multiple methods
 get_ip() {
@@ -166,15 +192,44 @@ echo "=========================================================="
 # Print clickable links
 print_links "$LOCAL_IP"
 
-# Prioritize KDE Konsole and GNOME Terminal
+# Check if ports are already in use
+check_port() {
+    if command -v lsof &> /dev/null; then
+        lsof -i:"$1" &> /dev/null
+        return $?
+    elif command -v netstat &> /dev/null; then
+        netstat -tuln | grep -q ":$1 "
+        return $?
+    elif command -v ss &> /dev/null; then
+        ss -tuln | grep -q ":$1 "
+        return $?
+    else
+        # If no tool is available, assume port is free
+        return 1
+    fi
+}
+
+if check_port 8000; then
+    echo "Warning: Port 8000 is already in use. Django server may fail to start."
+fi
+
+if check_port 8001; then
+    echo "Warning: Port 8001 is already in use. WebSocket server may fail to start."
+fi
+
+# Try to use KDE Konsole or GNOME Terminal
 if command -v konsole &> /dev/null; then
     # KDE Konsole
     echo "Using KDE Konsole to run both servers..."
 
-    # Create a temporary script for Django server
-    DJANGO_SCRIPT=$(mktemp)
+    # Create dedicated scripts in a more reliable location
+    mkdir -p "${HOME}/.e_platform_scripts"
+    DJANGO_SCRIPT="${HOME}/.e_platform_scripts/django_server.sh"
+    WS_SCRIPT="${HOME}/.e_platform_scripts/websocket_server.sh"
+    
+    # Create Django server script
     echo "#!/bin/bash" > $DJANGO_SCRIPT
-    echo "cd $(pwd)" >> $DJANGO_SCRIPT
+    echo "cd \"$(pwd)\"" >> $DJANGO_SCRIPT
     echo "source .venv/bin/activate" >> $DJANGO_SCRIPT
     echo "echo \"Starting Django development server on all interfaces (0.0.0.0:8000)...\"" >> $DJANGO_SCRIPT
     echo "echo \"This server handles HTTP requests and static files.\"" >> $DJANGO_SCRIPT
@@ -183,22 +238,41 @@ if command -v konsole &> /dev/null; then
     echo "python manage.py runserver 0.0.0.0:8000" >> $DJANGO_SCRIPT
     chmod +x $DJANGO_SCRIPT
 
-    # Create a temporary script for WebSocket server
-    WS_SCRIPT=$(mktemp)
+    # Create WebSocket server script
     echo "#!/bin/bash" > $WS_SCRIPT
-    echo "cd $(pwd)" >> $WS_SCRIPT
+    echo "cd \"$(pwd)\"" >> $WS_SCRIPT
     echo "source .venv/bin/activate" >> $WS_SCRIPT
     echo "echo \"Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...\"" >> $WS_SCRIPT
     echo "echo \"This server handles WebSocket connections only.\"" >> $WS_SCRIPT
     echo "echo \"Keep this terminal window open while using the application.\"" >> $WS_SCRIPT
     echo "echo \"------------------------------------------------------------\"" >> $WS_SCRIPT
-    echo "daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application" >> $WS_SCRIPT
+    echo "export WEBSOCKET_CSRF_EXEMPT=true" >> $WS_SCRIPT
+    echo "export DJANGO_ALLOW_ASYNC_UNSAFE=true" >> $WS_SCRIPT
+    echo "if [ -f E_Platform/asgi.py ]; then" >> $WS_SCRIPT
+    echo "  if command -v daphne &>/dev/null; then" >> $WS_SCRIPT
+    echo "    daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application" >> $WS_SCRIPT
+    echo "  else" >> $WS_SCRIPT
+    echo "    echo \"Daphne command not found. Using Python module directly...\"" >> $WS_SCRIPT
+    echo "    python -m daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application" >> $WS_SCRIPT
+    echo "  fi" >> $WS_SCRIPT
+    echo "else" >> $WS_SCRIPT
+    echo "  echo \"Error: WebSocket server configuration not found!\"" >> $WS_SCRIPT
+    echo "  echo \"Could not locate E_Platform/asgi.py\"" >> $WS_SCRIPT
+    echo "  echo \"Press Enter to exit...\"" >> $WS_SCRIPT
+    echo "  read" >> $WS_SCRIPT
+    echo "  exit 1" >> $WS_SCRIPT
+    echo "fi" >> $WS_SCRIPT
     chmod +x $WS_SCRIPT
+    
+    # Launch directly with command rather than script file
+    DJANGO_CMD="cd \"$(pwd)\" && source .venv/bin/activate && echo 'Starting Django development server on all interfaces (0.0.0.0:8000)...' && echo 'This server handles HTTP requests and static files.' && echo 'Keep this terminal window open while using the application.' && echo '------------------------------------------------------------' && python manage.py runserver 0.0.0.0:8000"
+    
+    WS_CMD="cd \"$(pwd)\" && source .venv/bin/activate && echo 'Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...' && echo 'This server handles WebSocket connections only.' && echo 'Keep this terminal window open while using the application.' && echo '------------------------------------------------------------' && export WEBSOCKET_CSRF_EXEMPT=true && export DJANGO_ALLOW_ASYNC_UNSAFE=true && if [ -f E_Platform/asgi.py ]; then if command -v daphne &>/dev/null; then daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; else echo 'Daphne command not found. Using Python module directly...'; python -m daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; fi; else echo 'Error: WebSocket server configuration not found!'; echo 'Press Enter to exit...'; read; fi"
 
-    # Launch both servers in Konsole tabs
-    konsole --new-tab --title="Django Server" --workdir "$(pwd)" -e $DJANGO_SCRIPT &
+    # Launch both servers in Konsole tabs using direct command execution
+    konsole --new-tab --title="Django Server" -e bash -c "$DJANGO_CMD" &
     sleep 1
-    konsole --new-tab --title="WebSocket Server" --workdir "$(pwd)" -e $WS_SCRIPT &
+    konsole --new-tab --title="WebSocket Server" -e bash -c "$WS_CMD" &
 
     echo "Started servers in KDE Konsole tabs"
 
@@ -212,111 +286,13 @@ elif command -v gnome-terminal &> /dev/null; then
     # GNOME Terminal
     echo "Using GNOME Terminal to run both servers..."
 
-    # Create command strings with echo statements
-    DJANGO_CMD="cd $(pwd) && source .venv/bin/activate && echo \"Starting Django development server on all interfaces (0.0.0.0:8000)...\" && echo \"This server handles HTTP requests and static files.\" && echo \"Keep this terminal window open while using the application.\" && echo \"------------------------------------------------------------\" && python manage.py runserver 0.0.0.0:8000"
-    WS_CMD="cd $(pwd) && source .venv/bin/activate && echo \"Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...\" && echo \"This server handles WebSocket connections only.\" && echo \"Keep this terminal window open while using the application.\" && echo \"------------------------------------------------------------\" && daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application"
+    # Launch Django server in a GNOME Terminal window
+    gnome-terminal --title="Django Server" -- bash -c "cd \"$(pwd)\" && source .venv/bin/activate && echo 'Starting Django development server on all interfaces (0.0.0.0:8000)...' && echo 'This server handles HTTP requests and static files.' && echo 'Keep this terminal window open while using the application.' && echo '------------------------------------------------------------' && python manage.py runserver 0.0.0.0:8000; exec bash"
+    
+    # Launch WebSocket server in another GNOME Terminal window
+    gnome-terminal --title="WebSocket Server" -- bash -c "cd \"$(pwd)\" && source .venv/bin/activate && echo 'Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...' && echo 'This server handles WebSocket connections only.' && echo 'Keep this terminal window open while using the application.' && echo '------------------------------------------------------------' && export WEBSOCKET_CSRF_EXEMPT=true && export DJANGO_ALLOW_ASYNC_UNSAFE=true && if [ -f E_Platform/asgi.py ]; then if command -v daphne &>/dev/null; then daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; else echo 'Daphne command not found. Using Python module directly...'; python -m daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; fi; else echo 'Error: WebSocket server configuration not found!'; fi; exec bash"
 
-    # Launch both servers in GNOME Terminal tabs
-    gnome-terminal --tab --title="Django Server" -- bash -c "$DJANGO_CMD"
-    gnome-terminal --tab --title="WebSocket Server" -- bash -c "$WS_CMD"
-
-    echo "Started servers in GNOME Terminal tabs"
-
-    # Open browser on host device
-    if command -v xdg-open &> /dev/null; then
-        echo "Opening browser on host device..."
-        xdg-open "http://localhost:8000" &
-    fi
-
-elif command -v tmux &> /dev/null; then
-    # Tmux as third option
-    echo "Using tmux to run both servers..."
-
-    # Create a new tmux session
-    tmux new-session -d -s e_platform_network
-
-    # Split the window horizontally
-    tmux split-window -h -t e_platform_network
-
-    # Send commands to run the Django server in the left pane
-    tmux send-keys -t e_platform_network:0.0 "cd $(pwd)" C-m
-    tmux send-keys -t e_platform_network:0.0 "source .venv/bin/activate" C-m
-    tmux send-keys -t e_platform_network:0.0 "echo \"Starting Django development server on all interfaces (0.0.0.0:8000)...\"" C-m
-    tmux send-keys -t e_platform_network:0.0 "echo \"This server handles HTTP requests and static files.\"" C-m
-    tmux send-keys -t e_platform_network:0.0 "echo \"Keep this terminal window open while using the application.\"" C-m
-    tmux send-keys -t e_platform_network:0.0 "echo \"------------------------------------------------------------\"" C-m
-    tmux send-keys -t e_platform_network:0.0 "python manage.py runserver 0.0.0.0:8000" C-m
-
-    # Send commands to run the WebSocket server in the right pane
-    tmux send-keys -t e_platform_network:0.1 "cd $(pwd)" C-m
-    tmux send-keys -t e_platform_network:0.1 "source .venv/bin/activate" C-m
-    tmux send-keys -t e_platform_network:0.1 "echo \"Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...\"" C-m
-    tmux send-keys -t e_platform_network:0.1 "echo \"This server handles WebSocket connections only.\"" C-m
-    tmux send-keys -t e_platform_network:0.1 "echo \"Keep this terminal window open while using the application.\"" C-m
-    tmux send-keys -t e_platform_network:0.1 "echo \"------------------------------------------------------------\"" C-m
-    tmux send-keys -t e_platform_network:0.1 "daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application" C-m
-
-    # Open browser in background if possible
-    if command -v xdg-open &> /dev/null; then
-        echo "Opening browser on host device..."
-        xdg-open "http://localhost:8000" &
-    fi
-
-    # Attach to the tmux session
-    tmux attach-session -t e_platform_network
-
-elif command -v xfce4-terminal &> /dev/null; then
-    # XFCE Terminal
-    echo "Using XFCE Terminal to run both servers..."
-
-    # Create temporary scripts
-    DJANGO_SCRIPT=$(mktemp)
-    echo "#!/bin/bash" > $DJANGO_SCRIPT
-    echo "cd $(pwd)" >> $DJANGO_SCRIPT
-    echo "source .venv/bin/activate" >> $DJANGO_SCRIPT
-    echo "echo \"Starting Django development server on all interfaces (0.0.0.0:8000)...\"" >> $DJANGO_SCRIPT
-    echo "echo \"This server handles HTTP requests and static files.\"" >> $DJANGO_SCRIPT
-    echo "echo \"Keep this terminal window open while using the application.\"" >> $DJANGO_SCRIPT
-    echo "echo \"------------------------------------------------------------\"" >> $DJANGO_SCRIPT
-    echo "python manage.py runserver 0.0.0.0:8000" >> $DJANGO_SCRIPT
-    chmod +x $DJANGO_SCRIPT
-
-    WS_SCRIPT=$(mktemp)
-    echo "#!/bin/bash" > $WS_SCRIPT
-    echo "cd $(pwd)" >> $WS_SCRIPT
-    echo "source .venv/bin/activate" >> $WS_SCRIPT
-    echo "echo \"Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...\"" >> $WS_SCRIPT
-    echo "echo \"This server handles WebSocket connections only.\"" >> $WS_SCRIPT
-    echo "echo \"Keep this terminal window open while using the application.\"" >> $WS_SCRIPT
-    echo "echo \"------------------------------------------------------------\"" >> $WS_SCRIPT
-    echo "daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application" >> $WS_SCRIPT
-    chmod +x $WS_SCRIPT
-
-    # Launch both servers in XFCE Terminal tabs
-    xfce4-terminal --tab --title="Django Server" -e "$DJANGO_SCRIPT" &
-    xfce4-terminal --tab --title="WebSocket Server" -e "$WS_SCRIPT" &
-
-    echo "Started servers in XFCE Terminal tabs"
-
-    # Open browser on host device
-    if command -v xdg-open &> /dev/null; then
-        echo "Opening browser on host device..."
-        xdg-open "http://localhost:8000" &
-    fi
-
-elif command -v xterm &> /dev/null; then
-    # XTerm
-    echo "Using XTerm to run both servers..."
-
-    # Create command strings
-    DJANGO_CMD="cd $(pwd) && source .venv/bin/activate && echo \"Starting Django development server on all interfaces (0.0.0.0:8000)...\" && echo \"This server handles HTTP requests and static files.\" && echo \"Keep this terminal window open while using the application.\" && echo \"------------------------------------------------------------\" && python manage.py runserver 0.0.0.0:8000"
-    WS_CMD="cd $(pwd) && source .venv/bin/activate && echo \"Starting Daphne WebSocket server on all interfaces (0.0.0.0:8001)...\" && echo \"This server handles WebSocket connections only.\" && echo \"Keep this terminal window open while using the application.\" && echo \"------------------------------------------------------------\" && daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application"
-
-    # Launch both servers in XTerm windows
-    xterm -title "Django Server" -e "bash -c '$DJANGO_CMD'" &
-    xterm -title "WebSocket Server" -e "bash -c '$WS_CMD'" &
-
-    echo "Started servers in XTerm windows"
+    echo "Started servers in GNOME Terminal windows"
 
     # Open browser on host device
     if command -v xdg-open &> /dev/null; then
@@ -325,22 +301,23 @@ elif command -v xterm &> /dev/null; then
     fi
 
 else
-    # No supported terminal found, run in foreground/background
-    echo "No supported terminal emulator found."
+    # Fallback mode - no supported terminal found
+    echo "Neither KDE Konsole nor GNOME Terminal found."
     echo "Running Django server in the background and WebSocket server in the foreground..."
     echo ""
 
-    # Create a temporary script for the Django server
-    DJANGO_SCRIPT=$(mktemp)
-    echo "#!/bin/bash" > $DJANGO_SCRIPT
-    echo "cd $(pwd)" >> $DJANGO_SCRIPT
-    echo "source .venv/bin/activate" >> $DJANGO_SCRIPT
-    echo "python manage.py runserver 0.0.0.0:8000" >> $DJANGO_SCRIPT
-    chmod +x $DJANGO_SCRIPT
-
-    # Run Django server in the background
-    $DJANGO_SCRIPT > django_server.log 2>&1 &
+    # Run Django server directly in the background with error handling
+    (cd "$(pwd)" && source .venv/bin/activate && python manage.py runserver 0.0.0.0:8000) > django_server.log 2>&1 &
     DJANGO_PID=$!
+    
+    # Give Django server a moment to start and check if it's running
+    sleep 2
+    if ! ps -p $DJANGO_PID > /dev/null; then
+        echo "Error: Django server failed to start. Check django_server.log for details."
+        cat django_server.log
+        exit 1
+    fi
+    
     echo "Django server started in background (PID: $DJANGO_PID)"
     echo "Log file: $(pwd)/django_server.log"
     echo ""
@@ -362,7 +339,41 @@ else
     echo "This server handles WebSocket connections only."
     echo "Keep this terminal window open while using the application."
     echo "------------------------------------------------------------"
-    daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application
+    
+    # Check if asgi.py exists before running daphne
+    if [ ! -f "E_Platform/asgi.py" ]; then
+        echo "Error: WebSocket server configuration (E_Platform/asgi.py) not found!"
+        echo "Stopping Django server..."
+        kill $DJANGO_PID 2>/dev/null
+        exit 1
+    fi
+    
+    # Export environment variables again to ensure they're set in this context
+    export WEBSOCKET_CSRF_EXEMPT=true
+    export DJANGO_ALLOW_ASYNC_UNSAFE=true
+    
+    # Run WebSocket server with error handling
+    echo "Starting WebSocket server..."
+    if command -v daphne &>/dev/null; then
+        if ! daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; then
+            echo "Error: WebSocket server failed to start with daphne command."
+            echo "Trying to run via Python module directly..."
+            if ! python -m daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; then
+                echo "Error: WebSocket server failed to start."
+                echo "Stopping Django server..."
+                kill $DJANGO_PID 2>/dev/null
+                exit 1
+            fi
+        fi
+    else
+        echo "Daphne command not found. Using Python module directly..."
+        if ! python -m daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application; then
+            echo "Error: WebSocket server failed to start."
+            echo "Stopping Django server..."
+            kill $DJANGO_PID 2>/dev/null
+            exit 1
+        fi
+    fi
 fi
 
 # This part will only be reached if the servers are started in the background

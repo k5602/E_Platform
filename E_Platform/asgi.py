@@ -40,11 +40,22 @@ class CSRFProtectionMiddleware(BaseMiddleware):
 
     This middleware checks for a valid CSRF token in the WebSocket query parameters
     to prevent Cross-Site WebSocket Hijacking (CSWSH) attacks.
+
+    In development mode, CSRF protection can be disabled by setting the
+    WEBSOCKET_CSRF_EXEMPT environment variable to 'True'.
     """
 
     async def __call__(self, scope, receive, send):
         # Skip CSRF check for non-WebSocket connections
         if scope["type"] != "websocket":
+            return await self.inner(scope, receive, send)
+
+        # Check if CSRF protection is disabled in development mode
+        csrf_exempt_value = os.environ.get('WEBSOCKET_CSRF_EXEMPT', 'False')
+        csrf_exempt = csrf_exempt_value.lower() in ('true', 't', 'yes', 'y', '1')
+
+        if csrf_exempt:
+            logger.warning("WebSocket CSRF protection is disabled in development mode")
             return await self.inner(scope, receive, send)
 
         # Get query parameters

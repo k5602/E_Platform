@@ -57,7 +57,12 @@ class WebSocketManager {
         // Create WebSocket URL
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const host = window.location.host;
-        this.wsUrl = `${protocol}${host}/ws/notifications/${userId}/`;
+
+        // Get CSRF token from cookie or Django's csrftoken input
+        const csrfToken = this.getCSRFToken();
+
+        // Add CSRF token to WebSocket URL as a query parameter
+        this.wsUrl = `${protocol}${host}/ws/notifications/${userId}/?csrf_token=${csrfToken}`;
 
         // Bind methods to this instance
         this.connect = this.connect.bind(this);
@@ -483,6 +488,31 @@ class WebSocketManager {
                 statusIndicator.textContent = 'Connection Failed';
                 break;
         }
+    }
+
+    /**
+     * Get CSRF token from cookie or Django's csrftoken input
+     * @returns {string} - The CSRF token
+     */
+    getCSRFToken() {
+        // Try to get from cookie first
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+
+        if (cookieValue) {
+            return cookieValue;
+        }
+
+        // If not in cookie, try to get from hidden input
+        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (csrfInput) {
+            return csrfInput.value;
+        }
+
+        console.error('CSRF token not found. WebSocket connection may fail.');
+        return '';
     }
 
     /**

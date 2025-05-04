@@ -1,9 +1,11 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-import random
 import json
+import random
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 # Mock feedback templates
 MOCK_FEEDBACK = {
@@ -46,19 +48,19 @@ def generate_mock_feedback_view(request, submission_id=None):
     if submission_id is None:
         # If no submission ID is provided, use a random one for demo purposes
         submission_id = f"mock-{random.randint(1000, 9999)}"
-    
+
     # Randomly select feedback type
     feedback_type = request.GET.get('type', random.choice(['assignment', 'quiz', 'general']))
-    
+
     # Select random concepts for personalization
     concept1 = random.choice(CONCEPTS)
     concept2 = random.choice([c for c in CONCEPTS if c != concept1])
-    
+
     # Select and personalize a random feedback template
     templates = MOCK_FEEDBACK.get(feedback_type, MOCK_FEEDBACK['general'])
     template = random.choice(templates)
     feedback = template.format(concept1=concept1, concept2=concept2)
-    
+
     # Return JSON response
     return JsonResponse({
         'status': 'success',
@@ -67,6 +69,8 @@ def generate_mock_feedback_view(request, submission_id=None):
         'feedback': feedback
     })
 
+
+@csrf_exempt
 @login_required
 @require_POST
 def feedback_request_view(request):
@@ -75,15 +79,15 @@ def feedback_request_view(request):
         data = json.loads(request.body)
         submission_id = data.get('submission_id', f"req-{random.randint(1000, 9999)}")
         feedback_type = data.get('type', 'general')
-        
+
         # Generate mock feedback
         concept1 = random.choice(CONCEPTS)
         concept2 = random.choice([c for c in CONCEPTS if c != concept1])
-        
+
         templates = MOCK_FEEDBACK.get(feedback_type, MOCK_FEEDBACK['general'])
         template = random.choice(templates)
         feedback = template.format(concept1=concept1, concept2=concept2)
-        
+
         # Return JSON response with a slight delay to simulate processing
         return JsonResponse({
             'status': 'success',
@@ -91,7 +95,7 @@ def feedback_request_view(request):
             'feedback_type': feedback_type,
             'feedback': feedback
         })
-    
+
     except Exception as e:
         return JsonResponse({
             'status': 'error',
