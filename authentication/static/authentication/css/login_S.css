@@ -49,6 +49,13 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  min-height: 100vh;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .darkmode section .wave {
   position: absolute;
@@ -75,6 +82,11 @@
   font-size: 4em;
   letter-spacing: 2px;
   color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 .darkmode section .wave span:nth-child(1) {
   border-radius: 45%;
@@ -218,6 +230,19 @@ header{
   background-color: var(--container-color);
   box-shadow: var(--box-shadow);
   color: initial;
+  width: 85%;
+  max-width: 380px;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  padding: 25px 20px;
+}
+
+.darkmode .head {
+  width: 85%;
+  max-width: 380px;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  padding: 25px 20px;
 }
 
 .container form {
@@ -828,4 +853,106 @@ button:hover .arrow:before {
   background-color: #fffbeb;
   color: #f39c12;
   border-left: 4px solid #f39c12;
+}
+
+/* Very tall screens */
+@media screen and (min-height: 800px) and (max-width: 500px) {
+  section {
+    align-items: flex-start;
+    padding-top: 50px;
+  }
+  .head {
+    margin-top: 20px;
+  }
+  .container {
+    margin-bottom: 30px;
+  }
+  .container form {
+    gap: 12px;
+  }
+  .input {
+    padding: 0.65rem 0.85rem;
+  }
+  button {
+    margin: 15px auto;
+  }
+}
+
+/* Ultra tall screens (newer phones like iPhone 12 Pro Max in portrait) */
+@media screen and (min-height: 900px) and (max-width: 500px) {
+  section {
+    padding-top: 70px;
+  }
+  .head {
+    margin-top: 30px;
+  }
+  .container {
+    margin-top: 20px;
+    margin-bottom: 40px;
+    padding: 30px 20px;
+  }
+  .container form {
+    gap: 15px;
+  }
+  .input {
+    padding: 0.7rem 0.9rem;
+    margin: 4px 0;
+  }
+  button {
+    height: 2.7em;
+    margin: 20px auto;
+  }
+}
+
+/* Improved landscape mode handling */
+@media screen and (max-height: 500px) and (min-width: 600px) {
+  section {
+    height: auto;
+    padding: 15px 0;
+  }
+  .content {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 15px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .head {
+    width: 30%;
+    margin-top: 0;
+  }
+  .container {
+    width: 65%;
+    margin: 0;
+  }
+  header {
+    font-size: var(--font-size-medium);
+  }
+}
+
+/* Fix for scrolling on very short screens */
+@media screen and (max-height: 450px) {
+  body {
+    overflow-y: auto;
+  }
+  section {
+    overflow-y: visible;
+    min-height: auto;
+    padding: 10px 0 20px;
+  }
+}
+
+.darkmode .input-wrapper,
+.darkmode .input {
+  width: 100%;
+  max-width: 280px;
+}
+
+.darkmode button {
+  width: 100%;
+  max-width: 280px;
+  height: 2.5em;
+  line-height: 2.5em;
 }
