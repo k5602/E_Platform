@@ -45,20 +45,20 @@ INSTALLED_APPS = [
     # Local apps
     'authentication',
     'home',
-    'chatting',  # Added chat app
-    'Ai_prototype',  # Added AI prototype app
+    'chatting',
+    'Ai_prototype',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # CORS middleware - must be before CommonMiddleware
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'home.middleware.GlobalErrorMiddleware',  # Custom middleware to handle various errors
+    'home.middleware.GlobalErrorMiddleware',
     'authentication.middleware.LoginRateLimitMiddleware',  # Rate limiting for login attempts
 ]
 
@@ -146,7 +146,6 @@ if DB_ENGINE == 'postgresql':
             }
         }
 else:
-    # Use SQLite by default
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -162,13 +161,13 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
         'OPTIONS': {
             'user_attributes': ['username', 'first_name', 'last_name', 'email'],
-            'max_similarity': 0.7,
+            'max_similarity': 0.9,
         }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
         'OPTIONS': {
-            'min_length': 10,
+            'min_length': 8,
         }
     },
     {
