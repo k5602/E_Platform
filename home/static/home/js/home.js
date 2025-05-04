@@ -74,30 +74,71 @@ function initializeMobileMenu() {
     const body = document.body;
 
     if (hamburgerBtn && sideNav) {
-        // فتح/إغلاق القائمة عند النقر على الزر
+        // Toggle sidebar when hamburger button is clicked
         hamburgerBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+
+            // Toggle sidebar open class on body
             body.classList.toggle('sidebar-open');
-            console.log('Hamburger clicked, sidebar-open:', body.classList.contains('sidebar-open'));
+
+            // Toggle active class on sidebar
+            sideNav.classList.toggle('active');
+
+            // Toggle active class on overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('active');
+            }
+
+            // Update ARIA attributes for accessibility
+            const isExpanded = body.classList.contains('sidebar-open');
+            hamburgerBtn.setAttribute('aria-expanded', isExpanded);
         });
 
-        // إغلاق القائمة عند النقر على الغطاء
+        // Close sidebar when overlay is clicked
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', function() {
                 body.classList.remove('sidebar-open');
+                sideNav.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
             });
         }
 
-        // إغلاق القائمة عند النقر خارجها
+        // Close sidebar when clicking outside
         document.addEventListener('click', function(e) {
             if (window.innerWidth <= 768 &&
                 body.classList.contains('sidebar-open') &&
                 !sideNav.contains(e.target) &&
                 !hamburgerBtn.contains(e.target)) {
                 body.classList.remove('sidebar-open');
+                sideNav.classList.remove('active');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
+                }
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
             }
         });
+
+        // Handle escape key to close sidebar
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && body.classList.contains('sidebar-open')) {
+                body.classList.remove('sidebar-open');
+                sideNav.classList.remove('active');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
+                }
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Add scrollbar to sidebar content on low-resolution screens
+        if (window.matchMedia('(max-height: 700px)').matches) {
+            const mainMenu = sideNav.querySelector('.main-menu');
+            if (mainMenu) {
+                mainMenu.classList.add('low-res-scroll');
+            }
+        }
     }
 }
 

@@ -761,11 +761,11 @@
 }
 
 @keyframes typingBounce {
-    0%, 60%, 100% { 
-        transform: translateY(0); 
+    0%, 60%, 100% {
+        transform: translateY(0);
     }
-    30% { 
-        transform: translateY(-6px); 
+    30% {
+        transform: translateY(-6px);
     }
 }
 
@@ -1253,6 +1253,17 @@ body[data-theme="dark"] .user-item:hover {
     .users-list {
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
+
+    /* Add scrollbars for low-resolution screens */
+    .messages-list {
+        max-height: calc(100vh - 180px);
+        overflow-y: auto;
+    }
+
+    .conversation-list {
+        max-height: calc(100vh - 150px);
+        overflow-y: auto;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1267,8 +1278,14 @@ body[data-theme="dark"] .user-item:hover {
     .message-action-btn,
     .action-btn,
     .send-btn {
-        min-width: 40px;
-        min-height: 40px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Improve input field for mobile */
+    .message-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 12px;
     }
 
     .chat-sidebar {
@@ -1279,6 +1296,7 @@ body[data-theme="dark"] .user-item:hover {
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        overflow-y: auto; /* Add scrollbar when needed */
     }
 
     .chat-sidebar.active {
@@ -1296,6 +1314,12 @@ body[data-theme="dark"] .user-item:hover {
         z-index: 99;
         opacity: 0;
         transition: opacity 0.3s ease;
+    }
+
+    /* Improve scrolling on mobile */
+    .messages-list,
+    .conversation-list {
+        -webkit-overflow-scrolling: touch;
     }
 
     .sidebar-overlay.active {
@@ -1398,6 +1422,54 @@ body[data-theme="dark"] .user-item:hover {
         font-size: 1.1rem;
     }
 
+    /* Improve message display on small screens */
+    .message-item {
+        max-width: 85%;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+    }
+
+    .message-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .message-time {
+        font-size: 0.7rem;
+        margin-top: 4px;
+    }
+
+    /* Improve message input on small screens */
+    .message-input-wrapper {
+        padding: 8px;
+    }
+
+    .message-actions {
+        gap: 5px;
+    }
+
+    /* Improve conversation list on small screens */
+    .conversation-item {
+        padding: 10px;
+    }
+
+    .conversation-name {
+        font-size: 0.95rem;
+    }
+
+    .conversation-last-message {
+        font-size: 0.8rem;
+        max-width: 180px;
+    }
+
+    /* Add horizontal scrolling for attachments */
+    .attachment-container {
+        overflow-x: auto;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 5px; /* Space for scrollbar */
+    }
+
     .search-input-wrapper {
         padding: 3px;
     }
@@ -1435,6 +1507,70 @@ body[data-theme="dark"] .user-item:hover {
 .message-item {
     opacity: 0;
     transform-origin: bottom;
+}
+
+/* --- Low Resolution Specific Styles --- */
+@media (max-width: 1366px) {
+    /* Add scrollbars for low-resolution screens */
+    .chat-sidebar,
+    .messages-list,
+    .conversation-list {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+    }
+
+    .darkmode .chat-sidebar,
+    .darkmode .messages-list,
+    .darkmode .conversation-list {
+        scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+    }
+
+    /* Custom scrollbar for Webkit browsers */
+    .chat-sidebar::-webkit-scrollbar,
+    .messages-list::-webkit-scrollbar,
+    .conversation-list::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .chat-sidebar::-webkit-scrollbar-track,
+    .messages-list::-webkit-scrollbar-track,
+    .conversation-list::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+    }
+
+    .chat-sidebar::-webkit-scrollbar-thumb,
+    .messages-list::-webkit-scrollbar-thumb,
+    .conversation-list::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+    }
+
+    .darkmode .chat-sidebar::-webkit-scrollbar-track,
+    .darkmode .messages-list::-webkit-scrollbar-track,
+    .darkmode .conversation-list::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .darkmode .chat-sidebar::-webkit-scrollbar-thumb,
+    .darkmode .messages-list::-webkit-scrollbar-thumb,
+    .darkmode .conversation-list::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Adjust font sizes for better readability */
+    .conversation-name {
+        font-size: 0.95rem;
+    }
+
+    .conversation-last-message {
+        font-size: 0.85rem;
+    }
+
+    .message-text {
+        font-size: 0.95rem;
+    }
 }
 
 .message-item.visible {

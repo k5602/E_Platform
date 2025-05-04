@@ -1179,32 +1179,61 @@ window.addEventListener('offline', function() {
     showConnectionStatus('disconnected');
 });
 
-// Check initial network status when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Check initial network status
-    if (!navigator.onLine) {
-        showToast('You are currently offline. Messages will be sent when you reconnect.', 'warning');
-    }
-
-    // Initialize mobile menu toggle for chat sidebar
+/**
+ * Initialize mobile menu functionality
+ */
+function initializeMobileMenu() {
     const menuToggle = document.querySelector('.menu-toggle');
     const chatSidebar = document.querySelector('.chat-sidebar');
-    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
 
     if (menuToggle && chatSidebar) {
         console.log('Found menu toggle and chat sidebar');
-        menuToggle.addEventListener('click', function() {
+
+        // Toggle sidebar when menu button is clicked
+        menuToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Toggle active class on sidebar
             chatSidebar.classList.toggle('active');
+
+            // Toggle active class on overlay
             if (sidebarOverlay) {
                 sidebarOverlay.classList.toggle('active');
             }
+
+            // Update ARIA attributes for accessibility
+            const isExpanded = chatSidebar.classList.contains('active');
+            menuToggle.setAttribute('aria-expanded', isExpanded);
         });
 
+        // Close sidebar when overlay is clicked
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', function() {
                 chatSidebar.classList.remove('active');
                 sidebarOverlay.classList.remove('active');
+                menuToggle.setAttribute('aria-expanded', 'false');
             });
+        }
+
+        // Handle escape key to close sidebar
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && chatSidebar.classList.contains('active')) {
+                chatSidebar.classList.remove('active');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('active');
+                }
+                menuToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Add scrollbar to sidebar content on low-resolution screens
+        if (window.matchMedia('(max-height: 700px)').matches) {
+            const conversationList = chatSidebar.querySelector('.conversation-list');
+            if (conversationList) {
+                conversationList.classList.add('low-res-scroll');
+            }
         }
     } else {
         console.log('Mobile menu elements not found:', {
@@ -1213,6 +1242,17 @@ document.addEventListener('DOMContentLoaded', function() {
             sidebarOverlay: !!sidebarOverlay
         });
     }
+}
+
+// Check initial network status when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Check initial network status
+    if (!navigator.onLine) {
+        showToast('You are currently offline. Messages will be sent when you reconnect.', 'warning');
+    }
+
+    // Initialize mobile menu
+    initializeMobileMenu();
 
     // Add animation classes to message items
     const messageItems = document.querySelectorAll('.message-item');
