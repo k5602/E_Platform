@@ -20,10 +20,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
     WebSocket consumer for handling real-time chat functionality.
     """
     async def connect(self):
+        # Enhanced logging for connection attempts
+        user_id = self.scope["user"].id if hasattr(self.scope["user"], "id") else "anonymous"
+        client_info = {
+            "user_id": user_id,
+            "path": self.scope.get("path", "unknown"),
+            "client": f"{self.scope.get('client', ('unknown', 0))[0]}:{self.scope.get('client', ('unknown', 0))[1]}",
+            "headers": dict(self.scope.get("headers", [])),
+        }
+
+        logger.info(f"WebSocket connection attempt: {client_info}")
+        print(f"ChatConsumer.connect called for user {user_id}")
+
         self.user = self.scope["user"]
 
         # Anonymous users can't use WebSockets
         if self.user.is_anonymous:
+            logger.warning("Anonymous user attempted to connect to chat WebSocket")
             await self.close()
             return
 
@@ -67,7 +80,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Accept the connection
         await self.accept()
 
-    async def disconnect(self, _):
+        # Log successful connection
+        user_id = self.user.id if hasattr(self.user, "id") else "anonymous"
+        logger.info(f"WebSocket connection established for user {user_id}")
+        print(f"WebSocket connection established for user {user_id}")
+
+        # Deliver any pending messages to the user who just came online
+        if hasattr(self.user, "id") and not self.user.is_anonymous:
+            delivered_count = await self.deliver_pending_messages(self.user.id)
+            if delivered_count > 0:
+                logger.info(f"Delivered {delivered_count} pending messages to user {self.user.id} on connect")
+                print(f"Delivered {delivered_count} pending messages to user {self.user.id} on connect")
+
+    async def disconnect(self, close_code):
+        # Enhanced logging for disconnections
+        user_id = self.scope["user"].id if hasattr(self.scope["user"], "id") else "anonymous"
+        client_info = {
+            "user_id": user_id,
+            "path": self.scope.get("path", "unknown"),
+            "client": f"{self.scope.get('client', ('unknown', 0))[0]}:{self.scope.get('client', ('unknown', 0))[1]}",
+            "close_code": close_code
+        }
+
+        logger.info(f"WebSocket disconnection: {client_info}")
+        print(f"ChatConsumer.disconnect called for user {user_id} with code {close_code}")
+
         if hasattr(self, 'user') and not self.user.is_anonymous:
             # Set user as offline
             user_status = await self.set_user_online(self.user.id, False)
@@ -222,6 +259,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Get the other participant in the conversation
         other_participant = await self.get_other_participant(conversation_id, self.user.id)
 
+        # Check if the recipient is online
+        recipient_online = await self.is_user_online(other_participant)
+
+        # Update message delivery status based on recipient's online status
+        if recipient_online:
+            await self.update_message_status(message.id, 'delivered')
+            logger.info(f"Message {message.id} delivered to online user {other_participant}")
+        else:
+            logger.info(f"Message {message.id} queued for offline user {other_participant}")
+            # Message remains in 'pending' status (default)
+
         # Prepare the message data
         message_data = {
             "type": "chat_message",
@@ -231,7 +279,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "timestamp": message.timestamp.isoformat(),
                 "sender_id": self.user.id,
                 "sender_name": f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username,
-                "is_read": False
+                "is_read": False,
+                "delivery_status": "delivered" if recipient_online else "pending"
             },
             "conversation_id": conversation_id
         }
@@ -481,8 +530,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         Mark all messages in a conversation as read for a user.
 
-        Uses a single update query for better performance instead of loading
-        all messages into memory and using bulk_update.
+        Uses bulk_update for better performance instead of individual save calls.
 
         Args:
             conversation_id: The ID of the conversation
@@ -495,13 +543,186 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             with transaction.atomic():
-                # Update all unread messages in a single query
-                updated_count = Message.objects.filter(
+                # Get all unread messages in a single query
+                messages_to_update = list(Message.objects.filter(
                     conversation_id=conversation_id,
                     is_read=False
-                ).exclude(sender_id=user_id).update(is_read=True)
+                ).exclude(sender_id=user_id))
 
+                # Update delivery status to 'read' for all messages
+                for message in messages_to_update:
+                    message.is_read = True
+                    message.delivery_status = 'read'
+
+                # Use bulk_update for better performance
+                if messages_to_update:
+                    Message.objects.bulk_update(messages_to_update, ['is_read', 'delivery_status'])
+
+                updated_count = len(messages_to_update)
                 return updated_count
         except Exception as e:
             logger.error(f"Error marking messages as read: {str(e)}", exc_info=True)
             return 0
+
+    @database_sync_to_async
+    def is_user_online(self, user_id):
+        """
+        Check if a user is currently online.
+
+        Args:
+            user_id: The ID of the user to check
+
+        Returns:
+            Boolean indicating if the user is online
+        """
+        try:
+            user_status = UserStatus.objects.filter(user_id=user_id, is_online=True).exists()
+            return user_status
+        except Exception as e:
+            logger.error(f"Error checking user online status: {str(e)}", exc_info=True)
+            return False
+
+    @database_sync_to_async
+    def update_message_status(self, message_id, status):
+        """
+        Update the delivery status of a message.
+
+        Args:
+            message_id: The ID of the message to update
+            status: The new delivery status ('pending', 'delivered', 'read', 'failed')
+
+        Returns:
+            The updated Message object
+        """
+        from django.db import transaction
+
+        try:
+            with transaction.atomic():
+                message = Message.objects.get(id=message_id)
+                message.delivery_status = status
+
+                if status == 'delivered' or status == 'read':
+                    message.delivery_attempts += 1
+                    message.last_delivery_attempt = timezone.now()
+
+                message.save()
+                return message
+        except Exception as e:
+            logger.error(f"Error updating message status: {str(e)}", exc_info=True)
+            return None
+
+    @database_sync_to_async
+    def get_pending_messages_for_user(self, user_id):
+        """
+        Get all pending messages for a user.
+
+        Args:
+            user_id: The ID of the user
+
+        Returns:
+            List of pending Message objects
+        """
+        try:
+            # Get all conversations the user is part of
+            conversations = Conversation.objects.filter(participants__id=user_id)
+
+            # Get all pending messages in those conversations where the user is not the sender
+            pending_messages = Message.objects.filter(
+                conversation__in=conversations,
+                delivery_status='pending'
+            ).exclude(sender_id=user_id).order_by('timestamp')
+
+            return list(pending_messages)
+        except Exception as e:
+            logger.error(f"Error getting pending messages: {str(e)}", exc_info=True)
+            return []
+
+    async def deliver_pending_messages(self, user_id):
+        """
+        Deliver all pending messages for a user who has just come online.
+
+        Args:
+            user_id: The ID of the user who has come online
+
+        Returns:
+            Number of messages delivered
+        """
+        try:
+            # Get all pending messages for the user
+            pending_messages = await self.get_pending_messages_for_user(user_id)
+
+            if not pending_messages:
+                logger.info(f"No pending messages for user {user_id}")
+                return 0
+
+            logger.info(f"Delivering {len(pending_messages)} pending messages to user {user_id}")
+
+            # Group messages by conversation for more efficient delivery
+            messages_by_conversation = {}
+            for message in pending_messages:
+                conv_id = message.conversation_id
+                if conv_id not in messages_by_conversation:
+                    messages_by_conversation[conv_id] = []
+                messages_by_conversation[conv_id].append(message)
+
+            # Deliver messages for each conversation
+            delivered_count = 0
+            for conv_id, messages in messages_by_conversation.items():
+                for message in messages:
+                    # Update message status to delivered
+                    await self.update_message_status(message.id, 'delivered')
+
+                    # Prepare message data
+                    sender = await self.get_user_info(message.sender_id)
+                    message_data = {
+                        "type": "chat_message",
+                        "message": {
+                            "id": message.id,
+                            "content": message.content,
+                            "timestamp": message.timestamp.isoformat(),
+                            "sender_id": message.sender_id,
+                            "sender_name": f"{sender.get('first_name', '')} {sender.get('last_name', '')}".strip() or sender.get(
+                                'username', 'Unknown'),
+                            "is_read": False,
+                            "delivery_status": "delivered"
+                        },
+                        "conversation_id": conv_id
+                    }
+
+                    # Send to the user's personal group
+                    await self.channel_layer.group_send(
+                        f"user_{user_id}",
+                        message_data
+                    )
+
+                    delivered_count += 1
+
+            logger.info(f"Successfully delivered {delivered_count} pending messages to user {user_id}")
+            return delivered_count
+
+        except Exception as e:
+            logger.error(f"Error delivering pending messages: {str(e)}", exc_info=True)
+            return 0
+
+    @database_sync_to_async
+    def get_user_info(self, user_id):
+        """
+        Get basic user information.
+
+        Args:
+            user_id: The ID of the user
+
+        Returns:
+            Dictionary with user information
+        """
+        try:
+            user = User.objects.get(id=user_id)
+            return {
+                'id': user.id,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+        except Exception as e:
+            logger.error(f"Error getting user info: {str(e)}", exc_info=True)
+            return {'username': 'Unknown'}

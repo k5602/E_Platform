@@ -221,29 +221,75 @@
 
 {% block chat_js %}
 <script>
+    // Wait for the chat.js script to load before initializing
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize the WebSocket connection
-        initializeChatWebsocket();
+        // Get the chat.js script element
+        const chatScript = document.getElementById('chat-js-script');
 
-        // Initialize the conversation
-        initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});
+        // Function to initialize everything once chat.js is loaded
+        function initializeChat() {
+            // Check if the required functions are available
+            if (typeof initializeChatWebsocket === 'function' &&
+                typeof initializeConversation === 'function') {
 
-        // Scroll to the bottom of the message list
-        scrollToBottom();
+                console.log('Chat.js loaded, initializing chat functions');
 
-        // Initialize emoji picker
-        initializeEmojiPicker();
+                // Initialize the WebSocket connection
+                initializeChatWebsocket();
 
-        // Initialize file attachment
-        initializeFileAttachment();
+                // Initialize the conversation
+                initializeConversation({{ conversation.id }}, {{ request.user.id }}, {{ other_user.id }});
 
-        // Initialize message actions (edit, delete)
-        initializeMessageActions();
+                // Scroll to the bottom of the message list
+                scrollToBottom();
+
+                // Initialize emoji picker if available
+                if (typeof initializeEmojiPicker === 'function') {
+                    initializeEmojiPicker();
+                }
+
+                // Initialize file attachment if available
+                if (typeof initializeFileAttachment === 'function') {
+                    initializeFileAttachment();
+                }
+
+                // Initialize message actions (edit, delete) if available
+                if (typeof initializeMessageActions === 'function') {
+                    initializeMessageActions();
+                }
+            } else {
+                console.error('Chat functions not available yet, retrying in 100ms');
+                // Retry after a short delay
+                setTimeout(initializeChat, 100);
+            }
+        }
+
+        // If the script is already loaded, initialize immediately
+        if (chatScript.loaded) {
+            initializeChat();
+        } else {
+            // Otherwise, wait for the script to load
+            chatScript.addEventListener('load', function () {
+                chatScript.loaded = true;
+                initializeChat();
+            });
+
+            // Fallback in case the load event doesn't fire
+            setTimeout(function () {
+                if (!chatScript.loaded) {
+                    console.log('Fallback: Initializing chat after timeout');
+                    chatScript.loaded = true;
+                    initializeChat();
+                }
+            }, 1000);
+        }
     });
 
     function scrollToBottom() {
         const messageList = document.getElementById('message-list');
-        messageList.scrollTop = messageList.scrollHeight;
+        if (messageList) {
+            messageList.scrollTop = messageList.scrollHeight;
+        }
     }
 </script>
 {% endblock %}

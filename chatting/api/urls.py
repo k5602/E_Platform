@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 app_name = 'chat_api'
@@ -18,4 +19,8 @@ urlpatterns = [
 
     # Message count API
     path('unread-count/', views.UnreadMessageCountView.as_view(), name='unread_count'),
+
+    # Message editing and deletion APIs
+    path('messages/<int:pk>/edit/', views.EditMessageView.as_view(), name='edit_message'),
+    path('messages/<int:pk>/delete/', views.DeleteMessageView.as_view(), name='delete_message'),
 ]

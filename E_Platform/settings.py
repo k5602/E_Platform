@@ -86,7 +86,12 @@ ASGI_APPLICATION = 'E_Platform.asgi.application'
 # Channels configuration
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+            'capacity': 1500,  # Maximum number of messages in channel layer
+            'expiry': 60,  # Message expiry time in seconds
+        },
     },
 }
 

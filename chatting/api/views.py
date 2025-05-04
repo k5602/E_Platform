@@ -1,9 +1,9 @@
-from rest_framework import generics, status, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count
+from django.db.models import Q
 from django.utils import timezone
+from rest_framework import generics, status, permissions, pagination, parsers
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from chatting.models import Conversation, Message, UserStatus
 from .serializers import (
@@ -94,19 +94,34 @@ class StartConversationView(APIView):
 
 
 class MessageListView(generics.ListAPIView):
-    """API view for listing messages in a conversation."""
+    """API view for listing messages in a conversation with pagination."""
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = pagination.PageNumberPagination
 
     def get_queryset(self):
         conversation_id = self.kwargs.get('pk')
+
+        # Get pagination parameters
+        page_size = self.request.query_params.get('page_size', 50)
+        try:
+            page_size = int(page_size)
+            # Limit page size to prevent performance issues
+            page_size = min(max(10, page_size), 100)
+            self.pagination_class.page_size = page_size
+        except (ValueError, TypeError):
+            pass
+
+        # Get before_id parameter for cursor-based pagination
+        before_id = self.request.query_params.get('before_id')
+        after_id = self.request.query_params.get('after_id')
 
         try:
             # Check if the user is a participant in the conversation
             conversation = Conversation.objects.filter(
                 id=conversation_id,
                 participants=self.request.user
-            ).first()
+            ).select_related().first()
 
             if not conversation:
                 return Message.objects.none()
@@ -117,18 +132,42 @@ class MessageListView(generics.ListAPIView):
                 is_read=False
             ).exclude(sender=self.request.user)
 
+            # Use bulk update for better performance
             for message in unread_messages:
-                message.mark_as_read()
+                message.is_read = True
+                message.delivery_status = 'read'
 
-            return Message.objects.filter(conversation=conversation)
+            if unread_messages:
+                Message.objects.bulk_update(unread_messages, ['is_read', 'delivery_status'])
+
+            # Base queryset
+            queryset = Message.objects.filter(conversation=conversation)
+
+            # Apply cursor-based pagination if requested
+            if before_id:
+                try:
+                    oldest_message = Message.objects.get(id=before_id)
+                    queryset = queryset.filter(timestamp__lt=oldest_message.timestamp)
+                except Message.DoesNotExist:
+                    pass
+
+            if after_id:
+                try:
+                    newest_message = Message.objects.get(id=after_id)
+                    queryset = queryset.filter(timestamp__gt=newest_message.timestamp)
+                except Message.DoesNotExist:
+                    pass
+
+            return queryset.order_by('-timestamp')
 
         except Conversation.DoesNotExist:
             return Message.objects.none()
 
 
 class AddMessageView(APIView):
-    """API view for adding a message to a conversation."""
+    """API view for adding a message to a conversation, with support for file attachments."""
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def post(self, request, pk, *args, **kwargs):
         try:
@@ -143,26 +182,59 @@ class AddMessageView(APIView):
             )
 
         content = request.data.get('content', '').strip()
+        file_attachment = request.FILES.get('file_attachment')
 
-        if not content:
+        # Check if we have either content or a file
+        if not content and not file_attachment:
             return Response(
-                {"error": "Message content cannot be empty."},
+                {"error": "Message must have either content or a file attachment."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Create the message
-        message = Message.objects.create(
+        # Create the message with basic fields
+        message = Message(
             conversation=conversation,
             sender=request.user,
             content=content,
             is_read=True  # Messages are always read by the sender
         )
 
+        # Handle file attachment if present
+        if file_attachment:
+            # Get file size
+            file_size = file_attachment.size
+
+            # Get original file name
+            file_name = file_attachment.name
+
+            # Determine file type based on content type or extension
+            content_type = file_attachment.content_type
+            file_type = 'other'
+
+            if content_type.startswith('image/'):
+                file_type = 'image'
+            elif content_type.startswith('audio/'):
+                file_type = 'audio'
+            elif content_type.startswith('video/'):
+                file_type = 'video'
+            elif content_type.startswith('application/') or content_type.startswith('text/'):
+                file_type = 'document'
+
+            # Set file metadata
+            message.file_attachment = file_attachment
+            message.file_type = file_type
+            message.file_name = file_name
+            message.file_size = file_size
+
+        # Save the message
+        message.save()
+
         # Update the conversation timestamp
         conversation.update_timestamp()
 
+        # Return the serialized message
         return Response(
-            MessageSerializer(message).data,
+            MessageSerializer(message, context={'request': request}).data,
             status=status.HTTP_201_CREATED
         )
 
@@ -237,9 +309,76 @@ class UnreadMessageCountView(APIView):
         for conversation in conversations:
             unread_count += Message.objects.filter(
                 conversation=conversation,
-                is_read=False
+                is_read=False,
+                is_deleted=False  # Don't count deleted messages
             ).exclude(sender=request.user).count()
 
         return Response({
             'unread_count': unread_count
         }, status=status.HTTP_200_OK)
+
+
+class EditMessageView(APIView):
+    """API view for editing a message."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, pk, *args, **kwargs):
+        try:
+            # Get the message and verify ownership
+            message = Message.objects.get(pk=pk, sender=request.user)
+
+            # Check if message is deleted
+            if message.is_deleted:
+                return Response(
+                    {"error": "Cannot edit a deleted message."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Get new content
+            content = request.data.get('content', '').strip()
+
+            if not content:
+                return Response(
+                    {"error": "Message content cannot be empty."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Edit the message
+            message.edit_message(content)
+
+            # Return the updated message
+            return Response(
+                MessageSerializer(message).data,
+                status=status.HTTP_200_OK
+            )
+
+        except Message.DoesNotExist:
+            return Response(
+                {"error": "Message not found or you don't have permission to edit it."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class DeleteMessageView(APIView):
+    """API view for deleting a message."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            # Get the message and verify ownership
+            message = Message.objects.get(pk=pk, sender=request.user)
+
+            # Soft delete the message
+            message.delete_message()
+
+            # Return success response
+            return Response(
+                {"message": "Message deleted successfully."},
+                status=status.HTTP_200_OK
+            )
+
+        except Message.DoesNotExist:
+            return Response(
+                {"error": "Message not found or you don't have permission to delete it."},
+                status=status.HTTP_404_NOT_FOUND
+            )

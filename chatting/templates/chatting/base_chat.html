@@ -17,6 +17,7 @@
 {% endblock %}
 
 {% block page_js %}
-<script src="{% static 'chatting/js/chat.js' %}"></script>
+    <!-- Load the chat.js script with an ID to prevent duplicate loading -->
+    <script id="chat-js-script" src="{% static 'chatting/js/chat.js' %}" defer></script>
 {% block chat_js %}{% endblock %}
 {% endblock %}

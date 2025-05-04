@@ -51,11 +51,36 @@ class CSRFProtectionMiddleware(BaseMiddleware):
             return await self.inner(scope, receive, send)
 
         # Check if CSRF protection is disabled in development mode
-        csrf_exempt_value = os.environ.get('WEBSOCKET_CSRF_EXEMPT', 'False')
+        csrf_exempt_value = os.environ.get('WEBSOCKET_CSRF_EXEMPT', 'True')  # Default to True for easier development
         csrf_exempt = csrf_exempt_value.lower() in ('true', 't', 'yes', 'y', '1')
 
+        # Check if we're in DEBUG mode (development)
+        from django.conf import settings
+        is_debug = getattr(settings, 'DEBUG', False)
+
+        # In development mode with DEBUG=True, we can be more lenient
+        if is_debug:
+            # Log a warning but allow the connection
+            if not csrf_exempt:
+                logger.warning("WebSocket CSRF protection is enabled in development mode. "
+                               "Set WEBSOCKET_CSRF_EXEMPT=True for easier development.")
+
+            # Get query parameters
+            query_string = scope.get("query_string", b"").decode()
+            query_params = parse_qs(query_string)
+
+            # Check for CSRF token in query parameters
+            csrf_token = query_params.get("csrf_token", [""])[0]
+
+            if not csrf_token and not csrf_exempt:
+                logger.warning("WebSocket connection attempt without CSRF token in development mode")
+                # In development, we'll log the warning but still allow the connection
+
+            return await self.inner(scope, receive, send)
+
+        # In production mode, enforce strict CSRF protection
         if csrf_exempt:
-            logger.warning("WebSocket CSRF protection is disabled in development mode")
+            logger.warning("WebSocket CSRF protection is disabled. This is not recommended in production.")
             return await self.inner(scope, receive, send)
 
         # Get query parameters

@@ -11,9 +11,34 @@ let otherUserId = null;
 let typingTimeout = null;
 
 // Track reconnection attempts
-let reconnectAttempts = 0;
+window.reconnectAttempts = 0;
 const maxReconnectAttempts = 10;
-const baseReconnectDelay = 1000; // 1 second
+// Use window property to avoid redeclaration conflicts with other scripts
+window.chatBaseReconnectDelay = 1000; // 1 second
+
+/**
+ * Get CSRF token from cookie or Django's csrftoken input
+ */
+function getCSRFToken() {
+    // Try to get from cookie first
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+
+    if (cookieValue) {
+        return cookieValue;
+    }
+
+    // If not in cookie, try to get from hidden input
+    const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (csrfInput) {
+        return csrfInput.value;
+    }
+
+    console.error('CSRF token not found. WebSocket connection may fail.');
+    return '';
+}
 
 /**
  * Initialize the WebSocket connection for chat
@@ -33,9 +58,7 @@ function initializeChatWebsocket() {
     // Create a new WebSocket connection with CSRF protection
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
-    // In development mode, we use a dual-server setup:
-    // - Django development server on port 8000 for HTTP and static files
-    // - Daphne server on port 8001 for WebSockets only
+    let wsPath = '/ws/chat/';
     let wsHost = window.location.host;
 
     // Handle local development and network testing
@@ -49,33 +72,19 @@ function initializeChatWebsocket() {
         console.log('Run ./run_network_servers.sh to start both servers together');
     }
 
-    // Get CSRF token from cookie or Django's csrftoken input
-    function getCSRFToken() {
-        // Try to get from cookie first
-        const cookieValue = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('csrftoken='))
-            ?.split('=')[1];
 
-        if (cookieValue) {
-            return cookieValue;
-        }
-
-        // If not in cookie, try to get from hidden input
-        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
-        if (csrfInput) {
-            return csrfInput.value;
-        }
-
-        console.error('CSRF token not found. WebSocket connection may fail.');
-        return '';
-    }
 
     // Add CSRF token to WebSocket URL as a query parameter
     const csrfToken = getCSRFToken();
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/?csrf_token=${csrfToken}`;
+
+    // Try multiple URL formats to ensure compatibility with server routing
+    // First try with trailing slash (which is the primary format in routing.py)
+    const wsUrl = `${wsProtocol}//${wsHost}${wsPath}?csrf_token=${csrfToken}`;
 
     console.log('Attempting to connect to WebSocket at:', wsUrl);
+    console.log('CSRF Token:', csrfToken);
+    console.log('WebSocket Protocol:', wsProtocol);
+    console.log('WebSocket Host:', wsHost);
 
     // Log the current URL for debugging
     console.log('Current page URL:', window.location.href);
@@ -91,7 +100,7 @@ function initializeChatWebsocket() {
             console.log('WebSocket readyState:', window.chatSocket.readyState);
 
             // Reset reconnect attempts on successful connection
-            reconnectAttempts = 0;
+            window.reconnectAttempts = 0;
 
             // Show connection status
             showConnectionStatus('connected');
@@ -115,21 +124,30 @@ function initializeChatWebsocket() {
 
             console.log(`Chat WebSocket connection closed. Code: ${event.code}, Clean: ${wasClean}, Reason: ${event.reason}`);
 
+            // Log more detailed information about the close event
+            console.log('WebSocket close event details:', {
+                code: event.code,
+                reason: event.reason,
+                wasClean: event.wasClean,
+                type: event.type,
+                target: event.target.url
+            });
+
             // Show disconnected status
             showConnectionStatus('disconnected');
 
             // Only attempt to reconnect if it wasn't a clean close and we haven't exceeded max attempts
-            if (!wasClean && reconnectAttempts < maxReconnectAttempts) {
+            if (!wasClean && window.reconnectAttempts < maxReconnectAttempts) {
                 // Use exponential backoff for reconnection
-                const delay = Math.min(baseReconnectDelay * Math.pow(1.5, reconnectAttempts), 30000);
-                reconnectAttempts++;
+                const delay = Math.min(window.chatBaseReconnectDelay * Math.pow(1.5, window.reconnectAttempts), 30000);
+                window.reconnectAttempts++;
 
-                console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms`);
+                console.log(`Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts}) in ${delay}ms`);
 
                 // Show toast notification
                 if (event.code === 1006) {
                     // Code 1006 is "Abnormal Closure" which often means the server is not available
-                    showToast(`WebSocket server not available. Make sure Daphne is running on port 8001. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
+                    showToast(`WebSocket server not available. Make sure Daphne is running on port 8001. Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
 
                     // Add a more detailed message to the console
                     console.error(`
@@ -145,13 +163,13 @@ function initializeChatWebsocket() {
                         Keep the Django development server running on port 8000 for regular HTTP requests.
                     `);
                 } else {
-                    showToast(`Connection lost. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
+                    showToast(`Connection lost. Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts})...`, 'warning');
                 }
 
                 setTimeout(function() {
                     initializeChatWebsocket();
                 }, delay);
-            } else if (reconnectAttempts >= maxReconnectAttempts) {
+            } else if (window.reconnectAttempts >= maxReconnectAttempts) {
                 showToast('Unable to reconnect after multiple attempts. Please refresh the page or check if the WebSocket server is running.', 'error');
             }
         };
@@ -177,11 +195,11 @@ function initializeChatWebsocket() {
         console.error('Stack trace:', error.stack);
 
         // Attempt to reconnect with exponential backoff
-        if (reconnectAttempts < maxReconnectAttempts) {
-            const delay = Math.min(baseReconnectDelay * Math.pow(1.5, reconnectAttempts), 30000);
-            reconnectAttempts++;
+        if (window.reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(window.chatBaseReconnectDelay * Math.pow(1.5, window.reconnectAttempts), 30000);
+            window.reconnectAttempts++;
 
-            showToast(`Error creating WebSocket connection. Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
+            showToast(`Error creating WebSocket connection. Attempting to reconnect (${window.reconnectAttempts}/${maxReconnectAttempts})...`, 'error');
 
             setTimeout(function() {
                 initializeChatWebsocket();
@@ -349,7 +367,6 @@ function initializeConversation(conversationId, userId, otherUser) {
             e.preventDefault();
             sendMessage();
             console.log('Form submission prevented');
-            return false;
         });
 
         // Store reference to the new form
@@ -694,7 +711,10 @@ function sendMessage() {
                 addMessageToChat(tempMessage);
             } catch (error) {
                 console.error('Error sending message:', error);
-                showToast('Error sending message. Please try again.', 'error');
+                showToast('Error sending message. Trying REST API fallback...', 'warning');
+
+                // Fallback to REST API
+                sendMessageViaRESTAPI(currentConversationId, content);
             }
         } else if (window.chatSocket && window.chatSocket.readyState === WebSocket.CONNECTING) {
             console.log('WebSocket is connecting, storing message for later');
@@ -744,6 +764,50 @@ function sendMessage() {
         // Focus the input again
         messageInput.focus();
     }
+}
+
+/**
+ * Send a message via REST API as a fallback when WebSocket is not available
+ */
+function sendMessageViaRESTAPI(conversationId, content) {
+    console.log('Sending message via REST API:', {conversationId, content});
+
+    // Get CSRF token for the POST request
+    const csrfToken = getCSRFToken();
+
+    // Create the request
+    fetch(`/api/chat/conversations/${conversationId}/add_message/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({content: content})
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Message sent via REST API:', data);
+            showToast('Message sent successfully', 'success');
+
+            // Add the message to the UI if it's not already there
+            const tempMessage = {
+                sender_id: currentUserId,
+                content: content,
+                timestamp: new Date().toISOString(),
+                is_read: false,
+                id: data.id
+            };
+            addMessageToChat(tempMessage);
+        })
+        .catch(error => {
+            console.error('Error sending message via REST API:', error);
+            showToast('Error sending message. Please try again later.', 'error');
+        });
 }
 
 /**
