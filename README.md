@@ -321,23 +321,43 @@ sudo -u postgres psql
    GRANT ALL PRIVILEGES ON DATABASE e_platform_db TO zero;
    ```
 
-    - Use the provided script to run the application with PostgreSQL:
+    - Use the provided script to run the application with PostgreSQL and WebSockets:
 
    ```bash
    ./run_with_postgresql.sh
    ```
 
-   - Alternatively, you can set the environment variables manually:
+   This script will:
+   - Set up PostgreSQL environment variables
+   - Check if PostgreSQL is running
+   - Create the database and user if they don't exist
+   - Apply migrations
+   - Run the Django development server in the background (for HTTP requests)
+   - Run the Daphne WebSocket server in the foreground (for WebSocket connections)
+
+   Both servers are required for the application to function properly:
+   - Django server: Handles HTTP requests and serves static files
+   - Daphne server: Handles WebSocket connections for real-time features
+
+   - Alternatively, you can set the environment variables and run servers manually:
 
    ```bash
+   # Set environment variables
    export DB_ENGINE=postgresql
    export DB_NAME=e_platform_db
    export DB_USER=zero
    export DB_PASSWORD=82821931003
    export DB_HOST=localhost
    export DB_PORT=5432
+
+   # Apply migrations
    python manage.py migrate
+
+   # Run Django server (in one terminal)
    python manage.py runserver
+
+   # Run Daphne WebSocket server (in another terminal)
+   daphne -b 0.0.0.0 -p 8001 E_Platform.asgi:application
    ```
 
    **Option 2: Use SQLite**
