@@ -109,6 +109,9 @@
             </div>
         </div>
 
+        <!-- Connection Status Container -->
+        <div id="connection-status-container" aria-live="polite"></div>
+
         <!-- Message List -->
         <div class="message-list" id="message-list" role="log" aria-label="Message history" aria-live="polite">
             {% if messages|length > 0 %}
@@ -117,32 +120,29 @@
                          role="article"
                          data-message-id="{{ message.id }}"
                          aria-label="{% if message.sender == request.user %}You{% else %}{{ message.sender.first_name }}{% endif %} at {{ message.timestamp|date:'h:i A' }}">
-                        <div class="message-content">{{ message.content }}</div>
-                        <div class="message-meta">
-                            <span class="message-time">{{ message.timestamp|date:"h:i A" }}</span>
+                        <div class="message-bubble">
+                            <div class="message-content">{{ message.content }}</div>
+                            <div class="message-meta">
+                                <span class="message-time" title="{{ message.timestamp|date:'F j, Y, g:i a' }}">{{ message.timestamp|date:"h:i A" }}</span>
+                                {% if message.sender == request.user %}
+                                    <span class="message-status" title="{% if message.is_read %}Read{% else %}Sent{% endif %}">
+                                        {% if message.is_read %}
+                                            <i class="fas fa-check-double read-indicator" aria-label="Read"></i>
+                                        {% else %}
+                                            <i class="fas fa-check" aria-label="Sent"></i>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
                             {% if message.sender == request.user %}
-                                <span class="message-status" aria-label="{% if message.is_read %}Read{% else %}Sent{% endif %}">
-                                    {% if message.is_read %}
-                                        <i class="fas fa-check-double read-indicator" aria-hidden="true"></i>
-                                    {% else %}
-                                        <i class="fas fa-check" aria-hidden="true"></i>
-                                    {% endif %}
-                                </span>
-                                <div class="message-actions-toggle">
-                                    <button type="button" class="message-action-toggle" aria-label="Message options">
-                                        <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
-                                    </button>
-                                    <div class="message-actions-menu">
-                                        <button type="button" class="edit-message" aria-label="Edit message">
-                                            <i class="fas fa-edit" aria-hidden="true"></i> Edit
-                                            <span class="feature-badge">Beta</span>
-                                        </button>
-                                        <button type="button" class="delete-message" aria-label="Delete message">
-                                            <i class="fas fa-trash-alt" aria-hidden="true"></i> Delete
-                                            <span class="feature-badge">Beta</span>
-                                        </button>
-                                    </div>
-                                </div>
+                            <div class="message-actions">
+                                <button type="button" class="edit-message" aria-label="Edit message">
+                                    <i class="fas fa-edit" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="delete-message" aria-label="Delete message">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -311,7 +311,10 @@
     function scrollToBottom() {
         const messageList = document.getElementById('message-list');
         if (messageList) {
-            messageList.scrollTop = messageList.scrollHeight;
+            messageList.scrollTo({
+                top: messageList.scrollHeight,
+                behavior: 'smooth'
+            });
         }
     }
 </script>
