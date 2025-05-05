@@ -530,8 +530,6 @@ function handleNewMessageNotification(data) {
  * Handle typing indicator updates
  */
 function handleTypingIndicator(data) {
-    console.log('Received typing indicator:', data);
-
     if (currentConversationId && data.conversation_id === currentConversationId) {
         const typingIndicator = document.getElementById('typing-indicator');
 
@@ -540,40 +538,28 @@ function handleTypingIndicator(data) {
             return;
         }
 
-        // Only show typing indicator if it's from the other user
-        if (data.user_id !== currentUserId) {
-            console.log(`Showing typing indicator for user ${data.user_id}, is_typing: ${data.is_typing}`);
+        if (data.is_typing) {
+            // Make sure the typing indicator is visible
+            typingIndicator.style.display = 'flex';
+            typingIndicator.classList.add('active');
 
-            if (data.is_typing) {
-                // Make sure the typing indicator is visible
-                typingIndicator.style.display = 'flex';
-                typingIndicator.classList.add('active');
-                console.log('Typing indicator activated');
+            // Auto-hide after 10 seconds in case we don't get the "stopped typing" event
+            if (window.typingTimeout) {
+                clearTimeout(window.typingTimeout);
+            }
 
-                // Auto-hide after 10 seconds in case we don't get the "stopped typing" event
-                if (window.typingTimeout) {
-                    clearTimeout(window.typingTimeout);
-                }
-
-                window.typingTimeout = setTimeout(() => {
-                    typingIndicator.classList.remove('active');
-                    typingIndicator.style.display = 'none';
-                    console.log('Typing indicator auto-hidden after timeout');
-                }, 10000);
-            } else {
+            window.typingTimeout = setTimeout(() => {
                 typingIndicator.classList.remove('active');
                 typingIndicator.style.display = 'none';
-                console.log('Typing indicator hidden');
-
-                if (window.typingTimeout) {
-                    clearTimeout(window.typingTimeout);
-                }
-            }
+            }, 10000);
         } else {
-            console.log('Ignoring typing indicator from self');
+            typingIndicator.classList.remove('active');
+            typingIndicator.style.display = 'none';
+
+            if (window.typingTimeout) {
+                clearTimeout(window.typingTimeout);
+            }
         }
-    } else {
-        console.log(`Ignoring typing indicator for different conversation: ${data.conversation_id}`);
     }
 }
 
@@ -625,47 +611,6 @@ function formatLastSeen(timestamp) {
 }
 
 /**
- * Format a timestamp into a human-readable last seen time
- */
-function formatLastSeen(timestamp) {
-    try {
-        // Parse the timestamp
-        const date = new Date(timestamp);
-
-        // Check if the date is valid
-        if (isNaN(date.getTime())) {
-            console.error('Invalid timestamp:', timestamp);
-            return 'recently';
-        }
-
-        const now = new Date();
-        const diffMs = now - date;
-        const diffSec = Math.floor(diffMs / 1000);
-        const diffMin = Math.floor(diffSec / 60);
-        const diffHour = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHour / 24);
-
-        // Format based on how long ago
-        if (diffSec < 60) {
-            return 'just now';
-        } else if (diffMin < 60) {
-            return `${diffMin} ${diffMin === 1 ? 'minute' : 'minutes'} ago`;
-        } else if (diffHour < 24) {
-            return `${diffHour} ${diffHour === 1 ? 'hour' : 'hours'} ago`;
-        } else if (diffDay < 7) {
-            return `${diffDay} ${diffDay === 1 ? 'day' : 'days'} ago`;
-        } else {
-            // Format as date
-            const options = { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' };
-            return date.toLocaleDateString(undefined, options);
-        }
-    } catch (error) {
-        console.error('Error formatting last seen time:', error);
-        return 'recently';
-    }
-}
-
-/**
  * Handle user status updates
  */
 function handleUserStatusUpdate(data) {
@@ -675,47 +620,30 @@ function handleUserStatusUpdate(data) {
 
     console.log('User status update received:', data);
 
-    if (lastSeen) {
-        console.log('Last seen formatted:', formatLastSeen(lastSeen));
-    }
-
     // Update status indicators for this user
     const statusIndicators = document.querySelectorAll(`.status-indicator[data-user-id="${userId}"]`);
-    console.log(`Found ${statusIndicators.length} status indicators for user ${userId}`);
 
     statusIndicators.forEach(function(indicator) {
         if (isOnline) {
             indicator.classList.add('online');
             indicator.classList.remove('offline');
-            console.log(`Set status indicator to online for user ${userId}`);
         } else {
             indicator.classList.add('offline');
             indicator.classList.remove('online');
-            console.log(`Set status indicator to offline for user ${userId}`);
         }
     });
 
     // Update status in conversation list
-    const conversationItems = document.querySelectorAll(`.conversation-item[href*="${userId}"]`);
-    console.log(`Found ${conversationItems.length} conversation items for user ${userId}`);
-
+    const conversationItems = document.querySelectorAll(`.conversation-item[data-user-id="${userId}"]`);
     conversationItems.forEach(function(item) {
-        // Set the user ID as a data attribute if it's not already there
-        if (!item.dataset.userId) {
-            item.dataset.userId = userId;
-        }
-
         const statusText = item.querySelector('.conversation-preview span');
         if (statusText) {
             if (isOnline) {
                 statusText.textContent = 'Online';
-                console.log(`Updated conversation list status to Online for user ${userId}`);
             } else if (lastSeen) {
                 statusText.textContent = `Last seen ${formatLastSeen(lastSeen)}`;
-                console.log(`Updated conversation list status to Last seen for user ${userId}`);
             } else {
                 statusText.textContent = 'Offline';
-                console.log(`Updated conversation list status to Offline for user ${userId}`);
             }
         }
     });
@@ -727,18 +655,29 @@ function handleUserStatusUpdate(data) {
             if (isOnline) {
                 statusText.textContent = 'Online';
                 statusText.classList.add('online');
-                console.log(`Updated header status to Online for user ${userId}`);
             } else if (lastSeen) {
                 statusText.textContent = `Last seen ${formatLastSeen(lastSeen)}`;
                 statusText.classList.remove('online');
-                console.log(`Updated header status to Last seen for user ${userId}`);
             } else {
                 statusText.textContent = 'Offline';
                 statusText.classList.remove('online');
-                console.log(`Updated header status to Offline for user ${userId}`);
             }
+        }
+    }
+
+    // Also update user status in the conversation header
+    const userStatus = document.querySelector('.user-status');
+    if (userStatus && userStatus.closest('.conversation-header') &&
+        userStatus.closest('.conversation-header').getAttribute('data-user-id') === userId.toString()) {
+        if (isOnline) {
+            userStatus.textContent = 'Online';
+            userStatus.classList.add('online');
+        } else if (lastSeen) {
+            userStatus.textContent = `Last seen ${formatLastSeen(lastSeen)}`;
+            userStatus.classList.remove('online');
         } else {
-            console.warn('Status text element not found in conversation header');
+            userStatus.textContent = 'Offline';
+            userStatus.classList.remove('online');
         }
     }
 }
@@ -1029,9 +968,8 @@ function sendTypingIndicator(isTyping) {
     }
 
     // Prepare the typing indicator data
-    // IMPORTANT: Use 'typing_indicator' as the type, not 'typing'
     const typingData = {
-        'type': 'typing_indicator',
+        'type': 'typing',
         'conversation_id': currentConversationId,
         'is_typing': isTyping
     };
@@ -1051,13 +989,6 @@ function sendTypingIndicator(isTyping) {
         try {
             window.chatSocket.send(JSON.stringify(typingData));
             console.log('Typing indicator sent:', isTyping);
-
-            // Show a visual confirmation in the console
-            if (isTyping) {
-                console.log('%c Typing indicator sent ✓ ', 'background: #4CAF50; color: white; padding: 2px 5px; border-radius: 3px;');
-            } else {
-                console.log('%c Stopped typing indicator sent ✓ ', 'background: #FF9800; color: white; padding: 2px 5px; border-radius: 3px;');
-            }
         } catch (error) {
             console.error('Error sending typing indicator:', error);
         }
@@ -1509,312 +1440,182 @@ document.addEventListener('DOMContentLoaded', function() {
  * Initialize emoji picker functionality
  */
 function initializeEmojiPicker() {
-    console.log('Initializing emoji picker...');
-
-    // Get all required elements
     const emojiButton = document.getElementById('emoji-button');
     const emojiPicker = document.getElementById('emoji-picker');
     const closeEmojiButton = document.getElementById('close-emoji');
     const emojis = document.querySelectorAll('.emoji');
+    const messageInput = document.getElementById('message-input');
 
-    // Get the message input - use the global reference if available
-    const messageInput = window.messageInput || document.getElementById('message-input');
-
-    // Check if elements exist
-    if (!emojiButton) {
-        console.error('Emoji button not found');
+    if (!emojiButton || !emojiPicker) {
+        console.log('Emoji picker elements not found');
         return;
     }
 
-    if (!emojiPicker) {
-        console.error('Emoji picker not found');
-        return;
-    }
+    console.log('Initializing emoji picker with button:', emojiButton);
 
-    console.log('Found emoji button and picker');
+    // Remove any existing event listeners to prevent duplicates
+    const newEmojiButton = emojiButton.cloneNode(true);
+    emojiButton.parentNode.replaceChild(newEmojiButton, emojiButton);
 
-    // Make sure emoji picker is initially hidden and has the correct styles
-    emojiPicker.style.display = 'none';
-    emojiPicker.classList.remove('active');
-
-    // Create direct click handler for emoji button
-    emojiButton.onclick = function(e) {
+    // Toggle emoji picker with the new button
+    newEmojiButton.addEventListener('click', function (e) {
         console.log('Emoji button clicked');
         e.preventDefault();
         e.stopPropagation();
+        emojiPicker.classList.toggle('active');
+    });
 
-        // Toggle visibility
-        if (emojiPicker.style.display === 'none' || !emojiPicker.classList.contains('active')) {
-            emojiPicker.style.display = 'block';
-            emojiPicker.classList.add('active');
-            console.log('Emoji picker shown');
-        } else {
-            emojiPicker.style.display = 'none';
-            emojiPicker.classList.remove('active');
-            console.log('Emoji picker hidden');
-        }
-
-        return false;
-    };
-
-    // Close emoji picker button
+    // Close emoji picker
     if (closeEmojiButton) {
-        closeEmojiButton.onclick = function(e) {
-            console.log('Close emoji button clicked');
+        const newCloseButton = closeEmojiButton.cloneNode(true);
+        closeEmojiButton.parentNode.replaceChild(newCloseButton, closeEmojiButton);
+
+        newCloseButton.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-
-            emojiPicker.style.display = 'none';
             emojiPicker.classList.remove('active');
-
-            return false;
-        };
+        });
     }
 
-    // Add emoji to message input when clicked
-    emojis.forEach(function(emoji) {
-        emoji.onclick = function(e) {
-            console.log('Emoji clicked:', this.textContent);
+    // Add emoji to message input
+    emojis.forEach(function (emoji) {
+        emoji.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
 
             const emojiChar = this.getAttribute('data-emoji');
-
             if (!messageInput) {
                 console.error('Message input not found');
-                return false;
+                return;
             }
 
-            // Insert emoji at cursor position
             const cursorPos = messageInput.selectionStart;
             const textBefore = messageInput.value.substring(0, cursorPos);
             const textAfter = messageInput.value.substring(cursorPos);
 
             messageInput.value = textBefore + emojiChar + textAfter;
             messageInput.focus();
-
-            // Update cursor position
             messageInput.selectionStart = cursorPos + emojiChar.length;
             messageInput.selectionEnd = cursorPos + emojiChar.length;
 
             // Trigger input event to activate typing indicator
-            messageInput.dispatchEvent(new Event('input', { bubbles: true }));
+            const inputEvent = new Event('input', { bubbles: true });
+            messageInput.dispatchEvent(inputEvent);
 
-            // Hide emoji picker
-            emojiPicker.style.display = 'none';
+            // Close emoji picker
             emojiPicker.classList.remove('active');
-
-            return false;
-        };
+        });
     });
 
     // Close emoji picker when clicking outside
-    document.addEventListener('click', function(e) {
-        if (emojiPicker && emojiPicker.style.display !== 'none' &&
-            !emojiPicker.contains(e.target) && e.target !== emojiButton) {
-            console.log('Clicked outside emoji picker, hiding it');
-            emojiPicker.style.display = 'none';
+    document.addEventListener('click', function (e) {
+        if (emojiPicker && !emojiPicker.contains(e.target) && e.target !== newEmojiButton) {
             emojiPicker.classList.remove('active');
         }
     });
-
-    console.log('Emoji picker initialization complete');
 }
 
 /**
  * Initialize file attachment functionality
  */
 function initializeFileAttachment() {
-    console.log('Initializing file attachment...');
-
-    // Get required elements
     const attachmentButton = document.getElementById('attachment-button');
     const messageForm = document.getElementById('message-form');
-    const messageInput = window.messageInput || document.getElementById('message-input');
 
-    if (!attachmentButton) {
-        console.error('Attachment button not found');
+    if (!attachmentButton || !messageForm) {
+        console.log('File attachment elements not found');
         return;
     }
 
-    if (!messageForm) {
-        console.error('Message form not found');
-        return;
-    }
+    attachmentButton.addEventListener('click', function () {
+        // Create a file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt';
+        fileInput.style.display = 'none';
 
-    console.log('Found attachment button and message form');
+        // Add file input to form
+        messageForm.appendChild(fileInput);
 
-    // Create a persistent file input element
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.id = 'file-input';
-    fileInput.accept = 'image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx';
-    fileInput.style.display = 'none';
-
-    // Add file input to form
-    messageForm.appendChild(fileInput);
-
-    console.log('Created file input element');
-
-    // Direct click handler for attachment button
-    attachmentButton.onclick = function(e) {
-        console.log('Attachment button clicked');
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Reset the file input to ensure change event fires even if selecting the same file
-        fileInput.value = '';
+        // Trigger file selection
         fileInput.click();
 
-        return false;
-    };
+        // Handle file selection
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
 
-    // Handle file selection
-    fileInput.onchange = function() {
-        console.log('File selected:', this.files && this.files[0] ? this.files[0].name : 'none');
+                // Check file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('File size exceeds 5MB limit', 'error');
+                    return;
+                }
 
-        if (this.files && this.files[0]) {
-            const file = this.files[0];
+                // Create attachment preview
+                const attachmentPreview = document.createElement('div');
+                attachmentPreview.className = 'attachment-preview';
 
-            // Check file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('File size exceeds 5MB limit', 'error');
-                this.value = '';
-                return;
-            }
+                // Determine file icon based on type
+                let fileIcon = 'fa-file';
+                if (file.type.startsWith('image/')) {
+                    fileIcon = 'fa-file-image';
+                } else if (file.type === 'application/pdf') {
+                    fileIcon = 'fa-file-pdf';
+                } else if (file.type.includes('word') || file.type.includes('doc')) {
+                    fileIcon = 'fa-file-word';
+                } else if (file.type === 'text/plain') {
+                    fileIcon = 'fa-file-alt';
+                }
 
-            // Remove any existing preview
-            const existingPreview = document.querySelector('.attachment-preview');
-            if (existingPreview) {
-                existingPreview.remove();
-            }
+                // Format file size
+                const fileSize = file.size < 1024 * 1024
+                    ? Math.round(file.size / 1024) + ' KB'
+                    : Math.round(file.size / (1024 * 1024) * 10) / 10 + ' MB';
 
-            // Create attachment preview
-            const attachmentPreview = document.createElement('div');
-            attachmentPreview.className = 'attachment-preview';
+                // Set preview content
+                attachmentPreview.innerHTML = `
+                    <div class="file-icon">
+                        <i class="fas ${fileIcon}"></i>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${fileSize}</div>
+                    </div>
+                    <button type="button" class="remove-file" aria-label="Remove file">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
 
-            // Determine file icon based on type
-            let fileIcon = 'fa-file';
-            if (file.type.startsWith('image/')) {
-                fileIcon = 'fa-file-image';
-            } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-                fileIcon = 'fa-file-pdf';
-            } else if (file.type.includes('word') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
-                fileIcon = 'fa-file-word';
-            } else if (file.type.includes('excel') || file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
-                fileIcon = 'fa-file-excel';
-            } else if (file.type.includes('powerpoint') || file.name.endsWith('.ppt') || file.name.endsWith('.pptx')) {
-                fileIcon = 'fa-file-powerpoint';
-            } else if (file.name.endsWith('.txt')) {
-                fileIcon = 'fa-file-alt';
-            }
+                // Add preview before message input
+                const messageInputContainer = document.querySelector('.message-input-container');
+                messageInputContainer.insertBefore(attachmentPreview, messageForm);
 
-            // Format file size
-            const fileSize = file.size < 1024 * 1024
-                ? Math.round(file.size / 1024) + ' KB'
-                : Math.round(file.size / (1024 * 1024) * 10) / 10 + ' MB';
+                // Handle remove button
+                const removeButton = attachmentPreview.querySelector('.remove-file');
+                removeButton.addEventListener('click', function () {
+                    attachmentPreview.remove();
+                    fileInput.value = '';
+                });
 
-            // Set preview content
-            attachmentPreview.innerHTML = `
-                <div class="file-icon">
-                    <i class="fas ${fileIcon}"></i>
-                </div>
-                <div class="file-info">
-                    <div class="file-name">${file.name}</div>
-                    <div class="file-size">${fileSize}</div>
-                </div>
-                <button type="button" class="remove-file" aria-label="Remove file">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button type="button" class="send-file" aria-label="Send file">
-                    <i class="fas fa-paper-plane"></i> Send
-                </button>
-            `;
-
-            // Add preview before message input
-            const messageInputContainer = document.querySelector('.message-input-container');
-            messageInputContainer.insertBefore(attachmentPreview, messageForm);
-
-            // Handle remove button
-            const removeButton = attachmentPreview.querySelector('.remove-file');
-            removeButton.onclick = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                attachmentPreview.remove();
-                fileInput.value = '';
-                return false;
-            };
-
-            // Handle send button
-            const sendButton = attachmentPreview.querySelector('.send-file');
-            sendButton.onclick = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                // Get message text
+                // Prepare to send the file
+                const messageInput = document.getElementById('message-input');
                 const messageText = messageInput ? messageInput.value.trim() : '';
 
-                // Send the file
+                // Send the file with optional message text
                 sendFileMessage(file, messageText);
 
                 // Clear the message input
                 if (messageInput) {
                     messageInput.value = '';
                 }
-
-                return false;
-            };
-
-            // Focus on message input for optional message
-            if (messageInput) {
-                messageInput.focus();
-            }
-        }
-    };
-
-    // Override form submission to handle file
-    const originalSubmitHandler = messageForm.onsubmit;
-    messageForm.onsubmit = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        console.log('Form submitted with file attachment check');
-
-        // Check if we have a file to send
-        if (fileInput.files && fileInput.files[0]) {
-            const file = fileInput.files[0];
-            const messageText = messageInput ? messageInput.value.trim() : '';
-
-            console.log('Sending file:', file.name, 'with message:', messageText);
-
-            // Send file with optional message
-            sendFileMessage(file, messageText);
-
-            // Reset file input
-            fileInput.value = '';
-
-            // Remove preview
-            const preview = document.querySelector('.attachment-preview');
-            if (preview) {
-                preview.remove();
             }
 
-            // Clear message input
-            if (messageInput) {
-                messageInput.value = '';
-            }
-        } else if (originalSubmitHandler) {
-            // If there's no file but there was an original submit handler, call it
-            return originalSubmitHandler.call(this, e);
-        } else {
-            // No file, send regular message
-            sendMessage();
-        }
-
-        return false;
-    };
-
-    console.log('File attachment initialization complete');
+            // Remove the file input from the form
+            setTimeout(() => {
+                fileInput.remove();
+            }, 1000);
+        });
+    });
 }
 
 /**

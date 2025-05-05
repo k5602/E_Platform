@@ -61,6 +61,10 @@ class WebSocketManager {
         // Get CSRF token from cookie or Django's csrftoken input
         const csrfToken = this.getCSRFToken();
 
+        // With Nginx as reverse proxy, we use the same host for both HTTP and WebSockets
+        console.log('Using WebSocket host:', host);
+        console.log('Using Nginx reverse proxy for routing');
+
         // Add CSRF token to WebSocket URL as a query parameter
         this.wsUrl = `${protocol}${host}/ws/notifications/${userId}/?csrf_token=${csrfToken}`;
 

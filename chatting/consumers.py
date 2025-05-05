@@ -161,16 +161,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             # Log the received message type (but not content for privacy)
             logger.debug(f"Received WebSocket message of type '{message_type}' from user {self.user.id}")
+            print(f"Received WebSocket message of type '{message_type}' from user {self.user.id}")
 
             # Route to appropriate handler based on message type
             if message_type == 'chat_message':
                 await self.handle_chat_message(text_data_json)
             elif message_type == 'read_messages':
                 await self.handle_read_messages(text_data_json)
-            elif message_type == 'typing':
+            elif message_type == 'typing' or message_type == 'typing_indicator':
+                # Handle both 'typing' and 'typing_indicator' for backward compatibility
                 await self.handle_typing(text_data_json)
+                print(f"Handling typing indicator: {text_data_json.get('is_typing')}")
             else:
                 logger.warning(f"Unknown message type '{message_type}' received from user {self.user.id}")
+                print(f"Unknown message type '{message_type}' received from user {self.user.id}")
                 # Notify client about the error
                 await self.send(text_data=json.dumps({
                     "type": "error",
@@ -185,6 +189,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
         except Exception as e:
             logger.error(f"Error processing WebSocket message from user {self.user.id}: {str(e)}", exc_info=True)
+            print(f"Error processing WebSocket message: {str(e)}")
             # Notify client about the error
             await self.send(text_data=json.dumps({
                 "type": "error",
@@ -338,15 +343,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         conversation_id = data.get('conversation_id')
         is_typing = data.get('is_typing', False)
 
+        # Log the typing indicator
+        print(f"Handling typing indicator from user {self.user.id}: is_typing={is_typing}")
+        logger.debug(f"Handling typing indicator from user {self.user.id}: is_typing={is_typing}")
+
         # Check if the user is a participant in this conversation
         is_participant = await self.is_conversation_participant(conversation_id, self.user.id)
         if not is_participant:
+            logger.warning(f"User {self.user.id} tried to send typing indicator for conversation {conversation_id} they're not part of")
             return
 
         # Get the other participant in the conversation
         other_participant = await self.get_other_participant(conversation_id, self.user.id)
 
         if other_participant:
+            print(f"Sending typing indicator to user {other_participant}: is_typing={is_typing}")
+
             # Send typing indicator to the other participant
             await self.channel_layer.group_send(
                 f"user_{other_participant}",
@@ -357,6 +369,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "is_typing": is_typing
                 }
             )
+        else:
+            logger.warning(f"Could not find other participant for conversation {conversation_id}")
+            print(f"Could not find other participant for conversation {conversation_id}")
 
     async def chat_message(self, event):
         """

@@ -11,6 +11,7 @@ urlpatterns = [
     path('conversations/start/', views.StartConversationView.as_view(), name='start_conversation'),
     path('conversations/<int:pk>/messages/', views.MessageListView.as_view(), name='message_list'),
     path('conversations/<int:pk>/add_message/', views.AddMessageView.as_view(), name='add_message'),
+    path('conversations/<int:pk>/mark_read/', views.MarkMessagesReadView.as_view(), name='mark_messages_read'),
 
     # User status APIs
     path('users/', views.UserListView.as_view(), name='user_list'),

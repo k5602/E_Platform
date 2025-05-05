@@ -172,9 +172,8 @@
                     <button type="button" id="emoji-button" class="message-action-btn" aria-label="Add emoji">
                         <i class="far fa-smile" aria-hidden="true"></i>
                     </button>
-                    <button type="button" id="attachment-button" class="message-action-btn" aria-label="Add attachment" title="File attachment (Coming soon)">
+                    <button type="button" id="attachment-button" class="message-action-btn" aria-label="Add attachment" title="Add file attachment">
                         <i class="fas fa-paperclip" aria-hidden="true"></i>
-                        <span class="feature-badge-small">Soon</span>
                     </button>
                     <input type="text" id="message-input" placeholder="Type a message to {{ other_user.first_name }}..." autocomplete="off" aria-label="Type a message" autofocus>
                     <button type="submit" id="send-button" aria-label="Send message">
@@ -224,17 +223,17 @@
     // More robust script loading check
     function checkChatScriptLoaded() {
         const chatScript = document.getElementById('chat-js-script');
-        
+
         // Check if window.initializeChatWebsocket function exists (direct method)
         if (typeof window.initializeChatWebsocket === 'function') {
             return true;
         }
-        
+
         // Check if script has loaded via data attribute
         if (chatScript && chatScript.getAttribute('data-loaded') === 'true') {
             return true;
         }
-        
+
         return false;
     }
 
@@ -279,14 +278,14 @@
     // Wait for the DOM to be fully loaded
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded, checking for chat script');
-        
+
         // If chat script is already loaded, initialize immediately
         if (checkChatScriptLoaded()) {
             console.log('Chat script detected as loaded');
             initializeChat();
         } else {
             console.log('Chat script not loaded yet, setting up load handler');
-            
+
             // Try to attach onload handler to the script (if it hasn't loaded yet)
             const chatScript = document.getElementById('chat-js-script');
             if (chatScript) {
@@ -295,7 +294,7 @@
                     initializeChat();
                 });
             }
-            
+
             // As a fallback, try again after a delay
             setTimeout(function checkAndInitialize() {
                 if (checkChatScriptLoaded()) {

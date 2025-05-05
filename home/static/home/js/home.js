@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Check CSRF token availability
+    checkCSRFToken();
+
     // Initialize Read More functionality for posts
     initializeReadMore();
 
@@ -26,6 +29,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize real-time polling for comments and likes
     initializeRealtimePolling();
 });
+
+// Function to check and log CSRF token availability
+function checkCSRFToken() {
+    console.log('Checking CSRF token availability...');
+    const token = getCSRFToken();
+    if (token) {
+        console.log('CSRF token is available:', token.substring(0, 5) + '...');
+    } else {
+        console.error('CSRF token is NOT available!');
+    }
+}
 
 // Read More functionality
 function initializeReadMore() {
@@ -981,14 +995,31 @@ function initializeLikes() {
 
             if (!postId) return;
 
+            // Get CSRF token
+            const csrftoken = getCSRFToken();
+            if (!csrftoken) {
+                showToast('CSRF token not found. Please refresh the page and try again.', 'error');
+                return;
+            }
+
             fetch(`/home/post/${postId}/like/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': csrftoken,
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                credentials: 'same-origin' // Include cookies in the request
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        throw new Error('Permission denied. You may need to log in again.');
+                    } else {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     if (data.liked) {
@@ -1004,6 +1035,7 @@ function initializeLikes() {
             })
             .catch(error => {
                 console.error('Error:', error);
+                showToast('Failed to like post. Please try again.', 'error');
             });
         });
     });
@@ -1075,6 +1107,13 @@ function initializeComments() {
 function submitComment(postId, content, post) {
     if (!content.trim()) return;
 
+    // Get CSRF token
+    const csrftoken = getCSRFToken();
+    if (!csrftoken) {
+        showToast('CSRF token not found. Please refresh the page and try again.', 'error');
+        return;
+    }
+
     const formData = new FormData();
     formData.append('content', content);
 
@@ -1082,11 +1121,21 @@ function submitComment(postId, content, post) {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
+            'X-CSRFToken': csrftoken,
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        credentials: 'same-origin' // Include cookies in the request
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('Permission denied. You may need to log in again.');
+            } else {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.status === 'success') {
             // Clear input
@@ -1159,6 +1208,7 @@ function submitComment(postId, content, post) {
     })
     .catch(error => {
         console.error('Error:', error);
+        showToast('Failed to submit comment. Please try again.', 'error');
     });
 }
 
@@ -1173,14 +1223,31 @@ function initializeDeleteButtons() {
 
                 if (!postId || !post) return;
 
+                // Get CSRF token
+                const csrftoken = getCSRFToken();
+                if (!csrftoken) {
+                    showToast('CSRF token not found. Please refresh the page and try again.', 'error');
+                    return;
+                }
+
                 fetch(`/home/post/${postId}/delete/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-CSRFToken': csrftoken,
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    credentials: 'same-origin' // Include cookies in the request
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 403) {
+                            throw new Error('Permission denied. You may need to log in again or you do not have permission to delete this post.');
+                        } else {
+                            throw new Error(`Server responded with status: ${response.status}`);
+                        }
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.status === 'success') {
                         post.remove();
@@ -1198,6 +1265,11 @@ function initializeDeleteButtons() {
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    if (typeof window.showToast === 'function') {
+                        window.showToast(error.message || 'Error deleting post', 'error');
+                    } else {
+                        alert(error.message || 'Error deleting post');
+                    }
                 });
             }
         });
@@ -1219,14 +1291,31 @@ function initializeDeleteButtons() {
 // Function to delete a comment
 function deleteComment(commentId, commentElement) {
     if (confirm('Are you sure you want to delete this comment?')) {
+        // Get CSRF token
+        const csrftoken = getCSRFToken();
+        if (!csrftoken) {
+            showToast('CSRF token not found. Please refresh the page and try again.', 'error');
+            return;
+        }
+
         fetch(`/home/comment/${commentId}/delete/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
+                'X-CSRFToken': csrftoken,
                 'X-Requested-With': 'XMLHttpRequest'
-            }
+            },
+            credentials: 'same-origin' // Include cookies in the request
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('Permission denied. You may need to log in again or you do not have permission to delete this comment.');
+                } else {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.status === 'success') {
                 commentElement.remove();
@@ -1244,6 +1333,11 @@ function deleteComment(commentId, commentElement) {
         })
         .catch(error => {
             console.error('Error:', error);
+            if (typeof window.showToast === 'function') {
+                window.showToast(error.message || 'Error deleting comment', 'error');
+            } else {
+                alert(error.message || 'Error deleting comment');
+            }
         });
     }
 }
@@ -1262,6 +1356,38 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+// More robust function to get CSRF token from multiple sources
+function getCSRFToken() {
+    // Try to get from cookie first
+    let token = getCookie('csrftoken');
+    if (token) {
+        console.log('CSRF token found in cookie');
+        return token;
+    }
+
+    // Try to get from meta tag
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+        console.log('CSRF token found in meta tag');
+        return metaTag.getAttribute('content');
+    }
+
+    // Try to get from hidden input field
+    const inputField = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (inputField) {
+        console.log('CSRF token found in hidden input field');
+        return inputField.value;
+    }
+
+    // Debug information
+    console.error('CSRF token not found in cookies, meta tags, or input fields');
+    console.log('Cookie content:', document.cookie);
+    console.log('Meta tags:', document.querySelectorAll('meta'));
+    console.log('Hidden inputs:', document.querySelectorAll('input[type="hidden"]'));
+
+    return null;
 }
 
 // Function to initialize toast test button
@@ -1303,8 +1429,23 @@ function initializeRealtimePolling() {
 
     function fetchAndUpdate(postId, postElement) {
         // Fetch comments
-        fetch(`/home/post/${postId}/comments/`, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(res => res.json())
+        fetch(`/home/post/${postId}/comments/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCSRFToken() || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(res => {
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        throw new Error('Permission denied. You may need to log in again.');
+                    } else {
+                        throw new Error(`Server responded with status: ${res.status}`);
+                    }
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     const comments = data.comments;
@@ -1317,10 +1458,30 @@ function initializeRealtimePolling() {
                         lastComments[postId] = comments;
                     }
                 }
+            })
+            .catch(error => {
+                console.error('Error fetching comments:', error);
+                // Don't show toast for polling errors to avoid spamming the user
             });
+
         // Fetch likes
-        fetch(`/home/post/${postId}/likes/`, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-            .then(res => res.json())
+        fetch(`/home/post/${postId}/likes/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCSRFToken() || ''
+            },
+            credentials: 'same-origin'
+        })
+            .then(res => {
+                if (!res.ok) {
+                    if (res.status === 403) {
+                        throw new Error('Permission denied. You may need to log in again.');
+                    } else {
+                        throw new Error(`Server responded with status: ${res.status}`);
+                    }
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.status === 'success') {
                     const likeCount = data.like_count;
@@ -1332,6 +1493,10 @@ function initializeRealtimePolling() {
                         lastLikes[postId] = likeCount;
                     }
                 }
+            })
+            .catch(error => {
+                console.error('Error fetching likes:', error);
+                // Don't show toast for polling errors to avoid spamming the user
             });
     }
 

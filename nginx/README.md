@@ -1,92 +1,83 @@
-# E_Platform Nginx Reverse Proxy Setup
+# E_Platform Simplified Nginx Deployment
 
-This directory contains configuration files and scripts to set up Nginx as a reverse proxy for the E_Platform application, replacing the dual server architecture (Django-Daphne) with a single entry point.
+This directory contains simplified scripts for deploying and managing the E_Platform with Nginx as a reverse proxy.
 
-## Files
+## Overview
 
-- `eplatform.conf` - Nginx server configuration
-- `eplatform-django.service` - Systemd service for Django
-- `eplatform-daphne.service` - Systemd service for Daphne
-- `deploy_nginx.sh` - Deployment script
-- `test_setup.sh` - Testing script
+The E_Platform uses Nginx as a reverse proxy to route traffic to:
+- Django/Gunicorn for HTTP requests (port 8000)
+- Daphne for WebSocket connections (port 8001)
+- Static and media files served directly by Nginx
 
-## Prerequisites
+## Simplified Scripts
 
-- Arch Linux
-- Nginx installed (`sudo pacman -S nginx`)
-- Python virtual environment with Django, Daphne, and Gunicorn installed
-- Redis server for Channels (already part of your setup)
+We've consolidated the numerous scripts into just two main scripts:
 
-## Setup Instructions
+1. **deploy.sh** - Unified deployment script that:
+   - Detects your local network IP address
+   - Configures Nginx as a reverse proxy
+   - Sets up systemd services for Django and Daphne
+   - Collects static files
+   - Configures firewall rules
+   - Starts all services
 
-1. **Edit Configuration Files**
+2. **test_fix.sh** - Combined testing and fixing script that:
+   - Tests HTTP and WebSocket connections
+   - Checks service status
+   - Examines logs for errors
+   - Fixes common issues automatically
+   - Provides detailed diagnostics
 
-   Before deployment, edit the following files to match your environment:
+## Usage
 
-   - `eplatform-django.service`: Update user, group, and paths
-   - `eplatform-daphne.service`: Update user, group, and paths
-   - `eplatform.conf`: Update server_name and paths
+### Deployment
 
-2. **Deploy the Configuration**
+To deploy E_Platform with Nginx:
 
-   Run the deployment script as root:
+```bash
+# Deploy with automatic IP detection
+sudo bash nginx/deploy.sh
 
-   ```bash
-   sudo bash deploy_nginx.sh
-   ```
+# Deploy with a specific IP address
+sudo bash nginx/deploy.sh --ip 192.168.1.100
+```
 
-3. **Test the Setup**
+### Testing and Fixing
 
-   Run the test script:
+To test your deployment and fix common issues:
 
-   ```bash
-   sudo bash test_setup.sh
-   ```
+```bash
+# Run tests and fix issues
+sudo bash nginx/test_fix.sh
 
-4. **Manual Testing**
+# Run tests only (no fixes)
+sudo bash nginx/test_fix.sh --test-only
 
-   - Open your browser and navigate to your domain
-   - Check if static files are loading
-   - Test the chat functionality to verify WebSocket connections
-   - Check browser console for any WebSocket errors
+# Skip tests and go straight to fixing
+sudo bash nginx/test_fix.sh --fix-only
+```
+
+## Network Access
+
+After deployment, your E_Platform will be accessible at:
+- Local access: http://localhost
+- Network access: http://YOUR_IP_ADDRESS
+- WebSocket test page: http://YOUR_IP_ADDRESS/static/websocket_test.html
 
 ## Troubleshooting
 
-### Common Issues
+If you encounter issues:
 
-1. **WebSocket Connection Failures**
+1. Run the test_fix.sh script to diagnose and fix common problems
+2. Check the service logs:
+   - Nginx: `journalctl -u nginx`
+   - Django: `journalctl -u eplatform-django`
+   - Daphne: `journalctl -u eplatform-daphne`
+   - Redis: `journalctl -u redis`
+3. Verify that ports 80, 8000, and 8001 are not being used by other services
 
-   - Check Nginx error logs: `sudo tail -f /var/log/nginx/eplatform_error.log`
-   - Verify Daphne is running: `systemctl status eplatform-daphne.service`
-   - Ensure WebSocket path is correct in Nginx config
+## Notes
 
-2. **Static Files Not Loading**
-
-   - Check file permissions
-   - Verify paths in Nginx configuration
-   - Run `collectstatic` if needed: `python manage.py collectstatic`
-
-3. **502 Bad Gateway**
-
-   - Check if backend services are running
-   - Verify ports in Nginx configuration match service ports
-
-## Security Considerations
-
-- Enable HTTPS by uncommenting the HTTPS server block and configuring SSL certificates
-- Consider using Let's Encrypt for free SSL certificates
-- Implement rate limiting for sensitive endpoints
-- Set up proper firewall rules
-
-## Performance Tuning
-
-- Enable Nginx caching for static assets
-- Configure worker processes based on CPU cores
-- Adjust buffer sizes for optimal performance
-- Consider using HTTP/2 for improved performance (requires HTTPS)
-
-## Maintenance
-
-- Regularly check logs for errors
-- Update SSL certificates before they expire
-- Monitor resource usage and adjust configuration as needed
+- These scripts require root privileges (sudo)
+- The deployment is configured for local network use
+- For production deployment, you should enable HTTPS by uncommenting and configuring the SSL section in the Nginx configuration

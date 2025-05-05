@@ -240,3 +240,8 @@ TESTING_CHAT_NETWORK.md
 /tests/scripts/README.md
 /tests/README.md
 /summary.md
+/logs/db_queries.log.1
+/logs/db_queries.log.2
+!/logs/
+!/logs/
+!/docs/

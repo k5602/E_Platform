@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="description" content="KFS University E-Learning Platform">
     <meta name="theme-color" content="#5349cc">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
@@ -17,6 +18,9 @@
 <body {% if user.is_authenticated %}data-user-id="{{ user.id }}"{% endif %} class="{% if request.session.darkMode %}darkmode{% endif %}">
     <!-- Toast container will be created by JavaScript -->
     <div id="toast-container" class="toast-container"></div>
+
+    <!-- Hidden CSRF token field for JavaScript -->
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
     {% block content %}{% endblock %}
 

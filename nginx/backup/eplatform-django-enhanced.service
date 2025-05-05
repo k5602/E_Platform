@@ -1,0 +1,58 @@
+[Unit]
+Description=E_Platform Django Service
+Documentation=https://docs.gunicorn.org/en/stable/
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+Requires=network.target
+
+[Service]
+# Run as zero user and group
+User=zero
+Group=zero
+
+# Working directory and execution
+WorkingDirectory=/mnt/4BC9EBFC28ECC8F5/Others/Projects/E_Platform
+ExecStart=/mnt/4BC9EBFC28ECC8F5/Others/Projects/E_Platform/.venv/bin/gunicorn \
+    --workers 3 \
+    --worker-class=gthread \
+    --threads 3 \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --max-requests 1000 \
+    --max-requests-jitter 50 \
+    --access-logfile /var/log/eplatform/gunicorn-access.log \
+    --error-logfile /var/log/eplatform/gunicorn-error.log \
+    --log-level=info \
+    --capture-output \
+    E_Platform.wsgi:application
+
+# Environment variables
+Environment=DJANGO_SETTINGS_MODULE=E_Platform.settings
+Environment=DB_ENGINE=postgresql
+Environment=DB_NAME=e_platform_db
+Environment=DB_USER=zero
+Environment=DB_PASSWORD=82821931003
+Environment=DB_HOST=localhost
+Environment=DB_PORT=5432
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# Process management
+Type=simple
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Security and resource limits
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+NoNewPrivileges=true
+LimitNOFILE=4096
+TimeoutStopSec=5
+KillMode=mixed
+KillSignal=SIGQUIT
+
+[Install]
+WantedBy=multi-user.target

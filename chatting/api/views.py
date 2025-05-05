@@ -233,8 +233,15 @@ class AddMessageView(APIView):
         conversation.update_timestamp()
 
         # Return the serialized message
+        serializer = MessageSerializer(message, context={'request': request})
+        response_data = serializer.data
+
+        # Ensure file_url is included if file_attachment exists
+        if response_data.get('file_attachment') and not response_data.get('file_url'):
+            response_data['file_url'] = request.build_absolute_uri(message.file_attachment.url)
+
         return Response(
-            MessageSerializer(message, context={'request': request}).data,
+            response_data,
             status=status.HTTP_201_CREATED
         )
 
@@ -355,6 +362,41 @@ class EditMessageView(APIView):
         except Message.DoesNotExist:
             return Response(
                 {"error": "Message not found or you don't have permission to edit it."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class MarkMessagesReadView(APIView):
+    """API view for marking all messages in a conversation as read."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk, *args, **kwargs):
+        try:
+            # Get the conversation and verify the user is a participant
+            conversation = Conversation.objects.get(
+                id=pk,
+                participants=request.user
+            )
+
+            # Mark all unread messages from other users as read
+            unread_count = Message.objects.filter(
+                conversation=conversation,
+                is_read=False
+            ).exclude(
+                sender=request.user
+            ).update(
+                is_read=True,
+                delivery_status='read'
+            )
+
+            return Response({
+                'success': True,
+                'marked_read': unread_count
+            })
+
+        except Conversation.DoesNotExist:
+            return Response(
+                {"error": "Conversation not found or you don't have permission."},
                 status=status.HTTP_404_NOT_FOUND
             )
 

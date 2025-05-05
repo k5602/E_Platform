@@ -1,0 +1,55 @@
+[Unit]
+Description=E_Platform Daphne Service (WebSocket Server)
+Documentation=https://github.com/django/daphne
+After=network.target redis.service
+Wants=redis.service
+Requires=network.target
+
+[Service]
+# Run as zero user and group
+User=zero
+Group=zero
+
+# Working directory and execution
+WorkingDirectory=/mnt/4BC9EBFC28ECC8F5/Others/Projects/E_Platform
+ExecStart=/mnt/4BC9EBFC28ECC8F5/Others/Projects/E_Platform/.venv/bin/daphne \
+    -b 127.0.0.1 \
+    -p 8001 \
+    --access-log /var/log/eplatform/daphne-access.log \
+    --websocket-timeout 86400 \
+    --proxy-headers \
+    --verbosity 1 \
+    E_Platform.asgi:application
+
+# Environment variables
+Environment=DJANGO_SETTINGS_MODULE=E_Platform.settings
+Environment=DJANGO_ALLOW_ASYNC_UNSAFE=true
+Environment=WEBSOCKET_CSRF_EXEMPT=true
+Environment=DB_ENGINE=postgresql
+Environment=DB_NAME=e_platform_db
+Environment=DB_USER=zero
+Environment=DB_PASSWORD=82821931003
+Environment=DB_HOST=localhost
+Environment=DB_PORT=5432
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# Process management
+Type=simple
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# Security and resource limits
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+NoNewPrivileges=true
+LimitNOFILE=4096
+TimeoutStopSec=5
+KillMode=mixed
+KillSignal=SIGQUIT
+
+[Install]
+WantedBy=multi-user.target
