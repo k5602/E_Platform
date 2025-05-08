@@ -17,15 +17,20 @@ def chat_home(request):
     Uses annotations to efficiently get unread message counts in a single query
     instead of querying the database for each conversation.
     """
-    from django.db.models import Count, Q, F, Window, Max
-    from django.db.models.functions import FirstValue
+    from django.db.models import Count, Q, F, OuterRef, Subquery
     from django.core.cache import cache
+    from .models import Message
 
     # Try to get from cache first
     cache_key = f"chat_home_{request.user.id}"
     cached_data = cache.get(cache_key)
     
     if cached_data is None:
+        # Get latest messages as a subquery instead of using Window function
+        latest_messages = Message.objects.filter(
+            conversation=OuterRef('pk')
+        ).order_by('-timestamp').values('content')[:1]
+
         # Get all conversations with unread counts in a single query
         conversations = Conversation.objects.filter(
             participants=request.user
@@ -36,12 +41,8 @@ def chat_home(request):
                        ~Q(messages__sender=request.user) &
                        Q(messages__sender__isnull=False)
             ),
-            # Add the latest message to each conversation
-            latest_message_content=Window(
-                expression=FirstValue('messages__content'),
-                partition_by=[F('id')],
-                order_by=F('messages__timestamp').desc()
-            )
+            # Add the latest message using a subquery instead of Window function
+            latest_message_content=Subquery(latest_messages)
         ).prefetch_related(
             'participants',
             'participants__chat_status'
@@ -49,19 +50,17 @@ def chat_home(request):
             # Select anything else needed for rendering
         ).order_by('-updated_at')
         
-        # Cache the result for 30 seconds
-        cache.set(cache_key, conversations, 30)
+        # Get the other participant for each conversation
+        for conversation in conversations:
+            conversation.other_user = conversation.get_other_participant(request.user)
+        
+        # Don't cache the queryset directly, it causes serialization issues
+        # We won't cache for now
     else:
         conversations = cached_data
-
-    context = {
-        'conversations': conversations,
-        'active_tab': 'conversations'
-    }
-    return render(request, 'chatting/chat_home.html', context)
-    # Get the other participant for each conversation
-    for conversation in conversations:
-        conversation.other_user = conversation.get_other_participant(request.user)
+        # Get the other participant for each conversation
+        for conversation in conversations:
+            conversation.other_user = conversation.get_other_participant(request.user)
 
     # Get users who are online
     online_users = User.objects.filter(

@@ -1,4 +1,5 @@
 from django.db import migrations
+from django.db.models import Index
 
 class Migration(migrations.Migration):
 
@@ -12,51 +13,51 @@ class Migration(migrations.Migration):
         # Home app indices
         migrations.AddIndex(
             model_name='post',
-            index=migrations.Index(fields=['created_at'], name='post_created_idx'),
+            index=Index(fields=['created_at'], name='post_created_idx'),
         ),
         migrations.AddIndex(
             model_name='post',
-            index=migrations.Index(fields=['user'], name='post_user_idx'),
+            index=Index(fields=['user'], name='post_user_idx'),
         ),
         migrations.AddIndex(
             model_name='comment',
-            index=migrations.Index(fields=['post', 'created_at'], name='comment_post_created_idx'),
+            index=Index(fields=['post', 'created_at'], name='comment_post_created_idx'),
         ),
         migrations.AddIndex(
             model_name='like',
-            index=migrations.Index(fields=['post', 'user'], name='like_post_user_idx'),
+            index=Index(fields=['post', 'user'], name='like_post_user_idx'),
         ),
         migrations.AddIndex(
             model_name='notification',
-            index=migrations.Index(fields=['recipient', 'is_read', 'created_at'], name='notification_recipient_idx'),
+            index=Index(fields=['recipient', 'is_read', 'created_at'], name='notification_recipient_idx'),
         ),
         migrations.AddIndex(
             model_name='notification',
-            index=migrations.Index(fields=['notification_type'], name='notification_type_idx'),
+            index=Index(fields=['notification_type'], name='notification_type_idx'),
         ),
         migrations.AddIndex(
             model_name='subject',
-            index=migrations.Index(fields=['name'], name='subject_name_idx'),
+            index=Index(fields=['name'], name='subject_name_idx'),
         ),
         migrations.AddIndex(
             model_name='subject',
-            index=migrations.Index(fields=['code'], name='subject_code_idx'),
+            index=Index(fields=['code'], name='subject_code_idx'),
         ),
         migrations.AddIndex(
             model_name='subject',
-            index=migrations.Index(fields=['is_active'], name='subject_active_idx'),
+            index=Index(fields=['is_active'], name='subject_active_idx'),
         ),
         migrations.AddIndex(
             model_name='subjectenrollment',
-            index=migrations.Index(fields=['student', 'subject', 'is_active'], name='enrollment_student_subject_idx'),
+            index=Index(fields=['student', 'subject', 'is_active'], name='enrollment_student_subject_idx'),
         ),
         migrations.AddIndex(
             model_name='appointment',
-            index=migrations.Index(fields=['appointment_date', 'status'], name='appointment_date_status_idx'),
+            index=Index(fields=['appointment_date', 'status'], name='appointment_date_status_idx'),
         ),
         migrations.AddIndex(
             model_name='appointment',
-            index=migrations.Index(fields=['user', 'instructor'], name='appointment_user_instructor_idx'),
+            index=Index(fields=['user', 'instructor'], name='appointment_user_instructor_idx'),
         ),
 
         # Chatting app indices

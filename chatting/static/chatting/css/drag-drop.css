@@ -1,0 +1,154 @@
+/* Drag and Drop Styles for Chat File Uploads */
+
+/* Drop Zone - Visible only when dragging is active */
+.drop-zone {
+    @apply fixed inset-0 flex flex-col items-center justify-center bg-primary/50 backdrop-blur-sm z-50;
+    @apply transition-all duration-300 ease-in-out;
+    @apply opacity-0 invisible;
+    @apply border-4 border-dashed border-white/50;
+}
+
+/* Screen reader only content */
+.sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden;
+    @apply whitespace-nowrap border-0;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+}
+
+/* Active Drop Zone */
+.drop-zone.active {
+    @apply opacity-100 visible;
+}
+
+/* Drop Zone Content */
+.drop-zone-content {
+    @apply flex flex-col items-center justify-center p-10;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-xl;
+    @apply text-center max-w-md mx-auto;
+    @apply transform transition-transform duration-300;
+    @apply scale-90;
+}
+
+.drop-zone.active .drop-zone-content {
+    @apply scale-100;
+}
+
+/* Drop Zone Icon */
+.drop-zone-icon {
+    @apply text-7xl text-primary mb-4;
+    @apply animate-bounce;
+}
+
+/* Drop Zone Text */
+.drop-zone-text {
+    @apply text-xl font-semibold mb-2;
+    @apply text-gray-800 dark:text-white;
+}
+
+.drop-zone-subtext {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+}
+
+/* File Drop Indicator - Shows when file is directly over drop zone */
+.file-over {
+    @apply bg-success/20;
+}
+
+/* File Attachment Preview Area */
+.attachment-preview-container {
+    @apply flex items-center mt-2 mb-2 p-2;
+    @apply bg-gray-100 dark:bg-gray-700 rounded-md;
+    @apply border border-gray-200 dark:border-gray-600;
+    @apply w-full max-w-md;
+    @apply transition-all duration-300 ease-in-out;
+}
+
+/* File Preview */
+.file-preview {
+    @apply flex items-center gap-3 w-full;
+}
+
+.file-icon {
+    @apply flex items-center justify-center;
+    @apply w-10 h-10 rounded-full;
+    @apply bg-primary/20 text-primary;
+    @apply text-xl;
+}
+
+.file-thumbnail {
+    @apply w-12 h-12 object-cover rounded;
+}
+
+.file-info {
+    @apply flex-grow text-sm truncate;
+}
+
+.file-size {
+    @apply text-xs text-gray-500 dark:text-gray-400;
+}
+
+/* Remove Button for Preview */
+.remove-attachment {
+    @apply ml-auto text-gray-500 dark:text-gray-400 hover:text-danger;
+    @apply cursor-pointer p-1;
+    @apply transition-colors duration-200;
+}
+
+/* Progress Indicators */
+.upload-progress-container {
+    @apply mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden;
+}
+
+.upload-progress {
+    @apply h-full bg-primary transition-all duration-300 ease-out;
+}
+
+.upload-progress-text {
+    @apply text-xs text-gray-600 dark:text-gray-300 mt-1;
+    @apply text-right;
+}
+
+/* Animations */
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        border-color: rgba(255, 255, 255, 0.8);
+    }
+}
+
+.drop-zone.active {
+    animation: pulse-border 2s infinite;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 640px) {
+    .drop-zone-content {
+        @apply p-6 max-w-[90%];
+    }
+    
+    .drop-zone-icon {
+        @apply text-5xl;
+    }
+    
+    .drop-zone-text {
+        @apply text-lg;
+    }
+}
+
+/* Accessibility Focus States */
+.drop-zone:focus, 
+.remove-attachment:focus {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* Dark Mode Adjustments */
+.darkmode .drop-zone {
+    @apply bg-gray-900/70;
+}
+
+.darkmode .drop-zone-content {
+    @apply bg-gray-800 text-white;
+}

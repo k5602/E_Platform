@@ -1134,6 +1134,23 @@ function sendMessage() {
     // Get message content
     const content = messageInput.value.trim();
 
+    // Check for a dragged file first
+    const draggedFile = window.DragDrop && typeof window.DragDrop.getCurrentFile === 'function' ? window.DragDrop.getCurrentFile() : null;
+
+    if (draggedFile) {
+        // If there's a dragged file, send it with the current message content
+        sendFileMessage(draggedFile, content);
+        // Clear the drag and drop preview and state
+        if (window.DragDrop && typeof window.DragDrop.clearPreview === 'function') {
+            window.DragDrop.clearPreview();
+        }
+        // Clear the message input field as well
+        messageInput.value = '';
+        resetTypingIndicator();
+        messageInput.focus();
+        return; // Exit after handling dragged file
+    }
+
     // Validate conversation ID
     if (!ChatState.currentConversationId) {
         showToast('Error: No active conversation', 'error');
@@ -2551,6 +2568,7 @@ function initializeFileAttachment() {
 
     // Check if elements exist
     if (!attachmentButton || !messageForm) {
+        console.error("Required attachment elements not found in the DOM");
         return;
     }
 
@@ -2563,12 +2581,15 @@ function initializeFileAttachment() {
     attachmentButton.setAttribute('aria-label', 'Attach file');
     attachmentButton.setAttribute('title', 'Attach file');
 
-    // Create or get file input element
+    // Use the existing file input in the DOM (now properly defined in the HTML)
     let fileInput = document.getElementById('file-input');
     if (!fileInput) {
+        console.error("File input element not found in the DOM");
+        // Create it as fallback (should not happen with our template fix)
         fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.id = 'file-input';
+        fileInput.name = 'file_attachment';
         fileInput.accept = CONFIG.FILE.ALLOWED_TYPES;
         fileInput.style.display = 'none';
         fileInput.setAttribute('aria-hidden', 'true');
@@ -2911,31 +2932,50 @@ function setupDragAndDrop(messageForm, fileInput) {
  * @param {File} file - The file to send
  * @param {string} messageText - Optional message text to include with the file
  */
-function sendFileMessage(file, messageText) {
+function sendFileMessage(file, messageText, tempId = null, attemptCount = 0) {
     // Only send if we have a conversation ID
     if (!ChatState.currentConversationId) {
         showToast('Cannot send file: No active conversation', 'error');
         return;
     }
 
-    // Generate a temporary ID for this message
-    const tempId = 'temp_file_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    // Generate a temporary ID for this message if not provided (for retries)
+    if (!tempId) {
+        tempId = 'temp_file_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    }
 
-    // Add a temporary message to the UI with pending indicator
-    const tempMessage = {
-        sender_id: ChatState.currentUserId,
-        content: messageText || 'Sending file: ' + file.name,
-        timestamp: new Date().toISOString(),
-        is_read: false,
-        is_pending: true,
-        is_file: true,
-        file_name: file.name,
-        file_type: file.type.startsWith('image/') ? 'image' : 'document',
-        temp_id: tempId
-    };
+    // Add a temporary message to the UI with pending indicator or update existing
+    const existingMsg = document.querySelector(`.message-item[data-temp-id="${tempId}"]`);
+    
+    if (!existingMsg) {
+        // Create new temporary message
+        const tempMessage = {
+            id: tempId,
+            temp_id: tempId,
+            sender: {
+                id: ChatState.currentUserId,
+                username: document.body.getAttribute('data-username') || 'You'
+            },
+            content: messageText,
+            timestamp: new Date().toISOString(),
+            is_read: false,
+            is_file: true,
+            file_name: file.name,
+            file_type: window.FileUtils.determineFileType(file.type, file.name),
+            file_size: file.size,
+            delivery_status: 'pending'
+        };
 
-    // Add message to chat
-    addMessageToChat(tempMessage);
+        // Add the message to the chat
+        addMessageToChat(tempMessage);
+    } else if (attemptCount > 0) {
+        // Update existing message for retry
+        const statusElement = existingMsg.querySelector('.message-status');
+        if (statusElement) {
+            statusElement.innerHTML = '<i class="fas fa-sync fa-spin" aria-label="Retrying..."></i>';
+            statusElement.title = `Retrying... (Attempt ${attemptCount + 1})`;
+        }
+    }
 
     // Create FormData to send the file
     const formData = new FormData();
@@ -2947,6 +2987,9 @@ function sendFileMessage(file, messageText) {
 
     // Create XMLHttpRequest to track upload progress
     const xhr = new XMLHttpRequest();
+    
+    // Set a timeout for the request
+    xhr.timeout = 30000; // 30 seconds timeout
 
     // Set up progress tracking
     xhr.upload.addEventListener('progress', function(e) {
@@ -2956,47 +2999,61 @@ function sendFileMessage(file, messageText) {
         }
     });
 
-    // Handle successful completion
     xhr.addEventListener('load', function() {
         if (xhr.status >= 200 && xhr.status < 300) {
             try {
                 const data = JSON.parse(xhr.responseText);
                 handleFileUploadSuccess(data, tempId);
+                
+                // Notify other users via WebSocket that a file was uploaded
+                if (ChatState.socket && ChatState.socket.readyState === WebSocket.OPEN) {
+                    ChatState.socket.send(JSON.stringify({
+                        type: 'file_message_sent',
+                        conversation_id: ChatState.currentConversationId,
+                        message_id: data.id
+                    }));
+                }
             } catch (error) {
                 console.error('Error parsing response:', error);
-                handleFileUploadError(error, tempId, file);
+                handleFileUploadRetry(error, tempId, file, attemptCount);
             }
         } else {
             const error = new Error(`Server responded with status: ${xhr.status}`);
-            handleFileUploadError(error, tempId, file);
+            handleFileUploadRetry(error, tempId, file, attemptCount);
         }
     });
 
-    // Handle errors
     xhr.addEventListener('error', function() {
         const error = new Error('Network error occurred during file upload');
-        handleFileUploadError(error, tempId, file);
+        handleFileUploadRetry(error, tempId, file, attemptCount);
     });
 
-    // Handle timeouts
     xhr.addEventListener('timeout', function() {
         const error = new Error('File upload timed out');
-        handleFileUploadError(error, tempId, file);
+        handleFileUploadRetry(error, tempId, file, attemptCount);
     });
 
-    // Handle aborts
     xhr.addEventListener('abort', function() {
         const error = new Error('File upload was aborted');
-        handleFileUploadError(error, tempId, file);
+        handleFileUploadRetry(error, tempId, file, attemptCount);
     });
 
-    // Open and send the request
+    // Configure and send request
     xhr.open('POST', `/api/chat/conversations/${ChatState.currentConversationId}/add_message/`);
     xhr.setRequestHeader('X-CSRFToken', csrfToken);
     xhr.send(formData);
 
-    // Show initial toast
-    showToast('Sending file...', 'info');
+    // Show toast based on attempt count
+    if (attemptCount === 0) {
+        showToast('Uploading file...', 'info');
+    } else {
+        showToast(`Retrying file upload (${attemptCount + 1}/3)...`, 'info');
+    }
+
+    // Clear the message input
+    if (messageInput && attemptCount === 0) {
+        messageInput.value = '';
+    }
 }
 
 /**
@@ -3006,40 +3063,65 @@ function sendFileMessage(file, messageText) {
  */
 function updateFileUploadProgress(tempId, percent) {
     const messageElement = document.querySelector(`.message-item[data-temp-id="${tempId}"]`);
-    if (!messageElement) return;
+    if (!messageElement) {
+        console.warn(`Could not find message element with temp ID ${tempId} to update progress`);
+        return;
+    }
 
     // Get or create progress bar
+    let progressContainer = messageElement.querySelector('.upload-progress-container');
     let progressBar = messageElement.querySelector('.upload-progress');
-    if (!progressBar) {
+    let progressText = messageElement.querySelector('.upload-progress-text');
+    
+    if (!progressContainer) {
         // Create progress container
-        const progressContainer = document.createElement('div');
+        progressContainer = document.createElement('div');
         progressContainer.className = 'upload-progress-container';
+        progressContainer.setAttribute('aria-label', 'Upload progress');
+        progressContainer.setAttribute('role', 'progressbar');
+        progressContainer.setAttribute('aria-valuenow', percent);
+        progressContainer.setAttribute('aria-valuemin', '0');
+        progressContainer.setAttribute('aria-valuemax', '100');
 
         // Create progress bar
         progressBar = document.createElement('div');
         progressBar.className = 'upload-progress';
 
         // Create progress text
-        const progressText = document.createElement('span');
+        progressText = document.createElement('span');
         progressText.className = 'upload-progress-text';
 
         // Add to container
         progressContainer.appendChild(progressBar);
         progressContainer.appendChild(progressText);
 
-        // Add to message
-        const messageBubble = messageElement.querySelector('.message-bubble') || messageElement;
-        messageBubble.appendChild(progressContainer);
+        // Add to message element
+        messageElement.appendChild(progressContainer);
+    } else {
+        // Update ARIA attributes
+        progressContainer.setAttribute('aria-valuenow', percent);
     }
 
-    // Update progress
+    // Update progress bar width
     progressBar.style.width = `${percent}%`;
 
     // Update text
-    const progressText = messageElement.querySelector('.upload-progress-text');
     if (progressText) {
         progressText.textContent = `${percent}%`;
     }
+    
+    // Update status message based on progress
+    const statusElement = messageElement.querySelector('.message-status');
+    if (statusElement) {
+        if (percent < 100) {
+            statusElement.innerHTML = `<i class="fas ${window.FileUtils.getFileIcon(window.FileUtils.determineFileType(file.type, file.name))}" aria-hidden="true"></i>`;
+            statusElement.title = 'Uploading...';
+        } else {
+            statusElement.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i>';
+            statusElement.title = 'Upload complete, processing...';
+        }
+    }
+}
 
     // Update status text
     const statusElement = messageElement.querySelector('.message-status');
@@ -3065,7 +3147,28 @@ function handleFileUploadSuccess(data, tempId) {
     }
 
     // Add the message to the chat UI (will update existing message)
+    data.temp_id = tempId;
+    
+    // Update the message properties to ensure it renders correctly
+    data.is_file = true;
+    
+    // If file_type is missing, try to determine it from the attachment path
+    if (!data.file_type && data.file_attachment) {
+        data.file_type = window.FileUtils.determineFileType('', data.file_attachment);
+    }
+    
+    // Update or add the message to the UI
     addMessageToChat(data);
+    
+    // Log success for diagnostics
+    console.log('File upload successful:', {
+        messageId: data.id,
+        fileType: data.file_type,
+        fileName: data.file_name
+    });
+}
+
+
 
     // Remove any attachment preview
     const attachmentPreview = document.querySelector('.attachment-preview');
@@ -3087,15 +3190,49 @@ function handleFileUploadSuccess(data, tempId) {
  * @param {string} tempId - The temporary message ID
  * @param {File} file - The file that failed to upload
  */
-function handleFileUploadError(error, tempId, file) {
+function handleFileUploadRetry(error, tempId, file, attemptCount, maxRetries = 2) {
     console.error('Error sending file:', error);
+    
+    // If we haven't reached max retries, automatically try again
+    if (attemptCount < maxRetries) {
+        console.log(`Automatically retrying file upload. Attempt ${attemptCount + 2} of ${maxRetries + 1}`);
+        
+        // Use exponential backoff for retries
+        const backoffDelay = Math.pow(2, attemptCount) * 1000; // 1s, 2s, 4s...
+        
+        // Update UI to show retrying status
+        const messageElement = document.querySelector(`.message-item[data-temp-id="${tempId}"]`);
+        if (messageElement) {
+            const statusElement = messageElement.querySelector('.message-status');
+            if (statusElement) {
+                statusElement.innerHTML = '<i class="fas fa-sync fa-spin" aria-label="Retrying..."></i>';
+                statusElement.title = `Retrying in ${backoffDelay/1000}s...`;
+            }
+        }
+        
+        // Wait then retry
+        setTimeout(() => {
+            sendFileMessage(file, messageElement ? messageElement.querySelector('.message-content').textContent : '', tempId, attemptCount + 1);
+        }, backoffDelay);
+    } else {
+        // Max retries reached, show final error
+        handleFileUploadError(error, tempId, file);
+    }
+}
+
+function handleFileUploadError(error, tempId, file) {
+    console.error('Error sending file (all retries failed):', error);
     showToast('Error sending file. Please try again.', 'error');
 
-    // Log file information
-    console.error('File information:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
+    // Log file information and detailed error
+    console.error('File upload failed:', {
+        file: {
+            name: file.name,
+            type: file.type,
+            size: file.size
+        },
+        error: error.message,
+        tempId: tempId
     });
 
     // Update the message to show error
@@ -3111,24 +3248,20 @@ function handleFileUploadError(error, tempId, file) {
             statusElement.innerHTML = '<i class="fas fa-exclamation-circle" aria-label="Failed to send"></i>';
             statusElement.title = 'Failed to send. Click to retry.';
 
-            // Add retry functionality
+            // Add manual retry functionality
             statusElement.style.cursor = 'pointer';
             statusElement.addEventListener('click', () => {
-                // Get file input
-                const fileInput = document.getElementById('file-input');
-                if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-                    showToast('Please select the file again to retry', 'warning');
-                    return;
-                }
-
-                // Get message text
+                // Store the content before removing the message
                 const content = messageElement.querySelector('.message-content').textContent;
-
+                
+                // Create a copy of the file for retry
+                const storedFile = file;
+                
                 // Remove the failed message
                 messageElement.remove();
 
-                // Try sending again
-                sendFileMessage(fileInput.files[0], content);
+                // Try sending again with a new temp ID
+                sendFileMessage(storedFile, content);
             });
         }
 
@@ -3137,6 +3270,15 @@ function handleFileUploadError(error, tempId, file) {
         if (progressContainer) {
             progressContainer.remove();
         }
+        
+        // Add diagnostic info (hidden in UI but visible in DOM for debugging)
+        const diagnosticInfo = document.createElement('div');
+        diagnosticInfo.className = 'file-error-info';
+        diagnosticInfo.style.display = 'none';
+        diagnosticInfo.dataset.errorMessage = error.message;
+        diagnosticInfo.dataset.fileType = file.type;
+        diagnosticInfo.dataset.fileSize = file.size;
+        messageElement.appendChild(diagnosticInfo);
     }
 }
 

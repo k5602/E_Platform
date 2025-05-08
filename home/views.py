@@ -12,6 +12,12 @@ from authentication.models import CustomUser
 from .utils import search_users, format_content_with_mentions
 from django.views.decorators.csrf import csrf_exempt
 import json
+from .utils_cache import cache_response
+from django.core.cache import cache
+
+def clear_model_cache(model_name):
+    """Clear all cache entries related to a specific model."""
+    cache.delete_pattern(f"*{model_name}*")
 
 @login_required
 @cache_response(timeout=60, key_prefix='home_feed', cache_alias='default')

@@ -29,21 +29,32 @@ class Conversation(models.Model):
 
 def message_file_path(instance, filename):
     """
-    Generate a unique file path for message attachments.
-    Format: chat_files/conversation_{id}/{timestamp}_{filename}
+    Generate a unique file path for message attachments with built-in error handling.
+    Format: chat_files/conversation_{id}/{timestamp}_{sender_id}_{filename}
     """
     import os
     from django.utils import timezone
 
-    # Get the file extension
-    ext = filename.split('.')[-1]
-
-    # Create a timestamp-based filename to avoid collisions
+    # Get timestamp for unique filename
     timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
-    new_filename = f"{timestamp}_{instance.sender.id}_{filename}"
-
+    
+    # Handle case where sender or conversation ID might not be set yet
+    sender_id = getattr(instance, 'sender_id', None) or getattr(instance, 'sender', None) or 'unknown'
+    if hasattr(sender_id, 'id'):
+        sender_id = sender_id.id
+        
+    # Get conversation ID safely
+    try:
+        conversation_id = instance.conversation.id
+    except (AttributeError, ValueError):
+        conversation_id = 'temp'  # Temporary folder for uploads with issues
+    
+    # Sanitize filename to avoid path traversal or invalid chars
+    safe_filename = os.path.basename(filename)
+    new_filename = f"{timestamp}_{sender_id}_{safe_filename}"
+    
     # Return the complete path
-    return os.path.join('chat_files', f'conversation_{instance.conversation.id}', new_filename)
+    return os.path.join('chat_files', f'conversation_{conversation_id}', new_filename)
 
 
 class Message(models.Model):

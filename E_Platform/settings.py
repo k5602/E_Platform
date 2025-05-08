@@ -158,40 +158,40 @@ else:
             }
         }
 
-    # Cache configuration using Redis
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': 'redis://127.0.0.1:6379/1',  # Use database 1 for caching (different from channels)
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'PARSER_CLASS': 'redis.connection.HiredisParser',
-                'SOCKET_CONNECT_TIMEOUT': 5,
-                'SOCKET_TIMEOUT': 5,
-                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-                'IGNORE_EXCEPTIONS': True,  # Don't crash on Redis connection errors
-            },
-            'KEY_PREFIX': 'eplatform',  # Add prefix to all keys to avoid collisions
+# Cache configuration using Redis - Always define this regardless of database
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # Use database 1 for caching (different from channels)
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            # Removed PARSER_CLASS as HiredisParser is not available
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            'IGNORE_EXCEPTIONS': True,  # Don't crash on Redis connection errors
         },
-        'session': {  # Dedicated cache for sessions
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': 'redis://127.0.0.1:6379/2',
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'PARSER_CLASS': 'redis.connection.HiredisParser',
-            },
-            'KEY_PREFIX': 'session',
+        'KEY_PREFIX': 'eplatform',  # Add prefix to all keys to avoid collisions
+    },
+    'session': {  # Dedicated cache for sessions
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/2',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            # Removed PARSER_CLASS as HiredisParser is not available
         },
-        'api': {  # Cache for API responses
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': 'redis://127.0.0.1:6379/3',
-            'TIMEOUT': 300,  # 5 minutes
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'KEY_PREFIX': 'api',
-        }
+        'KEY_PREFIX': 'session',
+    },
+    'api': {  # Cache for API responses
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/3',
+        'TIMEOUT': 300,  # 5 minutes
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'api',
     }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

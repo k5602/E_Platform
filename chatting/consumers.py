@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.utils import timezone
 from django.utils.html import escape
+from django.urls import reverse
 
 from .models import Conversation, Message, UserStatus
 
@@ -172,6 +173,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 # Handle both 'typing' and 'typing_indicator' for backward compatibility
                 await self.handle_typing(text_data_json)
                 print(f"Handling typing indicator: {text_data_json.get('is_typing')}")
+            elif message_type == 'file_message_sent':
+                # Handle notification that a file message was sent via HTTP
+                await self.handle_file_message_sent(text_data_json)
+                print(f"Handling file message sent notification for message {text_data_json.get('message_id')}")
             else:
                 logger.warning(f"Unknown message type '{message_type}' received from user {self.user.id}")
                 print(f"Unknown message type '{message_type}' received from user {self.user.id}")
@@ -413,6 +418,44 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "user_id": event["user_id"],
             "is_typing": event["is_typing"]
         }))
+        
+    async def handle_file_message_sent(self, data):
+        """
+        Handle notification that a file message was sent through HTTP.
+        Updates other participants about the new file message.
+        """
+        conversation_id = data.get('conversation_id')
+        message_id = data.get('message_id')
+        
+        # Validate the data
+        if not conversation_id or not message_id:
+            return
+        
+        try:
+            # Get message details
+            message = await self.get_message(message_id)
+            if not message:
+                return
+                
+            # Get other participants
+            other_participants = await self.get_other_participants(conversation_id, self.user.id)
+            
+            # Format message data for WebSocket
+            message_data = await self.format_message_for_ws(message)
+            
+            # Send to the conversation group for other participants
+            for participant_id in other_participants:
+                await self.channel_layer.group_send(
+                    f"user_{participant_id}",
+                    {
+                        "type": "chat_message",
+                        "message": message_data,
+                        "conversation_id": conversation_id,
+                        "is_file": True
+                    }
+                )
+        except Exception as e:
+            logger.error(f"Error handling file message notification: {str(e)}", exc_info=True)
 
     async def user_status(self, event):
         """
@@ -458,6 +501,82 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         return Conversation.objects.filter(id=conversation_id, participants__id=user_id).exists()
 
+    @database_sync_to_async
+    def get_message(self, message_id):
+        """
+        Get a message by its ID.
+        
+        Args:
+            message_id: The ID of the message
+            
+        Returns:
+            The Message object or None if not found
+        """
+        try:
+            return Message.objects.select_related('sender', 'conversation').get(id=message_id)
+        except Message.DoesNotExist:
+            return None
+    
+    @database_sync_to_async
+    def get_other_participants(self, conversation_id, user_id):
+        """
+        Get the other participants in a conversation.
+        
+        Args:
+            conversation_id: The ID of the conversation
+            user_id: The ID of the current user
+            
+        Returns:
+            List of user IDs for other participants
+        """
+        try:
+            # Get the conversation
+            conversation = Conversation.objects.get(id=conversation_id)
+            
+            # Get other participants (excluding current user)
+            other_participants = conversation.participants.exclude(id=user_id).values_list('id', flat=True)
+            
+            return list(other_participants)
+        except Conversation.DoesNotExist:
+            return []
+    
+    @database_sync_to_async
+    def format_message_for_ws(self, message):
+        """
+        Format a message for WebSocket transmission.
+        
+        Args:
+            message: The Message object
+            
+        Returns:
+            Dict with message data formatted for WebSocket
+        """
+        data = {
+            'id': message.id,
+            'sender': {
+                'id': message.sender.id,
+                'username': message.sender.username,
+                'first_name': message.sender.first_name or '',
+                'last_name': message.sender.last_name or '',
+            },
+            'content': message.content,
+            'timestamp': message.timestamp.isoformat(),
+            'is_read': message.is_read,
+            'delivery_status': message.delivery_status,
+        }
+        
+        # Add file info if this is a file message
+        if message.file_attachment:
+            data['is_file'] = True
+            data['file_type'] = message.file_type
+            data['file_name'] = message.file_name
+            data['file_size'] = message.file_size
+            data['file_attachment'] = message.file_attachment.name
+            # We can't construct absolute URLs here since we don't have request object
+            # The frontend will handle this
+            
+        return data
+    
     @database_sync_to_async
     def create_message(self, conversation_id, user_id, content):
         """

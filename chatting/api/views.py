@@ -165,85 +165,120 @@ class MessageListView(generics.ListAPIView):
 
 
 class AddMessageView(APIView):
-    """API view for adding a message to a conversation, with support for file attachments."""
+    """API view for adding a message to a conversation with improved file handling."""
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+    parser_classes = [parsers.MultiPartParser]  # Simplified parser configuration
+    
+    def determine_file_type(self, file_attachment):
+        """More robust file type detection."""
+        content_type = file_attachment.content_type
+        filename = file_attachment.name.lower()
+        
+        # Default file type
+        file_type = 'document'
+        
+        # Check MIME type first
+        if content_type.startswith('image/'):
+            file_type = 'image'
+        elif content_type.startswith('audio/'):
+            file_type = 'audio'
+        elif content_type.startswith('video/'):
+            file_type = 'video'
+        # Then check extension as fallback
+        elif any(filename.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+            file_type = 'image'
+        elif any(filename.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.m4a']):
+            file_type = 'audio'
+        elif any(filename.endswith(ext) for ext in ['.mp4', '.webm', '.avi', '.mov']):
+            file_type = 'video'
+        elif content_type.startswith('application/') or content_type.startswith('text/'):
+            file_type = 'document'
+        
+        return file_type
 
     def post(self, request, pk, *args, **kwargs):
         try:
-            conversation = Conversation.objects.get(
-                id=pk,
-                participants=request.user
-            )
-        except Conversation.DoesNotExist:
+            # Use a transaction to ensure data consistency
+            from django.db import transaction
+            with transaction.atomic():
+                # Verify conversation access
+                try:
+                    conversation = Conversation.objects.get(
+                        id=pk,
+                        participants=request.user
+                    )
+                except Conversation.DoesNotExist:
+                    return Response(
+                        {"error": "Conversation not found or you don't have permission."},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+
+                content = request.data.get('content', '').strip()
+                file_attachment = request.FILES.get('file_attachment')
+
+                # Check for required content
+                if not content and not file_attachment:
+                    return Response(
+                        {"error": "Message must have either content or a file attachment."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # Create message instance but don't save yet
+                message = Message(
+                    conversation=conversation,
+                    sender=request.user,
+                    content=content,
+                    is_read=True  # Messages are always read by the sender
+                )
+
+                # Handle file attachment if present
+                if file_attachment:
+                    # Validate file size
+                    if file_attachment.size > 5 * 1024 * 1024:  # 5MB limit
+                        return Response(
+                            {"error": "File exceeds maximum size of 5MB."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    # Get original file name and size
+                    file_size = file_attachment.size
+                    file_name = file_attachment.name
+                    
+                    # Determine file type using more comprehensive method
+                    file_type = self.determine_file_type(file_attachment)
+                    
+                    # Set file metadata
+                    message.file_attachment = file_attachment
+                    message.file_type = file_type
+                    message.file_name = file_name
+                    message.file_size = file_size
+
+                # Save the message now that all fields are set
+                message.save()
+
+                # Update the conversation timestamp
+                conversation.update_timestamp()
+
+                # Return the serialized message with complete URL info
+                serializer = MessageSerializer(message, context={'request': request})
+                response_data = serializer.data
+
+                # Ensure file_url is included if file_attachment exists
+                if response_data.get('file_attachment') and not response_data.get('file_url'):
+                    response_data['file_url'] = request.build_absolute_uri(message.file_attachment.url)
+
+                return Response(
+                    response_data,
+                    status=status.HTTP_201_CREATED
+                )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in file upload: {str(e)}", exc_info=True)
             return Response(
-                {"error": "Conversation not found or you don't have permission."},
-                status=status.HTTP_404_NOT_FOUND
+                {"error": f"File upload failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-        content = request.data.get('content', '').strip()
-        file_attachment = request.FILES.get('file_attachment')
-
-        # Check if we have either content or a file
-        if not content and not file_attachment:
-            return Response(
-                {"error": "Message must have either content or a file attachment."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Create the message with basic fields
-        message = Message(
-            conversation=conversation,
-            sender=request.user,
-            content=content,
-            is_read=True  # Messages are always read by the sender
-        )
-
-        # Handle file attachment if present
-        if file_attachment:
-            # Get file size
-            file_size = file_attachment.size
-
-            # Get original file name
-            file_name = file_attachment.name
-
-            # Determine file type based on content type or extension
-            content_type = file_attachment.content_type
-            file_type = 'other'
-
-            if content_type.startswith('image/'):
-                file_type = 'image'
-            elif content_type.startswith('audio/'):
-                file_type = 'audio'
-            elif content_type.startswith('video/'):
-                file_type = 'video'
-            elif content_type.startswith('application/') or content_type.startswith('text/'):
-                file_type = 'document'
-
-            # Set file metadata
-            message.file_attachment = file_attachment
-            message.file_type = file_type
-            message.file_name = file_name
-            message.file_size = file_size
-
-        # Save the message
-        message.save()
-
-        # Update the conversation timestamp
-        conversation.update_timestamp()
-
-        # Return the serialized message
-        serializer = MessageSerializer(message, context={'request': request})
-        response_data = serializer.data
-
-        # Ensure file_url is included if file_attachment exists
-        if response_data.get('file_attachment') and not response_data.get('file_url'):
-            response_data['file_url'] = request.build_absolute_uri(message.file_attachment.url)
-
-        return Response(
-            response_data,
-            status=status.HTTP_201_CREATED
-        )
 
 
 class UserListView(generics.ListAPIView):

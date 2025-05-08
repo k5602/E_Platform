@@ -6,7 +6,26 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.tailwindcss.com">
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          primary: '#5349cc',
+          secondary: '#6c757d',
+          success: '#28a745',
+          warning: '#ffc107',
+          danger: '#dc3545',
+          info: '#17a2b8',
+        }
+      }
+    }
+  }
+</script>
 <link rel="stylesheet" href="{% static 'chatting/css/chat_unified.css' %}">
+<link rel="stylesheet" href="{% static 'chatting/css/drag-drop.css' %}">
 {% endblock %}
 
 {% block home_content %}
@@ -17,6 +36,9 @@
 {% endblock %}
 
 {% block page_js %}
+    <!-- Load utility scripts first -->
+    <script src="{% static 'chatting/js/file-utils.js' %}"></script>
+    <script src="{% static 'chatting/js/drag-drop.js' %}"></script>
     <!-- Load the chat.js script with an ID for reference and onload handler -->
     <script id="chat-js-script" src="{% static 'chatting/js/chat.js' %}" onload="this.setAttribute('data-loaded', 'true');"></script>
 {% block chat_js %}{% endblock %}

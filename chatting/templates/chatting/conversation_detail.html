@@ -4,6 +4,16 @@
 {% block title %}Chat with {{ other_user.first_name }} {{ other_user.last_name }}{% endblock %}
 
 {% block chat_content %}
+<!-- Drop zone for file drag and drop -->
+<div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop files here to send to {{ other_user.first_name }}">
+    <div class="drop-zone-content">
+        <i class="fas fa-cloud-upload-alt drop-zone-icon" aria-hidden="true"></i>
+        <h3 class="drop-zone-text sr-only">Drop files to send</h3>
+        <p class="drop-zone-subtext sr-only">Files will be sent to {{ other_user.first_name }}</p>
+        <p class="sr-only">You can also click to select files.</p>
+    </div>
+</div>
+
 <div class="chat-container" role="main">
     <!-- Sidebar overlay for mobile -->
     <div class="sidebar-overlay" aria-hidden="true"></div>
@@ -167,7 +177,7 @@
                     <span class="typing-dot"></span>
                 </div>
             </div>
-            <form id="message-form" method="post" action="#" onsubmit="return false;" aria-label="Message form">
+            <form id="message-form" method="post" enctype="multipart/form-data" action="#" onsubmit="return false;" aria-label="Message form">
                 <div class="message-input-wrapper">
                     <button type="button" id="emoji-button" class="message-action-btn" aria-label="Add emoji">
                         <i class="far fa-smile" aria-hidden="true"></i>
@@ -176,6 +186,7 @@
                         <i class="fas fa-paperclip" aria-hidden="true"></i>
                     </button>
                     <input type="text" id="message-input" placeholder="Type a message to {{ other_user.first_name }}..." autocomplete="off" aria-label="Type a message" autofocus>
+                    <input type="file" id="file-input" name="file_attachment" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx" style="display:none" aria-hidden="true">
                     <button type="submit" id="send-button" aria-label="Send message">
                         <i class="fas fa-paper-plane" aria-hidden="true"></i>
                     </button>
@@ -210,6 +221,13 @@
                             <span class="emoji" data-emoji="😢">😢</span>
                             <span class="emoji" data-emoji="😭">😭</span>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Attachment preview area -->
+                <div id="attachment-preview-wrapper" class="hidden">
+                    <div id="attachment-preview" class="attachment-preview-container" role="region" aria-live="polite" aria-label="File attachment preview">
+                        <!-- Preview content will be dynamically inserted here -->
                     </div>
                 </div>
             </form>
