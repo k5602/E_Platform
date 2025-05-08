@@ -17,6 +17,12 @@ channels==4.2.2
 channels-redis==4.2.1
 redis==5.2.1
 argon2-cffi>=21.3.0
+# Caching dependencies
+django-redis==5.4.0
+hiredis==2.2.3
+# Performance monitoring
+django-debug-toolbar==4.2.0
+pymemcache==4.0.0
 # Celery dependencies
 celery==5.3.0
 django-celery-beat

@@ -1,5 +1,10 @@
 import re
+import random
 from authentication.models import CustomUser
+from .utils_cache import (
+    cache_response, cache_model_method, clear_model_cache, 
+    cached_property_with_ttl, timed_cache
+)
 
 def extract_mentions(text):
     """

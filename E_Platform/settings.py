@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'channels',
+    # Caching
+    'django_redis',
     # Local apps
     'authentication',
     'home',
@@ -58,6 +60,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.cache.UpdateCacheMiddleware',  # Cache middleware (before response)
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',  # Cache middleware (after response)
     'home.middleware.GlobalErrorMiddleware',
     'authentication.middleware.LoginRateLimitMiddleware',  # Rate limiting for login attempts
 ]
@@ -147,9 +152,44 @@ if DB_ENGINE == 'postgresql':
         }
 else:
     DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+
+    # Cache configuration using Redis
+    CACHES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/1',  # Use database 1 for caching (different from channels)
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'PARSER_CLASS': 'redis.connection.HiredisParser',
+                'SOCKET_CONNECT_TIMEOUT': 5,
+                'SOCKET_TIMEOUT': 5,
+                'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                'IGNORE_EXCEPTIONS': True,  # Don't crash on Redis connection errors
+            },
+            'KEY_PREFIX': 'eplatform',  # Add prefix to all keys to avoid collisions
+        },
+        'session': {  # Dedicated cache for sessions
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/2',
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'PARSER_CLASS': 'redis.connection.HiredisParser',
+            },
+            'KEY_PREFIX': 'session',
+        },
+        'api': {  # Cache for API responses
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': 'redis://127.0.0.1:6379/3',
+            'TIMEOUT': 300,  # 5 minutes
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'api',
         }
     }
 
@@ -224,6 +264,11 @@ AUTH_USER_MODEL = 'authentication.CustomUser'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Session configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'session'
+SESSION_COOKIE_AGE = 86400  # 1 day in seconds
 
 # Security settings
 # Always enable these security settings regardless of environment

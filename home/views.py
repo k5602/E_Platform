@@ -14,25 +14,39 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 
 @login_required
+@cache_response(timeout=60, key_prefix='home_feed', cache_alias='default')
 def home_view(request):
     """Main home page view that displays the feed of posts."""
-    posts = Post.objects.select_related('user').prefetch_related('likes', 'comments').all()
+    # Clear cache for authenticated requests and POST requests
+    if request.method == 'POST':
+        # Handle post creation with transaction
+        form = PostForm(request.POST, request.FILES)
+        if form.is_valid():
+            with transaction.atomic():
+                post = form.save(commit=False)
+                post.user = request.user
+                post.save()
+                # Clear user's feed cache
+                clear_model_cache('post')
+            return redirect('home')
+        # If form is invalid, continue to showing the feed
+    else:
+        form = PostForm()
+    
+    # Optimize query with proper select_related and prefetch_related
+    posts = Post.objects.select_related(
+        'user'
+    ).prefetch_related(
+        'likes',
+        'likes__user',
+        'comments',
+        'comments__user'
+    ).order_by('-created_at')
 
     # Pagination
     paginator = Paginator(posts, 10)  # Show 10 posts per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
-    # Handle post creation
-    if request.method == 'POST':
-        form = PostForm(request.POST, request.FILES)
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.user = request.user
-            post.save()
-            return redirect('home')
-    else:
-        form = PostForm()
 
     context = {
         'page_obj': page_obj,
@@ -290,10 +304,25 @@ def contact_view(request):
 
 @login_required
 @require_GET
+@cache_response(timeout=30, key_prefix='user_notifications', cache_alias='default')
 def get_notifications(request):
     """API endpoint to fetch user notifications."""
-    notifications = Notification.objects.filter(recipient=request.user).select_related(
+    # Add cache key based on user ID
+    cache_key = f"notifications_{request.user.id}"
+    cached_data = cache.get(cache_key)
+    
+    if cached_data:
+        return JsonResponse(cached_data)
+    
+    # Optimize query with select_related and only needed fields
+    notifications = Notification.objects.filter(
+        recipient=request.user
+    ).select_related(
         'sender', 'post', 'comment'
+    ).only(
+        'id', 'notification_type', 'text', 'is_read', 'created_at',
+        'sender__username', 'sender__first_name', 'sender__last_name',
+        'post__id', 'post__content', 'comment__id', 'comment__content'
     ).order_by('-created_at')[:20]  # Limit to 20 most recent
 
     notifications_data = []
@@ -327,12 +356,23 @@ def get_notifications(request):
             }
 
         notifications_data.append(data)
-
-    return JsonResponse({
+    
+    # Count unread notifications with an optimized query
+    unread_count = Notification.objects.filter(
+        recipient=request.user, 
+        is_read=False
+    ).values('id').count()
+    
+    response_data = {
         'status': 'success',
         'notifications': notifications_data,
-        'unread_count': Notification.objects.filter(recipient=request.user, is_read=False).count()
-    })
+        'unread_count': unread_count
+    }
+    
+    # Cache the result for 30 seconds
+    cache.set(cache_key, response_data, 30)
+    
+    return JsonResponse(response_data)
 
 @login_required
 @require_GET
