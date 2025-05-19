@@ -409,4 +409,4 @@ Developed as an educational platform prototype with AI augmentation capabilities
 
 ## Dedication
 
-For My Love Sara.
+For The Light of my life Sara.
