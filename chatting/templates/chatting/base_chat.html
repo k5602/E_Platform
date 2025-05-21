@@ -6,23 +6,28 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://cdn.tailwindcss.com">
+<!-- Load Tailwind CSS properly with a specific version -->
+<script src="https://cdn.tailwindcss.com"></script>
 <script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          primary: '#5349cc',
-          secondary: '#6c757d',
-          success: '#28a745',
-          warning: '#ffc107',
-          danger: '#dc3545',
-          info: '#17a2b8',
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof tailwind !== 'undefined') {
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              primary: '#5349cc',
+              secondary: '#6c757d',
+              success: '#28a745',
+              warning: '#ffc107',
+              danger: '#dc3545',
+              info: '#17a2b8',
+            }
+          }
         }
-      }
+      };
     }
-  }
+  });
 </script>
 <link rel="stylesheet" href="{% static 'chatting/css/chat_unified.css' %}">
 <link rel="stylesheet" href="{% static 'chatting/css/drag-drop.css' %}">

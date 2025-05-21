@@ -677,22 +677,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             with transaction.atomic():
-                # Get all unread messages in a single query
-                messages_to_update = list(Message.objects.filter(
+                # Update all unread messages in a single query
+                updated_count = Message.objects.filter(
                     conversation_id=conversation_id,
                     is_read=False
-                ).exclude(sender_id=user_id))
-
-                # Update delivery status to 'read' for all messages
-                for message in messages_to_update:
-                    message.is_read = True
-                    message.delivery_status = 'read'
-
-                # Use bulk_update for better performance
-                if messages_to_update:
-                    Message.objects.bulk_update(messages_to_update, ['is_read', 'delivery_status'])
-
-                updated_count = len(messages_to_update)
+                ).exclude(sender_id=user_id).update(
+                    is_read=True,
+                    delivery_status='read'
+                )
                 return updated_count
         except Exception as e:
             logger.error(f"Error marking messages as read: {str(e)}", exc_info=True)

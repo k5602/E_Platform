@@ -3114,20 +3114,12 @@ function updateFileUploadProgress(tempId, percent) {
     const statusElement = messageElement.querySelector('.message-status');
     if (statusElement) {
         if (percent < 100) {
-            statusElement.innerHTML = `<i class="fas ${window.FileUtils.getFileIcon(window.FileUtils.determineFileType(file.type, file.name))}" aria-hidden="true"></i>`;
-            statusElement.title = 'Uploading...';
+            statusElement.innerHTML = '<i class="fas fa-upload" aria-label="Uploading"></i>';
+            statusElement.title = `Uploading: ${percent}%`;
         } else {
             statusElement.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i>';
             statusElement.title = 'Upload complete, processing...';
         }
-    }
-}
-
-    // Update status text
-    const statusElement = messageElement.querySelector('.message-status');
-    if (statusElement) {
-        statusElement.innerHTML = '<i class="fas fa-upload" aria-label="Uploading"></i>';
-        statusElement.title = `Uploading: ${percent}%`;
     }
 }
 
@@ -3166,9 +3158,6 @@ function handleFileUploadSuccess(data, tempId) {
         fileType: data.file_type,
         fileName: data.file_name
     });
-}
-
-
 
     // Remove any attachment preview
     const attachmentPreview = document.querySelector('.attachment-preview');
