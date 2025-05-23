@@ -1,50 +1,47 @@
-{% extends 'home/base_home.html' %}
-{% load static %}
-
-{% block title %}Chat | E-Platform{% endblock %}
-
-{% block extra_css %}
-{{ block.super }}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% extends 'home/base_home.html' %} {% load static %} {% block title %}Chat |
+E-Platform{% endblock %} {% block extra_css %} {{ block.super }}
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+/>
 <!-- Load Tailwind CSS properly with a specific version -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof tailwind !== 'undefined') {
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              primary: '#5349cc',
-              secondary: '#6c757d',
-              success: '#28a745',
-              warning: '#ffc107',
-              danger: '#dc3545',
-              info: '#17a2b8',
-            }
-          }
+    document.addEventListener("DOMContentLoaded", function () {
+        if (typeof tailwind !== "undefined") {
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: "#5349cc",
+                            secondary: "#6c757d",
+                            success: "#28a745",
+                            warning: "#ffc107",
+                            danger: "#dc3545",
+                            info: "#17a2b8",
+                        },
+                    },
+                },
+            };
         }
-      };
-    }
-  });
+    });
 </script>
-<link rel="stylesheet" href="{% static 'chatting/css/chat_unified.css' %}">
-<link rel="stylesheet" href="{% static 'chatting/css/drag-drop.css' %}">
-{% endblock %}
-
-{% block home_content %}
+<link rel="stylesheet" href="{% static 'chatting/css/chat.css' %}" />
+<link rel="stylesheet" href="{% static 'chatting/css/drag-drop.css' %}" />
+{% endblock %} {% block home_content %}
 <div class="chat-wrapper">
     {% block chat_content %}{% endblock %}
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
 </div>
-{% endblock %}
-
-{% block page_js %}
-    <!-- Load utility scripts first -->
-    <script src="{% static 'chatting/js/file-utils.js' %}"></script>
-    <script src="{% static 'chatting/js/drag-drop.js' %}"></script>
-    <!-- Load the chat.js script with an ID for reference and onload handler -->
-    <script id="chat-js-script" src="{% static 'chatting/js/chat.js' %}" onload="this.setAttribute('data-loaded', 'true');"></script>
-{% block chat_js %}{% endblock %}
-{% endblock %}
+{% endblock %} {% block page_js %}
+<!-- Load utility scripts first -->
+<script src="{% static 'chatting/js/file-utils.js' %}"></script>
+<script src="{% static 'chatting/js/drag-drop.js' %}"></script>
+<!-- Load the chat.js script with an ID for reference and onload handler -->
+<script
+    id="chat-js-script"
+    src="{% static 'chatting/js/chat.js' %}"
+    onload="this.setAttribute('data-loaded', 'true');"
+></script>
+{% block chat_js %}{% endblock %} {% endblock %}
