@@ -1,5 +1,7 @@
 # E-Platform: AI-Augmented Educational Platform
 
+##Deprecated
+
 A comprehensive Django-based educational platform with AI augmentation, designed to provide a modern learning experience with social features, real-time interactions, and content sharing capabilities.
 
 ## Project Overview
