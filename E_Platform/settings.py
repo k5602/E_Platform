@@ -31,6 +31,8 @@ ALLOWED_HOSTS = ['*', 'localhost', '127.0.0.1', '0.0.0.0']
 # Application definition
 
 INSTALLED_APPS = [
+    'authentication',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,7 +47,6 @@ INSTALLED_APPS = [
     # Caching
     'django_redis',
     # Local apps
-    'authentication',
     'home',
     'chatting',
     'Ai_prototype',
@@ -110,9 +111,9 @@ import sys
 # Database configuration
 # Use environment variables if available, otherwise use default values
 DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql')  # 'postgresql' or 'sqlite3'
-DB_NAME = os.environ.get('DB_NAME', 'e_platform_db')
-DB_USER = os.environ.get('DB_USER', 'zero')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', '82821931003')
+DB_NAME = os.environ.get('DB_NAME', 'e_platform_e')
+DB_USER = os.environ.get('DB_USER', 'admin')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '202520')
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
 DB_PORT = os.environ.get('DB_PORT', '5432')
 
@@ -123,21 +124,21 @@ if DB_ENGINE == 'postgresql':
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': DB_NAME,
-                'USER': DB_USER,
-                'PASSWORD': DB_PASSWORD,
-                'HOST': DB_HOST,
-                'PORT': DB_PORT,
+                'NAME': 'e_platform_e',
+                'USER': 'postgres',
+                'PASSWORD': 202520,
+                'HOST': 'localhost',
+                'PORT': 5432,
                 'CONN_MAX_AGE': 600,
             }
         }
         # Test the connection
         conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=DB_PORT
+            dbname='e_platform_e',
+            user= 'postgres',
+            password=202520,
+            host='localhost',
+            port=5432
         )
         conn.close()
         print("PostgreSQL connection successful")

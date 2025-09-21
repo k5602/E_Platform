@@ -5,7 +5,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('home', '0001_initial'),  # Update this to the latest migration in your home app
-        ('chatting', '0001_initial'),  # Update this to the latest migration in your chatting app
+        #('chatting', '0001_initial'),  # Update this to the latest migration in your chatting app
         ('authentication', '0001_initial'),  # Update this to the latest migration in your authentication app
     ]
 
