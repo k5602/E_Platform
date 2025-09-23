@@ -1,6 +1,0 @@
-Database name: e_platform_db
-Username: zero
-Password: 82821931003
-Host: localhost
-Port: 5432
-username 'admin' and password 'admin123'
