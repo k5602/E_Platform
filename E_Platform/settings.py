@@ -106,93 +106,68 @@ CHANNEL_LAYERS = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 import os
-import sys
+import psycopg2
 
-# Database configuration
-# Use environment variables if available, otherwise use default values
-DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql')  # 'postgresql' or 'sqlite3'
-DB_NAME = os.environ.get('DB_NAME', 'e_platform_e')
-DB_USER = os.environ.get('DB_USER', 'admin')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', '202520')
-DB_HOST = os.environ.get('DB_HOST', 'localhost')
-DB_PORT = os.environ.get('DB_PORT', '5432')
-
-# Configure database based on engine
-if DB_ENGINE == 'postgresql':
-    try:
-        import psycopg2
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'e_platform_e',
-                'USER': 'postgres',
-                'PASSWORD': 202520,
-                'HOST': 'localhost',
-                'PORT': 5432,
-                'CONN_MAX_AGE': 600,
-            }
-        }
-        # Test the connection
-        conn = psycopg2.connect(
-            dbname='e_platform_e',
-            user= 'postgres',
-            password=202520,
-            host='localhost',
-            port=5432
-        )
-        conn.close()
-        print("PostgreSQL connection successful")
-    except (ImportError, psycopg2.OperationalError) as e:
-        print(f"PostgreSQL connection failed: {e}")
-        print("Falling back to SQLite")
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
-else:
-    DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
-
-# Cache configuration using Redis - Always define this regardless of database
-CACHES = {
+DATABASES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',  # Use database 1 for caching (different from channels)
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            # Removed PARSER_CLASS as HiredisParser is not available
-            'SOCKET_CONNECT_TIMEOUT': 5,
-            'SOCKET_TIMEOUT': 5,
-            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-            'IGNORE_EXCEPTIONS': True,  # Don't crash on Redis connection errors
-        },
-        'KEY_PREFIX': 'eplatform',  # Add prefix to all keys to avoid collisions
-    },
-    'session': {  # Dedicated cache for sessions
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/2',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            # Removed PARSER_CLASS as HiredisParser is not available
-        },
-        'KEY_PREFIX': 'session',
-    },
-    'api': {  # Cache for API responses
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/3',
-        'TIMEOUT': 300,  # 5 minutes
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': 'api',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME', 'e_platform'),
+        'USER': os.environ.get('DB_USER', 'iskandrany'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', '202520'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 600,
     }
 }
+
+# Test PostgreSQL connection
+try:
+    conn = psycopg2.connect(
+        dbname=DATABASES['default']['NAME'],
+        user=DATABASES['default']['USER'],
+        password=DATABASES['default']['PASSWORD'],
+        host=DATABASES['default']['HOST'],
+        port=DATABASES['default']['PORT'],
+    )
+    conn.close()
+    print("✅ PostgreSQL connection successful")
+except Exception as e:
+    print(f"❌ PostgreSQL connection failed: {e}")
+
+# Cache configuration using Redis - Always define this regardless of database
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/1',  # Use database 1 for caching (different from channels)
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#             # Removed PARSER_CLASS as HiredisParser is not available
+#             'SOCKET_CONNECT_TIMEOUT': 5,
+#             'SOCKET_TIMEOUT': 5,
+#             'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+#             'IGNORE_EXCEPTIONS': True,  # Don't crash on Redis connection errors
+#         },
+#         'KEY_PREFIX': 'eplatform',  # Add prefix to all keys to avoid collisions
+#     },
+#     'session': {  # Dedicated cache for sessions
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/2',
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#             # Removed PARSER_CLASS as HiredisParser is not available
+#         },
+#         'KEY_PREFIX': 'session',
+#     },
+#     'api': {  # Cache for API responses
+#         'BACKEND': 'django_redis.cache.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/3',
+#         'TIMEOUT': 300,  # 5 minutes
+#         'OPTIONS': {
+#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+#         },
+#         'KEY_PREFIX': 'api',
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -266,36 +241,36 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
-# Session configuration
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'session'
-SESSION_COOKIE_AGE = 86400  # 1 day in seconds
+# # Session configuration
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+# SESSION_CACHE_ALIAS = 'session'
+# SESSION_COOKIE_AGE = 86400  # 1 day in seconds
 
-# Security settings
-# Always enable these security settings regardless of environment
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
-SESSION_COOKIE_SAMESITE = 'Lax'  # Restrict cookie sending to same-site requests
-CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookie
-SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS protection
-SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
-X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking by denying framing
+# # Security settings
+# # Always enable these security settings regardless of environment
+# SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+# SESSION_COOKIE_SAMESITE = 'Lax'  # Restrict cookie sending to same-site requests
+# CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookie
+# SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS protection
+# SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+# X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking by denying framing
 
-# HTTPS-related settings - only enable in production
-if not DEBUG:  # Production environment
-    SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
-    CSRF_COOKIE_SECURE = True  # Only send CSRF cookie over HTTPS
-    SECURE_HSTS_SECONDS = 31536000  # Enable HSTS for 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Apply HSTS to subdomains
-    SECURE_HSTS_PRELOAD = True  # Allow preloading of HSTS settings
-    SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
-else:  # Development environment
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    SECURE_SSL_REDIRECT = False
-    # Disable HSTS in development
-    SECURE_HSTS_SECONDS = 0
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = False
+# # HTTPS-related settings - only enable in production
+# if not DEBUG:  # Production environment
+#     SESSION_COOKIE_SECURE = True  # Only send cookies over HTTPS
+#     CSRF_COOKIE_SECURE = True  # Only send CSRF cookie over HTTPS
+#     SECURE_HSTS_SECONDS = 31536000  # Enable HSTS for 1 year
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True  # Apply HSTS to subdomains
+#     SECURE_HSTS_PRELOAD = True  # Allow preloading of HSTS settings
+#     SECURE_SSL_REDIRECT = True  # Redirect HTTP to HTTPS
+# else:  # Development environment
+#     SESSION_COOKIE_SECURE = False
+#     CSRF_COOKIE_SECURE = False
+#     SECURE_SSL_REDIRECT = False
+#     # Disable HSTS in development
+#     SECURE_HSTS_SECONDS = 0
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+#     SECURE_HSTS_PRELOAD = False
 
 # Access codes for user types (should be stored in environment variables in production)
 ADMIN_ACCESS_CODE = os.environ.get('ADMIN_ACCESS_CODE', 'KFS2025')
