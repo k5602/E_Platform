@@ -14,22 +14,31 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('authentication.urls')),
-    path('home/', include('home.urls', namespace='home')),
-    path('chat/', include('chatting.urls', namespace='chatting')),  # Chat app URLs
-    path('ai/', include('Ai_prototype.urls', namespace='ai_prototype')),  # AI prototype app URLs
-
-    # API URLs
-    path('api/auth/', include('authentication.api.urls')),
-    path('api/', include('home.api.urls')),
-    path('api/chat/', include('chatting.api.urls', namespace='chat_api')),  # Chat API URLs
+    path("admin/", admin.site.urls),
+    path("", include("authentication.urls")),
+    path("home/", include("home.urls", namespace="home")),
+    path("chat/", include("chatting.urls", namespace="chatting")),  # Chat app URLs
+    path(
+        "ai/", include("Ai_prototype.urls", namespace="ai_prototype")
+    ),  # AI prototype app URLs
+    # Consolidated API URLs under single api/ prefix
+    path(
+        "api/",
+        include(
+            [
+                path("", include("home.api.urls")),
+                path("auth/", include("authentication.api.urls")),
+                path("chat/", include("chatting.api.urls", namespace="chat_api")),
+            ]
+        ),
+    ),
 ]
 
 if settings.DEBUG:

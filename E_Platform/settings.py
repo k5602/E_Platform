@@ -20,83 +20,81 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ce+=i=0+%s1u$9sik8$rh7d-_yk7@cdh$aek=s_rnkprn5m+3)'
+SECRET_KEY = "django-insecure-ce+=i=0+%s1u$9sik8$rh7d-_yk7@cdh$aek=s_rnkprn5m+3)"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*', 'localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", "0.0.0.0"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'authentication',
-
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "authentication",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Third-party apps
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'corsheaders',
-    'channels',
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "corsheaders",
+    "channels",
     # Caching
-    'django_redis',
+    "django_redis",
     # Local apps
-    'home',
-    'chatting',
-    'Ai_prototype',
+    "home",
+    "chatting",
+    "Ai_prototype",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.cache.UpdateCacheMiddleware',  # Cache middleware (before response)
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.cache.FetchFromCacheMiddleware',  # Cache middleware (after response)
-    'home.middleware.GlobalErrorMiddleware',
-    'authentication.middleware.LoginRateLimitMiddleware',  # Rate limiting for login attempts
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # CORS middleware
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.cache.UpdateCacheMiddleware",  # Cache middleware (before response)
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.cache.FetchFromCacheMiddleware",  # Cache middleware (after response)
+    "home.middleware.GlobalErrorMiddleware",
+    "authentication.middleware.LoginRateLimitMiddleware",  # Rate limiting for login attempts
 ]
 
-ROOT_URLCONF = 'E_Platform.urls'
+ROOT_URLCONF = "E_Platform.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'E_Platform.wsgi.application'
-ASGI_APPLICATION = 'E_Platform.asgi.application'
+WSGI_APPLICATION = "E_Platform.wsgi.application"
+ASGI_APPLICATION = "E_Platform.asgi.application"
 
 # Channels configuration
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
-            'capacity': 1500,  # Maximum number of messages in channel layer
-            'expiry': 60,  # Message expiry time in seconds
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+            "capacity": 1500,  # Maximum number of messages in channel layer
+            "expiry": 60,  # Message expiry time in seconds
         },
     },
 }
@@ -107,17 +105,28 @@ CHANNEL_LAYERS = {
 
 import os
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'e_platform'),
-        'USER': os.environ.get('DB_USER', 'iskandrany'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', '202520'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 600,
+# Check if we should use SQLite for development (when PostgreSQL is not available)
+USE_SQLITE = os.environ.get("USE_SQLITE", "false").lower() == "true"
+
+if USE_SQLITE:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "e_platform"),
+            "USER": os.environ.get("DB_USER", "iskandrany"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", "202520"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            "CONN_MAX_AGE": 600,
+        }
+    }
 
 # Cache configuration using Redis - Always define this regardless of database
 # CACHES = {
@@ -159,41 +168,41 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-        'OPTIONS': {
-            'user_attributes': ['username', 'first_name', 'last_name', 'email'],
-            'max_similarity': 0.9,
-        }
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "OPTIONS": {
+            "user_attributes": ["username", "first_name", "last_name", "email"],
+            "max_similarity": 0.9,
+        },
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 8,
-        }
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {
+            "min_length": 8,
+        },
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 # Password Hashers
 PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
 ]
 
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -203,28 +212,28 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    BASE_DIR / "static",
 ]
 
 # Media files (User uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom user model
-AUTH_USER_MODEL = 'authentication.CustomUser'
+AUTH_USER_MODEL = "authentication.CustomUser"
 
 # Login URL
-LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "login"
 
 # # Session configuration
 # SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
@@ -258,220 +267,222 @@ LOGOUT_REDIRECT_URL = 'login'
 #     SECURE_HSTS_PRELOAD = False
 
 # Access codes for user types (should be stored in environment variables in production)
-ADMIN_ACCESS_CODE = os.environ.get('ADMIN_ACCESS_CODE', 'KFS2025')
-INSTRUCTOR_ACCESS_CODE = os.environ.get('INSTRUCTOR_ACCESS_CODE', 'INS2025')
+ADMIN_ACCESS_CODE = os.environ.get("ADMIN_ACCESS_CODE", "KFS2025")
+INSTRUCTOR_ACCESS_CODE = os.environ.get("INSTRUCTOR_ACCESS_CODE", "INS2025")
 
 # Email settings for password reset
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@eplatform.com')
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@eplatform.com")
 
 # Django REST Framework settings
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.SessionAuthentication',  # For browsable API
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",  # For browsable API
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
     ),
 }
 
 # JWT settings
 from datetime import timedelta
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Reduced from 1 day to 30 minutes
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # Reduced from 7 days to 1 day
-    'ROTATE_REFRESH_TOKENS': True,  # Enable refresh token rotation
-    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
-    'UPDATE_LAST_LOGIN': True,  # Update last login timestamp
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-    'JTI_CLAIM': 'jti',  # JWT ID claim
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),  # Reduced from 1 day to 30 minutes
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),  # Reduced from 7 days to 1 day
+    "ROTATE_REFRESH_TOKENS": True,  # Enable refresh token rotation
+    "BLACKLIST_AFTER_ROTATION": True,  # Blacklist old refresh tokens
+    "UPDATE_LAST_LOGIN": True,  # Update last login timestamp
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "VERIFYING_KEY": None,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "JTI_CLAIM": "jti",  # JWT ID claim
 }
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True  # For development only, set specific origins in production
+CORS_ALLOW_ALL_ORIGINS = (
+    True  # For development only, set specific origins in production
+)
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
 ]
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
 ]
 
 # Logging configuration
 import os
+
 # Create logs directory if it doesn't exist
-LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR = BASE_DIR / "logs"
 if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {asctime} {message}',
-            'style': '{',
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
         },
-        'detailed': {
-            'format': '{levelname} {asctime} {name} {module} {funcName} {lineno} {message}',
-            'style': '{',
-        },
-    },
-    'filters': {
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
+        "detailed": {
+            "format": "{levelname} {asctime} {name} {module} {funcName} {lineno} {message}",
+            "style": "{",
         },
     },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-            'filters': ['require_debug_true'],
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
         },
-        'file_error': {
-            'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'django_errors.log',
-            'formatter': 'detailed',
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 10,
-        },
-        'file_info': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'django_info.log',
-            'formatter': 'verbose',
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 5,
-        },
-        'file_debug': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'django_debug.log',
-            'formatter': 'detailed',
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 3,
-            'filters': ['require_debug_true'],
-        },
-        'mail_admins': {
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler',
-            'formatter': 'detailed',
-            'filters': ['require_debug_false'],
-        },
-        'security': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'security.log',
-            'formatter': 'detailed',
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 5,
-        },
-        'db': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': LOGS_DIR / 'db_queries.log',
-            'formatter': 'detailed',
-            'maxBytes': 10485760,  # 10MB
-            'backupCount': 3,
-            'filters': ['require_debug_true'],
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file_info', 'file_error', 'mail_admins'],
-            'level': 'INFO',
-            'propagate': True,
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "filters": ["require_debug_true"],
         },
-        'django.request': {
-            'handlers': ['file_error', 'mail_admins'],
-            'level': 'ERROR',
-            'propagate': False,
+        "file_error": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django_errors.log",
+            "formatter": "detailed",
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 10,
         },
-        'django.security': {
-            'handlers': ['security', 'mail_admins'],
-            'level': 'INFO',
-            'propagate': False,
+        "file_info": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django_info.log",
+            "formatter": "verbose",
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 5,
         },
-        'django.db.backends': {
-            'handlers': ['db'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "file_debug": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "django_debug.log",
+            "formatter": "detailed",
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 3,
+            "filters": ["require_debug_true"],
         },
-        'home': {
-            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "formatter": "detailed",
+            "filters": ["require_debug_false"],
         },
-        'authentication': {
-            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "security": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "security.log",
+            "formatter": "detailed",
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 5,
         },
-        'home.middleware': {
-            'handlers': ['console', 'file_error'],
-            'level': 'ERROR',
-            'propagate': False,
+        "db": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOGS_DIR / "db_queries.log",
+            "formatter": "detailed",
+            "maxBytes": 10485760,  # 10MB
+            "backupCount": 3,
+            "filters": ["require_debug_true"],
         },
-        'home.websockets': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file_info", "file_error", "mail_admins"],
+            "level": "INFO",
+            "propagate": True,
         },
-        'chatting': {
-            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "django.request": {
+            "handlers": ["file_error", "mail_admins"],
+            "level": "ERROR",
+            "propagate": False,
         },
-        'chatting.consumers': {
-            'handlers': ['console', 'file_info', 'file_error'],
-            'level': 'INFO',
-            'propagate': False,
+        "django.security": {
+            "handlers": ["security", "mail_admins"],
+            "level": "INFO",
+            "propagate": False,
         },
-        'Ai_prototype': {
-            'handlers': ['console', 'file_info', 'file_error', 'file_debug'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "django.db.backends": {
+            "handlers": ["db"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "home": {
+            "handlers": ["console", "file_info", "file_error", "file_debug"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "authentication": {
+            "handlers": ["console", "file_info", "file_error", "file_debug"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "home.middleware": {
+            "handlers": ["console", "file_error"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "home.websockets": {
+            "handlers": ["console", "file_info", "file_error"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "chatting": {
+            "handlers": ["console", "file_info", "file_error", "file_debug"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        "chatting.consumers": {
+            "handlers": ["console", "file_info", "file_error"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "Ai_prototype": {
+            "handlers": ["console", "file_info", "file_error", "file_debug"],
+            "level": "DEBUG",
+            "propagate": False,
         },
     },
 }

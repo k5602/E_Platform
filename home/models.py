@@ -5,21 +5,33 @@ from django.utils import timezone
 import re
 
 # Import profile models
-from .models_profile import ProfileUserProfile, ProfileEducation, ProfileExperience, ProfileSkill, ProfileProject, ProfileCertification
+from .models_profile import (
+    ProfileUserProfile,
+    ProfileEducation,
+    ProfileExperience,
+    ProfileSkill,
+    ProfileProject,
+    ProfileCertification,
+)
 
 logger = logging.getLogger(__name__)
 
+
 class Post(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='posts')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="posts")
     content = models.TextField()
-    image = models.ImageField(upload_to='posts/images/', null=True, blank=True)
-    video = models.FileField(upload_to='posts/videos/', null=True, blank=True)
-    document = models.FileField(upload_to='posts/documents/', null=True, blank=True)
+    image = models.ImageField(upload_to="posts/images/", null=True, blank=True)
+    video = models.FileField(upload_to="posts/videos/", null=True, blank=True)
+    document = models.FileField(upload_to="posts/documents/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
         return f"Post by {self.user.username} on {self.created_at.strftime('%Y-%m-%d %H:%M')}"
@@ -31,31 +43,41 @@ class Post(models.Model):
         # Process mentions only if this is a new post
         if is_new and self.content:
             from home.utils import extract_mentions
+
             mentioned_users = extract_mentions(self.content)
 
-            logger.debug(f"Post save: Found {len(mentioned_users)} mentioned users in post {self.id}")
+            logger.debug(
+                f"Post save: Found {len(mentioned_users)} mentioned users in post {self.id}"
+            )
 
             # Create notifications for mentioned users
             for mentioned_user in mentioned_users:
                 if mentioned_user != self.user:  # Don't notify yourself
-                    logger.debug(f"Creating mention notification for {mentioned_user.username} from {self.user.username}")
+                    logger.debug(
+                        f"Creating mention notification for {mentioned_user.username} from {self.user.username}"
+                    )
                     notification = Notification.objects.create(
                         recipient=mentioned_user,
                         sender=self.user,
                         post=self,
-                        notification_type='mention',
-                        text=f"{self.user.username} mentioned you in a post"
+                        notification_type="mention",
+                        text=f"{self.user.username} mentioned you in a post",
                     )
                     logger.debug(f"Created notification with ID: {notification.id}")
 
+
 class Like(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='likes')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='likes')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="likes")
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="likes")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'post')
-        ordering = ['-created_at']
+        unique_together = ("user", "post")
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["post"]),
+            models.Index(fields=["user"]),
+        ]
 
     def __str__(self):
         return f"{self.user.username} liked {self.post}"
@@ -70,18 +92,26 @@ class Like(models.Model):
                 recipient=self.post.user,
                 sender=self.user,
                 post=self.post,
-                notification_type='like',
-                text=f"{self.user.username} liked your post"
+                notification_type="like",
+                text=f"{self.user.username} liked your post",
             )
 
+
 class Comment(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='comments')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="comments"
+    )
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="comments")
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["post"]),
+            models.Index(fields=["user"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.post}"
@@ -93,37 +123,47 @@ class Comment(models.Model):
         if is_new:
             # Create notification for post owner (if not self)
             if self.post.user != self.user:
-                logger.debug(f"Creating comment notification for post owner {self.post.user.username}")
+                logger.debug(
+                    f"Creating comment notification for post owner {self.post.user.username}"
+                )
                 notification = Notification.objects.create(
                     recipient=self.post.user,
                     sender=self.user,
                     post=self.post,
                     comment=self,
-                    notification_type='comment',
-                    text=f"{self.user.username} commented on your post"
+                    notification_type="comment",
+                    text=f"{self.user.username} commented on your post",
                 )
                 logger.debug(f"Created comment notification with ID: {notification.id}")
 
             # Process mentions
             if self.content:
                 from home.utils import extract_mentions
+
                 mentioned_users = extract_mentions(self.content)
 
-                logger.debug(f"Comment save: Found {len(mentioned_users)} mentioned users in comment {self.id}")
+                logger.debug(
+                    f"Comment save: Found {len(mentioned_users)} mentioned users in comment {self.id}"
+                )
 
                 # Create notifications for mentioned users
                 for mentioned_user in mentioned_users:
                     if mentioned_user != self.user:  # Don't notify yourself
-                        logger.debug(f"Creating mention notification for {mentioned_user.username} from {self.user.username} in comment")
+                        logger.debug(
+                            f"Creating mention notification for {mentioned_user.username} from {self.user.username} in comment"
+                        )
                         notification = Notification.objects.create(
                             recipient=mentioned_user,
                             sender=self.user,
                             post=self.post,
                             comment=self,
-                            notification_type='mention',
-                            text=f"{self.user.username} mentioned you in a comment"
+                            notification_type="mention",
+                            text=f"{self.user.username} mentioned you in a comment",
                         )
-                        logger.debug(f"Created mention notification with ID: {notification.id}")
+                        logger.debug(
+                            f"Created mention notification with ID: {notification.id}"
+                        )
+
 
 class Contact(models.Model):
     name = models.CharField(max_length=100)
@@ -133,12 +173,13 @@ class Contact(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         verbose_name = "Contact Message"
         verbose_name_plural = "Contact Messages"
 
     def __str__(self):
         return f"Message from {self.name} - {self.subject}"
+
 
 class FAQ(models.Model):
     question = models.CharField(max_length=255)
@@ -150,28 +191,29 @@ class FAQ(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['order', 'question']
+        ordering = ["order", "question"]
         verbose_name = "FAQ"
         verbose_name_plural = "FAQs"
 
     def __str__(self):
         return self.question
 
+
 class Appointment(models.Model):
     APPOINTMENT_STATUS = (
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
     )
 
     APPOINTMENT_TYPE = (
-        ('office_hours', 'Office Hours'),
-        ('project_discussion', 'Project Discussion'),
-        ('academic_advice', 'Academic Advice'),
-        ('course_related', 'Course Related'),
-        ('other', 'Other'),
+        ("office_hours", "Office Hours"),
+        ("project_discussion", "Project Discussion"),
+        ("academic_advice", "Academic Advice"),
+        ("course_related", "Course Related"),
+        ("other", "Other"),
     )
 
     name = models.CharField(max_length=100)
@@ -179,16 +221,32 @@ class Appointment(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     appointment_date = models.DateField()
     appointment_time = models.TimeField()
-    appointment_type = models.CharField(max_length=50, choices=APPOINTMENT_TYPE, default='office_hours')
+    appointment_type = models.CharField(
+        max_length=50, choices=APPOINTMENT_TYPE, default="office_hours"
+    )
     message = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=APPOINTMENT_STATUS, default='pending')
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='appointments')
-    instructor = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True, related_name='instructor_appointments')
+    status = models.CharField(
+        max_length=20, choices=APPOINTMENT_STATUS, default="pending"
+    )
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="appointments",
+    )
+    instructor = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="instructor_appointments",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-appointment_date', '-appointment_time']
+        ordering = ["-appointment_date", "-appointment_time"]
 
     def __str__(self):
         return f"Appointment for {self.name} on {self.appointment_date} at {self.appointment_time} ({self.get_status_display()})"
@@ -206,38 +264,49 @@ class Appointment(models.Model):
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
-        ('mention', 'Mention'),
-        ('comment', 'Comment'),
-        ('like', 'Like'),
+        ("mention", "Mention"),
+        ("comment", "Comment"),
+        ("like", "Like"),
     )
 
-    recipient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notifications')
-    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_notifications')
+    recipient = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="notifications"
+    )
+    sender = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="sent_notifications"
+    )
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, null=True, blank=True)
+    comment = models.ForeignKey(
+        Comment, on_delete=models.CASCADE, null=True, blank=True
+    )
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     text = models.TextField(blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["recipient", "is_read"]),
+            models.Index(fields=["recipient", "created_at"]),
+            models.Index(fields=["sender"]),
+        ]
 
     def __str__(self):
         return f"{self.notification_type} notification for {self.recipient.username} from {self.sender.username}"
 
     def get_notification_url(self):
         """Get the URL for this notification."""
-        if self.notification_type == 'mention' and self.comment:
+        if self.notification_type == "mention" and self.comment:
             # Mention in a comment
             return f"/home/post/{self.post.id}/#comment-{self.comment.id}"
-        elif self.notification_type == 'mention' and self.post:
+        elif self.notification_type == "mention" and self.post:
             # Mention in a post
             return f"/home/post/{self.post.id}/"
-        elif self.notification_type == 'comment':
+        elif self.notification_type == "comment":
             # Comment on a post
             return f"/home/post/{self.post.id}/#comment-{self.comment.id}"
-        elif self.notification_type == 'like':
+        elif self.notification_type == "like":
             # Like on a post
             return f"/home/post/{self.post.id}/"
         else:
@@ -256,6 +325,7 @@ class Notification(models.Model):
     def send_notification(self):
         """Send notification via WebSocket."""
         import logging
+
         logger = logging.getLogger(__name__)
 
         try:
@@ -272,41 +342,43 @@ class Notification(models.Model):
 
             # Prepare notification data
             notification_data = {
-                'id': self.id,
-                'recipient': self.recipient.username,
-                'recipient_id': self.recipient.id,
-                'sender': self.sender.username,
-                'sender_id': self.sender.id,
-                'notification_type': self.notification_type,
-                'text': self.text,
-                'is_read': self.is_read,
-                'created_at': self.created_at.isoformat(),
-                'post_id': self.post.id if self.post else None,
-                'comment_id': self.comment.id if self.comment else None,
-                'url': self.get_notification_url(),
+                "id": self.id,
+                "recipient": self.recipient.username,
+                "recipient_id": self.recipient.id,
+                "sender": self.sender.username,
+                "sender_id": self.sender.id,
+                "notification_type": self.notification_type,
+                "text": self.text,
+                "is_read": self.is_read,
+                "created_at": self.created_at.isoformat(),
+                "post_id": self.post.id if self.post else None,
+                "comment_id": self.comment.id if self.comment else None,
+                "url": self.get_notification_url(),
             }
 
             # Send notification to the recipient's group
-            group_name = f'notifications_{self.recipient.id}'
+            group_name = f"notifications_{self.recipient.id}"
             logger.info(f"Sending notification {self.id} to group {group_name}")
 
             async_to_sync(channel_layer.group_send)(
                 group_name,
-                {
-                    'type': 'notification_message',
-                    'notification': notification_data
-                }
+                {"type": "notification_message", "notification": notification_data},
             )
 
-            logger.info(f"Successfully sent notification {self.id} to user {self.recipient.username}")
+            logger.info(
+                f"Successfully sent notification {self.id} to user {self.recipient.username}"
+            )
 
         except Exception as e:
             # Log the error but don't prevent the notification from being saved
-            logger.error(f"Error sending WebSocket notification: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error sending WebSocket notification: {str(e)}", exc_info=True
+            )
 
 
 class Subject(models.Model):
     """Model representing an academic subject or course."""
+
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True, default="SUB-001")
     description = models.TextField(default="Subject description")
@@ -315,8 +387,12 @@ class Subject(models.Model):
     icon_color = models.CharField(max_length=20, default="#5349cc")
     order = models.IntegerField(default=0)
     # New fields
-    icon_name = models.CharField(max_length=50, help_text="Material icon name", default="school")
-    background_icon = models.CharField(max_length=50, help_text="Material icon for background", default="book")
+    icon_name = models.CharField(
+        max_length=50, help_text="Material icon name", default="school"
+    )
+    background_icon = models.CharField(
+        max_length=50, help_text="Material icon for background", default="book"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -327,12 +403,12 @@ class Subject(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='taught_subjects',
-        limit_choices_to={'user_type': 'instructor'}
+        related_name="taught_subjects",
+        limit_choices_to={"user_type": "instructor"},
     )
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         verbose_name = "Subject"
         verbose_name_plural = "Subjects"
 
@@ -352,29 +428,34 @@ class Subject(models.Model):
 
 class SubjectMaterial(models.Model):
     """Model representing learning materials for a subject."""
+
     MATERIAL_TYPES = (
-        ('document', 'Document'),
-        ('video', 'Video'),
-        ('link', 'External Link'),
-        ('assignment', 'Assignment'),
+        ("document", "Document"),
+        ("video", "Video"),
+        ("link", "External Link"),
+        ("assignment", "Assignment"),
     )
 
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='materials')
+    subject = models.ForeignKey(
+        Subject, on_delete=models.CASCADE, related_name="materials"
+    )
     title = models.CharField(max_length=200, default="Material Title")
     description = models.TextField(blank=True)
-    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPES, default='document')
+    material_type = models.CharField(
+        max_length=20, choices=MATERIAL_TYPES, default="document"
+    )
     # Legacy fields (required by the database)
     content = models.TextField(default="", blank=True)
     order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)  # Instead of is_published
     # Current fields
-    file = models.FileField(upload_to='subject_materials/', null=True, blank=True)
+    file = models.FileField(upload_to="subject_materials/", null=True, blank=True)
     external_url = models.URLField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         verbose_name = "Subject Material"
         verbose_name_plural = "Subject Materials"
 
@@ -384,13 +465,18 @@ class SubjectMaterial(models.Model):
 
 class SubjectEnrollment(models.Model):
     """Model to track student enrollments in subjects."""
-    student = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='enrollments')
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='enrollments')
+
+    student = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="enrollments"
+    )
+    subject = models.ForeignKey(
+        Subject, on_delete=models.CASCADE, related_name="enrollments"
+    )
     enrolled_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('student', 'subject')
+        unique_together = ("student", "subject")
         verbose_name = "Subject Enrollment"
         verbose_name_plural = "Subject Enrollments"
 

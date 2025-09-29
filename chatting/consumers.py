@@ -16,13 +16,17 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
+
 class ChatConsumer(AsyncWebsocketConsumer):
     """
     WebSocket consumer for handling real-time chat functionality.
     """
+
     async def connect(self):
         # Enhanced logging for connection attempts
-        user_id = self.scope["user"].id if hasattr(self.scope["user"], "id") else "anonymous"
+        user_id = (
+            self.scope["user"].id if hasattr(self.scope["user"], "id") else "anonymous"
+        )
         client_info = {
             "user_id": user_id,
             "path": self.scope.get("path", "unknown"),
@@ -40,41 +44,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # Set user as online
-        await self.set_user_online(self.user.id, True)
+        # Set user as online with caching
+        await self.set_user_online_cached(self.user.id, True)
 
         # Create a unique channel group name for the user
         self.user_group_name = f"user_{self.user.id}"
 
         # Join user group
-        await self.channel_layer.group_add(
-            self.user_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.user_group_name, self.channel_name)
 
         # Join the global online users group
-        await self.channel_layer.group_add(
-            "online_users",
-            self.channel_name
-        )
+        await self.channel_layer.group_add("online_users", self.channel_name)
 
-        # Add user to specific conversation groups
-        user_conversations = await self.get_user_conversations(self.user.id)
+        # Add user to specific conversation groups (optimized with caching)
+        user_conversations = await self.get_user_conversations_cached(self.user.id)
         for conversation_id in user_conversations:
             conversation_group_name = f"conversation_{conversation_id}"
             await self.channel_layer.group_add(
-                conversation_group_name,
-                self.channel_name
+                conversation_group_name, self.channel_name
             )
 
         # Broadcast user online status to all connected clients
         await self.channel_layer.group_send(
             "online_users",
-            {
-                "type": "user_status",
-                "user_id": self.user.id,
-                "status": True
-            }
+            {"type": "user_status", "user_id": self.user.id, "status": True},
         )
 
         # Accept the connection
@@ -84,32 +77,37 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user_id = self.user.id if hasattr(self.user, "id") else "anonymous"
         logger.info(f"WebSocket connection established for user {user_id}")
 
-        # Deliver any pending messages to the user who just came online
+        # Deliver any pending messages to the user who just came online (optimized)
         if hasattr(self.user, "id") and not self.user.is_anonymous:
-            delivered_count = await self.deliver_pending_messages(self.user.id)
+            delivered_count = await self.deliver_pending_messages_optimized(
+                self.user.id
+            )
             if delivered_count > 0:
-                logger.info(f"Delivered {delivered_count} pending messages to user {self.user.id} on connect")
+                logger.info(
+                    f"Delivered {delivered_count} pending messages to user {self.user.id} on connect"
+                )
 
     async def disconnect(self, close_code):
         # Enhanced logging for disconnections
-        user_id = self.scope["user"].id if hasattr(self.scope["user"], "id") else "anonymous"
+        user_id = (
+            self.scope["user"].id if hasattr(self.scope["user"], "id") else "anonymous"
+        )
         client_info = {
             "user_id": user_id,
             "path": self.scope.get("path", "unknown"),
             "client": f"{self.scope.get('client', ('unknown', 0))[0]}:{self.scope.get('client', ('unknown', 0))[1]}",
-            "close_code": close_code
+            "close_code": close_code,
         }
 
         logger.info(f"WebSocket disconnection: {client_info}")
 
-        if hasattr(self, 'user') and not self.user.is_anonymous:
+        if hasattr(self, "user") and not self.user.is_anonymous:
             # Set user as offline
             user_status = await self.set_user_online(self.user.id, False)
 
             # Leave user group
             await self.channel_layer.group_discard(
-                self.user_group_name,
-                self.channel_name
+                self.user_group_name, self.channel_name
             )
 
             # Leave conversation groups
@@ -117,15 +115,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             for conversation_id in user_conversations:
                 conversation_group_name = f"conversation_{conversation_id}"
                 await self.channel_layer.group_discard(
-                    conversation_group_name,
-                    self.channel_name
+                    conversation_group_name, self.channel_name
                 )
 
             # Leave online status group
-            await self.channel_layer.group_discard(
-                "online_users",
-                self.channel_name
-            )
+            await self.channel_layer.group_discard("online_users", self.channel_name)
 
             # Broadcast user offline status with last seen time
             await self.channel_layer.group_send(
@@ -134,8 +128,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "type": "user_status",
                     "user_id": self.user.id,
                     "status": False,
-                    "last_seen": user_status.last_active.isoformat() if hasattr(user_status, 'last_active') else timezone.now().isoformat()
-                }
+                    "last_seen": (
+                        user_status.last_active.isoformat()
+                        if hasattr(user_status, "last_active")
+                        else timezone.now().isoformat()
+                    ),
+                },
             )
 
     async def receive(self, text_data):
@@ -154,43 +152,64 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             # Parse JSON data
             text_data_json = json.loads(text_data)
-            message_type = text_data_json.get('type', '')
+            message_type = text_data_json.get("type", "")
 
             # Log the received message type (but not content for privacy)
-            logger.debug(f"Received WebSocket message of type '{message_type}' from user {self.user.id}")
+            logger.debug(
+                f"Received WebSocket message of type '{message_type}' from user {self.user.id}"
+            )
 
             # Route to appropriate handler based on message type
-            if message_type == 'chat_message':
+            if message_type == "chat_message":
                 await self.handle_chat_message(text_data_json)
-            elif message_type == 'read_messages':
+            elif message_type == "read_messages":
                 await self.handle_read_messages(text_data_json)
-            elif message_type == 'typing' or message_type == 'typing_indicator':
+            elif message_type == "typing" or message_type == "typing_indicator":
                 # Handle both 'typing' and 'typing_indicator' for backward compatibility
                 await self.handle_typing(text_data_json)
-            elif message_type == 'file_message_sent':
+            elif message_type == "file_message_sent":
                 # Handle notification that a file message was sent via HTTP
                 await self.handle_file_message_sent(text_data_json)
             else:
-                logger.warning(f"Unknown message type '{message_type}' received from user {self.user.id}")
+                logger.warning(
+                    f"Unknown message type '{message_type}' received from user {self.user.id}"
+                )
                 # Notify client about the error
-                await self.send(text_data=json.dumps({
-                    "type": "error",
-                    "message": f"Unknown message type: {message_type}"
-                }))
+                await self.send(
+                    text_data=json.dumps(
+                        {
+                            "type": "error",
+                            "message": f"Unknown message type: {message_type}",
+                        }
+                    )
+                )
         except json.JSONDecodeError:
-            logger.error(f"Invalid JSON received from user {self.user.id}: {text_data[:100]}...")
+            logger.error(
+                f"Invalid JSON received from user {self.user.id}: {text_data[:100]}..."
+            )
             # Notify client about the error
-            await self.send(text_data=json.dumps({
-                "type": "error",
-                "message": "Invalid message format. Please send valid JSON."
-            }))
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "error",
+                        "message": "Invalid message format. Please send valid JSON.",
+                    }
+                )
+            )
         except Exception as e:
-            logger.error(f"Error processing WebSocket message from user {self.user.id}: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error processing WebSocket message from user {self.user.id}: {str(e)}",
+                exc_info=True,
+            )
             # Notify client about the error
-            await self.send(text_data=json.dumps({
-                "type": "error",
-                "message": "An error occurred while processing your message."
-            }))
+            await self.send(
+                text_data=json.dumps(
+                    {
+                        "type": "error",
+                        "message": "An error occurred while processing your message.",
+                    }
+                )
+            )
 
     async def handle_chat_message(self, data):
         """
@@ -214,13 +233,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         try:
             # Validate conversation_id
-            conversation_id = data.get('conversation_id')
+            conversation_id = data.get("conversation_id")
             if not conversation_id:
-                logger.warning(f"Missing conversation_id in message from user {self.user.id}")
+                logger.warning(
+                    f"Missing conversation_id in message from user {self.user.id}"
+                )
                 return
 
             # Validate and sanitize content
-            content = data.get('content', '').strip()
+            content = data.get("content", "").strip()
             if not content:
                 logger.debug(f"Empty message content from user {self.user.id}")
                 return
@@ -232,43 +253,58 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if rate >= 10:  # Max 10 messages per minute
                 logger.warning(f"Rate limit exceeded for user {self.user.id}")
                 # Notify user about rate limiting
-                await self.send(text_data=json.dumps({
-                    "type": "error",
-                    "message": "You're sending messages too quickly. Please wait a moment."
-                }))
+                await self.send(
+                    text_data=json.dumps(
+                        {
+                            "type": "error",
+                            "message": "You're sending messages too quickly. Please wait a moment.",
+                        }
+                    )
+                )
                 return
 
             # Increment rate counter
             cache.set(rate_limit_key, rate + 1, 60)  # Reset after 60 seconds
 
             # Check if the user is a participant in this conversation
-            is_participant = await self.is_conversation_participant(conversation_id, self.user.id)
+            is_participant = await self.is_conversation_participant(
+                conversation_id, self.user.id
+            )
             if not is_participant:
                 logger.warning(
-                    f"User {self.user.id} attempted to send message to conversation {conversation_id} they're not part of")
+                    f"User {self.user.id} attempted to send message to conversation {conversation_id} they're not part of"
+                )
                 return
 
             # Sanitize content to prevent XSS attacks
             sanitized_content = escape(content)
 
             # Create the message in the database (this also updates the conversation timestamp)
-            message = await self.create_message(conversation_id, self.user.id, sanitized_content)
+            message = await self.create_message(
+                conversation_id, self.user.id, sanitized_content
+            )
         except Exception as e:
             logger.error(f"Error handling chat message: {str(e)}", exc_info=True)
             return
 
         # Get the other participant in the conversation
-        other_participant = await self.get_other_participant(conversation_id, self.user.id)
+        other_participant = await self.get_other_participant(
+            conversation_id, self.user.id
+        )
 
         # Check if the recipient is online
         recipient_online = await self.is_user_online(other_participant)
 
         # Update message delivery status based on recipient's online status
         if recipient_online:
-            await self.update_message_status(message.id, 'delivered')
-            logger.info(f"Message {message.id} delivered to online user {other_participant}")
+            await self.update_message_status(message.id, "delivered")
+            logger.info(
+                f"Message {message.id} delivered to online user {other_participant}"
+            )
         else:
-            logger.info(f"Message {message.id} queued for offline user {other_participant}")
+            logger.info(
+                f"Message {message.id} queued for offline user {other_participant}"
+            )
             # Message remains in 'pending' status (default)
 
         # Prepare the message data
@@ -279,19 +315,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "content": message.content,
                 "timestamp": message.timestamp.isoformat(),
                 "sender_id": self.user.id,
-                "sender_name": f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username,
+                "sender_name": f"{self.user.first_name} {self.user.last_name}".strip()
+                or self.user.username,
                 "is_read": False,
-                "delivery_status": "delivered" if recipient_online else "pending"
+                "delivery_status": "delivered" if recipient_online else "pending",
             },
-            "conversation_id": conversation_id
+            "conversation_id": conversation_id,
         }
 
         # Send the message to the conversation group
         conversation_group_name = f"conversation_{conversation_id}"
-        await self.channel_layer.group_send(
-            conversation_group_name,
-            message_data
-        )
+        await self.channel_layer.group_send(conversation_group_name, message_data)
 
         # Also send a notification to the other participant's personal group
         if other_participant:
@@ -300,18 +334,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "new_message_notification",
                     "conversation_id": conversation_id,
-                    "message": message_data["message"]
-                }
+                    "message": message_data["message"],
+                },
             )
 
     async def handle_read_messages(self, data):
         """
         Handle message read status updates.
         """
-        conversation_id = data.get('conversation_id')
+        conversation_id = data.get("conversation_id")
 
         # Check if the user is a participant in this conversation
-        is_participant = await self.is_conversation_participant(conversation_id, self.user.id)
+        is_participant = await self.is_conversation_participant(
+            conversation_id, self.user.id
+        )
         if not is_participant:
             return
 
@@ -319,7 +355,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.mark_messages_as_read(conversation_id, self.user.id)
 
         # Get the other participant in the conversation
-        other_participant = await self.get_other_participant(conversation_id, self.user.id)
+        other_participant = await self.get_other_participant(
+            conversation_id, self.user.id
+        )
 
         # Notify the other participant that messages have been read
         if other_participant:
@@ -328,28 +366,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {
                     "type": "messages_read",
                     "conversation_id": conversation_id,
-                    "reader_id": self.user.id
-                }
+                    "reader_id": self.user.id,
+                },
             )
 
     async def handle_typing(self, data):
         """
         Handle typing indicators.
         """
-        conversation_id = data.get('conversation_id')
-        is_typing = data.get('is_typing', False)
+        conversation_id = data.get("conversation_id")
+        is_typing = data.get("is_typing", False)
 
         # Log the typing indicator
-        logger.debug(f"Handling typing indicator from user {self.user.id}: is_typing={is_typing}")
+        logger.debug(
+            f"Handling typing indicator from user {self.user.id}: is_typing={is_typing}"
+        )
 
         # Check if the user is a participant in this conversation
-        is_participant = await self.is_conversation_participant(conversation_id, self.user.id)
+        is_participant = await self.is_conversation_participant(
+            conversation_id, self.user.id
+        )
         if not is_participant:
-            logger.warning(f"User {self.user.id} tried to send typing indicator for conversation {conversation_id} they're not part of")
+            logger.warning(
+                f"User {self.user.id} tried to send typing indicator for conversation {conversation_id} they're not part of"
+            )
             return
 
         # Get the other participant in the conversation
-        other_participant = await self.get_other_participant(conversation_id, self.user.id)
+        other_participant = await self.get_other_participant(
+            conversation_id, self.user.id
+        )
 
         if other_participant:
             # Send typing indicator to the other participant
@@ -359,60 +405,78 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "type": "typing_indicator",
                     "conversation_id": conversation_id,
                     "user_id": self.user.id,
-                    "is_typing": is_typing
-                }
+                    "is_typing": is_typing,
+                },
             )
         else:
-            logger.warning(f"Could not find other participant for conversation {conversation_id}")
+            logger.warning(
+                f"Could not find other participant for conversation {conversation_id}"
+            )
 
     async def chat_message(self, event):
         """
         Send the chat message to the WebSocket.
         """
-        await self.send(text_data=json.dumps({
-            "type": "chat_message",
-            "message": event["message"],
-            "conversation_id": event["conversation_id"]
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "chat_message",
+                    "message": event["message"],
+                    "conversation_id": event["conversation_id"],
+                }
+            )
+        )
 
     async def new_message_notification(self, event):
         """
         Send a new message notification to the WebSocket.
         """
-        await self.send(text_data=json.dumps({
-            "type": "new_message_notification",
-            "conversation_id": event["conversation_id"],
-            "message": event["message"]
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "new_message_notification",
+                    "conversation_id": event["conversation_id"],
+                    "message": event["message"],
+                }
+            )
+        )
 
     async def messages_read(self, event):
         """
         Send a messages read notification to the WebSocket.
         """
-        await self.send(text_data=json.dumps({
-            "type": "messages_read",
-            "conversation_id": event["conversation_id"],
-            "reader_id": event["reader_id"]
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "messages_read",
+                    "conversation_id": event["conversation_id"],
+                    "reader_id": event["reader_id"],
+                }
+            )
+        )
 
     async def typing_indicator(self, event):
         """
         Send a typing indicator to the WebSocket.
         """
-        await self.send(text_data=json.dumps({
-            "type": "typing_indicator",
-            "conversation_id": event["conversation_id"],
-            "user_id": event["user_id"],
-            "is_typing": event["is_typing"]
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "typing_indicator",
+                    "conversation_id": event["conversation_id"],
+                    "user_id": event["user_id"],
+                    "is_typing": event["is_typing"],
+                }
+            )
+        )
 
     async def handle_file_message_sent(self, data):
         """
         Handle notification that a file message was sent through HTTP.
         Updates other participants about the new file message.
         """
-        conversation_id = data.get('conversation_id')
-        message_id = data.get('message_id')
+        conversation_id = data.get("conversation_id")
+        message_id = data.get("message_id")
 
         # Validate the data
         if not conversation_id or not message_id:
@@ -425,7 +489,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return
 
             # Get other participants
-            other_participants = await self.get_other_participants(conversation_id, self.user.id)
+            other_participants = await self.get_other_participants(
+                conversation_id, self.user.id
+            )
 
             # Format message data for WebSocket
             message_data = await self.format_message_for_ws(message)
@@ -438,11 +504,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "type": "chat_message",
                         "message": message_data,
                         "conversation_id": conversation_id,
-                        "is_file": True
-                    }
+                        "is_file": True,
+                    },
                 )
         except Exception as e:
-            logger.error(f"Error handling file message notification: {str(e)}", exc_info=True)
+            logger.error(
+                f"Error handling file message notification: {str(e)}", exc_info=True
+            )
 
     async def user_status(self, event):
         """
@@ -451,7 +519,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         status_data = {
             "type": "user_status",
             "user_id": event["user_id"],
-            "status": event["status"]
+            "status": event["status"],
         }
 
         # Add last_seen if available
@@ -474,19 +542,54 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user_status.save()
         return user_status
 
+    async def set_user_online_cached(self, user_id, status):
+        """Set user online status with caching."""
+        user_status = await self.set_user_online(user_id, status)
+
+        # Update cache
+        cache_key = f"user_online_{user_id}"
+        if status:
+            cache.set(cache_key, True, 300)  # Cache for 5 minutes
+        else:
+            cache.delete(cache_key)
+
+        return user_status
+
     @database_sync_to_async
     def get_user_conversations(self, user_id):
         """
         Get all conversation IDs that the user is a participant in.
         """
-        return list(Conversation.objects.filter(participants__id=user_id).values_list('id', flat=True))
+        return list(
+            Conversation.objects.filter(participants__id=user_id).values_list(
+                "id", flat=True
+            )
+        )
+
+    async def get_user_conversations_cached(self, user_id):
+        """Get user conversations with caching."""
+        cache_key = f"user_conversations_{user_id}"
+
+        # Try cache first
+        cached_conversations = cache.get(cache_key)
+        if cached_conversations is not None:
+            return cached_conversations
+
+        # Cache miss - get from database
+        conversations = await self.get_user_conversations(user_id)
+
+        # Cache for 10 minutes (conversations don't change often)
+        cache.set(cache_key, conversations, 600)
+        return conversations
 
     @database_sync_to_async
     def is_conversation_participant(self, conversation_id, user_id):
         """
         Check if a user is a participant in a conversation.
         """
-        return Conversation.objects.filter(id=conversation_id, participants__id=user_id).exists()
+        return Conversation.objects.filter(
+            id=conversation_id, participants__id=user_id
+        ).exists()
 
     @database_sync_to_async
     def get_message(self, message_id):
@@ -500,7 +603,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             The Message object or None if not found
         """
         try:
-            return Message.objects.select_related('sender', 'conversation').get(id=message_id)
+            return Message.objects.select_related("sender", "conversation").get(
+                id=message_id
+            )
         except Message.DoesNotExist:
             return None
 
@@ -521,7 +626,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             conversation = Conversation.objects.get(id=conversation_id)
 
             # Get other participants (excluding current user)
-            other_participants = conversation.participants.exclude(id=user_id).values_list('id', flat=True)
+            other_participants = conversation.participants.exclude(
+                id=user_id
+            ).values_list("id", flat=True)
 
             return list(other_participants)
         except Conversation.DoesNotExist:
@@ -539,26 +646,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             Dict with message data formatted for WebSocket
         """
         data = {
-            'id': message.id,
-            'sender': {
-                'id': message.sender.id,
-                'username': message.sender.username,
-                'first_name': message.sender.first_name or '',
-                'last_name': message.sender.last_name or '',
+            "id": message.id,
+            "sender": {
+                "id": message.sender.id,
+                "username": message.sender.username,
+                "first_name": message.sender.first_name or "",
+                "last_name": message.sender.last_name or "",
             },
-            'content': message.content,
-            'timestamp': message.timestamp.isoformat(),
-            'is_read': message.is_read,
-            'delivery_status': message.delivery_status,
+            "content": message.content,
+            "timestamp": message.timestamp.isoformat(),
+            "is_read": message.is_read,
+            "delivery_status": message.delivery_status,
         }
 
         # Add file info if this is a file message
         if message.file_attachment:
-            data['is_file'] = True
-            data['file_type'] = message.file_type
-            data['file_name'] = message.file_name
-            data['file_size'] = message.file_size
-            data['file_attachment'] = message.file_attachment.name
+            data["is_file"] = True
+            data["file_type"] = message.file_type
+            data["file_name"] = message.file_name
+            data["file_size"] = message.file_size
+            data["file_attachment"] = message.file_attachment.name
             # We can't construct absolute URLs here since we don't have request object
             # The frontend will handle this
 
@@ -585,14 +692,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             with transaction.atomic():
                 # Get conversation with a SELECT FOR UPDATE to prevent race conditions
-                conversation = Conversation.objects.select_for_update().get(id=conversation_id)
+                conversation = Conversation.objects.select_for_update().get(
+                    id=conversation_id
+                )
 
                 # Create message
                 message = Message.objects.create(
                     conversation=conversation,
                     sender_id=user_id,
                     content=content,
-                    is_read=True  # Messages are always read by the sender
+                    is_read=True,  # Messages are always read by the sender
                 )
 
                 # Update conversation timestamp
@@ -633,13 +742,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         try:
             # Get the other participant in a single query
-            other_participant_id = Conversation.objects.filter(
-                id=conversation_id
-            ).values_list(
-                'participants__id', flat=True
-            ).exclude(
-                participants__id=user_id
-            ).first()
+            other_participant_id = (
+                Conversation.objects.filter(id=conversation_id)
+                .values_list("participants__id", flat=True)
+                .exclude(participants__id=user_id)
+                .first()
+            )
 
             return other_participant_id
         except Exception as e:
@@ -665,12 +773,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             with transaction.atomic():
                 # Update all unread messages in a single query
-                updated_count = Message.objects.filter(
-                    conversation_id=conversation_id,
-                    is_read=False
-                ).exclude(sender_id=user_id).update(
-                    is_read=True,
-                    delivery_status='read'
+                updated_count = (
+                    Message.objects.filter(
+                        conversation_id=conversation_id, is_read=False
+                    )
+                    .exclude(sender_id=user_id)
+                    .update(is_read=True, delivery_status="read")
                 )
                 return updated_count
         except Exception as e:
@@ -689,7 +797,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             Boolean indicating if the user is online
         """
         try:
-            user_status = UserStatus.objects.filter(user_id=user_id, is_online=True).exists()
+            user_status = UserStatus.objects.filter(
+                user_id=user_id, is_online=True
+            ).exists()
             return user_status
         except Exception as e:
             logger.error(f"Error checking user online status: {str(e)}", exc_info=True)
@@ -714,7 +824,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 message = Message.objects.get(id=message_id)
                 message.delivery_status = status
 
-                if status == 'delivered' or status == 'read':
+                if status == "delivered" or status == "read":
                     message.delivery_attempts += 1
                     message.last_delivery_attempt = timezone.now()
 
@@ -740,19 +850,47 @@ class ChatConsumer(AsyncWebsocketConsumer):
             conversations = Conversation.objects.filter(participants__id=user_id)
 
             # Get all pending messages in those conversations where the user is not the sender
-            pending_messages = Message.objects.filter(
-                conversation__in=conversations,
-                delivery_status='pending'
-            ).exclude(sender_id=user_id).order_by('timestamp')
+            pending_messages = (
+                Message.objects.filter(
+                    conversation__in=conversations, delivery_status="pending"
+                )
+                .exclude(sender_id=user_id)
+                .order_by("timestamp")
+            )
 
             return list(pending_messages)
         except Exception as e:
             logger.error(f"Error getting pending messages: {str(e)}", exc_info=True)
             return []
 
-    async def deliver_pending_messages(self, user_id):
+    @database_sync_to_async
+    def batch_update_message_status(self, message_ids, status):
+        """
+        Batch update message delivery status for multiple messages.
+
+        Args:
+            message_ids: List of message IDs to update
+            status: New status ('delivered' or 'read')
+
+        Returns:
+            Number of messages updated
+        """
+        try:
+            updated_count = Message.objects.filter(id__in=message_ids).update(
+                delivery_status=status
+            )
+            logger.info(f"Batch updated {updated_count} messages to status '{status}'")
+            return updated_count
+        except Exception as e:
+            logger.error(
+                f"Error batch updating message status: {str(e)}", exc_info=True
+            )
+            return 0
+
+    async def deliver_pending_messages_optimized(self, user_id):
         """
         Deliver all pending messages for a user who has just come online.
+        Optimized version with caching, batching, and rate limiting.
 
         Args:
             user_id: The ID of the user who has come online
@@ -768,49 +906,73 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 logger.info(f"No pending messages for user {user_id}")
                 return 0
 
-            logger.info(f"Delivering {len(pending_messages)} pending messages to user {user_id}")
+            logger.info(
+                f"Delivering {len(pending_messages)} pending messages to user {user_id}"
+            )
+
+            # Rate limiting: Don't overwhelm the user with too many messages at once
+            max_messages_per_batch = 50
+            if len(pending_messages) > max_messages_per_batch:
+                logger.warning(
+                    f"User {user_id} has {len(pending_messages)} pending messages. "
+                    f"Limiting to {max_messages_per_batch} for performance."
+                )
+                pending_messages = pending_messages[:max_messages_per_batch]
 
             # Group messages by conversation for more efficient delivery
             messages_by_conversation = {}
+            message_ids = []
             for message in pending_messages:
                 conv_id = message.conversation_id
                 if conv_id not in messages_by_conversation:
                     messages_by_conversation[conv_id] = []
                 messages_by_conversation[conv_id].append(message)
+                message_ids.append(message.id)
+
+            # Batch update all message statuses to 'delivered'
+            await self.batch_update_message_status(message_ids, "delivered")
+
+            # Cache user info lookups to avoid repeated DB queries
+            user_cache = {}
 
             # Deliver messages for each conversation
             delivered_count = 0
             for conv_id, messages in messages_by_conversation.items():
                 for message in messages:
-                    # Update message status to delivered
-                    await self.update_message_status(message.id, 'delivered')
+                    sender_id = message.sender_id
+
+                    # Get sender info from cache or fetch and cache it
+                    if sender_id not in user_cache:
+                        user_cache[sender_id] = await self.get_user_info_cached(
+                            sender_id
+                        )
+
+                    sender = user_cache[sender_id]
 
                     # Prepare message data
-                    sender = await self.get_user_info(message.sender_id)
                     message_data = {
                         "type": "chat_message",
                         "message": {
                             "id": message.id,
                             "content": message.content,
                             "timestamp": message.timestamp.isoformat(),
-                            "sender_id": message.sender_id,
-                            "sender_name": f"{sender.get('first_name', '')} {sender.get('last_name', '')}".strip() or sender.get(
-                                'username', 'Unknown'),
+                            "sender_id": sender_id,
+                            "sender_name": f"{sender.get('first_name', '')} {sender.get('last_name', '')}".strip()
+                            or sender.get("username", "Unknown"),
                             "is_read": False,
-                            "delivery_status": "delivered"
+                            "delivery_status": "delivered",
                         },
-                        "conversation_id": conv_id
+                        "conversation_id": conv_id,
                     }
 
                     # Send to the user's personal group
-                    await self.channel_layer.group_send(
-                        f"user_{user_id}",
-                        message_data
-                    )
+                    await self.channel_layer.group_send(f"user_{user_id}", message_data)
 
                     delivered_count += 1
 
-            logger.info(f"Successfully delivered {delivered_count} pending messages to user {user_id}")
+            logger.info(
+                f"Successfully delivered {delivered_count} pending messages to user {user_id}"
+            )
             return delivered_count
 
         except Exception as e:
@@ -818,9 +980,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return 0
 
     @database_sync_to_async
-    def get_user_info(self, user_id):
+    def get_user_info_cached(self, user_id):
         """
-        Get basic user information.
+        Get basic user information with caching.
 
         Args:
             user_id: The ID of the user
@@ -828,14 +990,21 @@ class ChatConsumer(AsyncWebsocketConsumer):
         Returns:
             Dictionary with user information
         """
+        cache_key = f"user_info_{user_id}"
+        cached_info = cache.get(cache_key)
+        if cached_info:
+            return cached_info
+
         try:
             user = User.objects.get(id=user_id)
-            return {
-                'id': user.id,
-                'username': user.username,
-                'first_name': user.first_name,
-                'last_name': user.last_name
+            user_info = {
+                "id": user.id,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
             }
+            cache.set(cache_key, user_info, 300)  # Cache for 5 minutes
+            return user_info
         except Exception as e:
             logger.error(f"Error getting user info: {str(e)}", exc_info=True)
-            return {'username': 'Unknown'}
+            return {"username": "Unknown"}

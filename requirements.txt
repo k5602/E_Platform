@@ -15,7 +15,6 @@ click-didyoumean==0.3.1
 click-plugins==1.1.1.2
 click-repl==0.3.0
 constantly==23.10.4
-crispy-bootstrap5==0.7
 cron_descriptor==2.0.6
 cryptography==46.0.1
 daphne==4.2.1
@@ -25,12 +24,12 @@ django-cors-headers==4.3.1
 djangorestframework-simplejwt==5.5.1
 # Caching dependencies
 django-crispy-forms==2.1
-django-debug-toolbar==4.2.0
-django-redis==5.4.0
+django-debug-toolbar==6.0.0
+django-redis==6.0.0
 django-timezone-field==7.1
 djangorestframework==3.15.2
 gunicorn==23.0.0
-hiredis==2.2.3
+hiredis==3.2.1
 hyperlink==21.0.0
 idna==3.10
 incremental==24.7.2
@@ -39,8 +38,8 @@ msgpack==1.1.1
 packaging==25.0
 pillow==11.3.0
 prompt_toolkit==3.0.52
-psycopg==2.9.10
-psycopg-binary==2.9.10
+psycopg==3.2.10
+psycopg-binary==3.2.10
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.23

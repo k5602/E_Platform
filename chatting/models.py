@@ -6,15 +6,21 @@ from authentication.models import CustomUser
 
 class Conversation(models.Model):
     """Model representing a conversation between two users."""
-    participants = models.ManyToManyField(CustomUser, related_name='conversations')
+
+    participants = models.ManyToManyField(CustomUser, related_name="conversations")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
     class Meta:
-        ordering = ['-updated_at']
+        ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["updated_at"]),
+        ]
 
     def __str__(self):
-        participant_names = ", ".join([user.username for user in self.participants.all()])
+        participant_names = ", ".join(
+            [user.username for user in self.participants.all()]
+        )
         return f"Conversation between {participant_names}"
 
     def get_other_participant(self, user):
@@ -36,50 +42,64 @@ def message_file_path(instance, filename):
     from django.utils import timezone
 
     # Get timestamp for unique filename
-    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
-    
+    timestamp = timezone.now().strftime("%Y%m%d_%H%M%S")
+
     # Handle case where sender or conversation ID might not be set yet
-    sender_id = getattr(instance, 'sender_id', None) or getattr(instance, 'sender', None) or 'unknown'
-    if hasattr(sender_id, 'id'):
+    sender_id = (
+        getattr(instance, "sender_id", None)
+        or getattr(instance, "sender", None)
+        or "unknown"
+    )
+    if hasattr(sender_id, "id"):
         sender_id = sender_id.id
-        
+
     # Get conversation ID safely
     try:
         conversation_id = instance.conversation.id
     except (AttributeError, ValueError):
-        conversation_id = 'temp'  # Temporary folder for uploads with issues
-    
+        conversation_id = "temp"  # Temporary folder for uploads with issues
+
     # Sanitize filename to avoid path traversal or invalid chars
     safe_filename = os.path.basename(filename)
     new_filename = f"{timestamp}_{sender_id}_{safe_filename}"
-    
+
     # Return the complete path
-    return os.path.join('chat_files', f'conversation_{conversation_id}', new_filename)
+    return os.path.join("chat_files", f"conversation_{conversation_id}", new_filename)
 
 
 class Message(models.Model):
     """Model representing a message in a conversation."""
+
     STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('delivered', 'Delivered'),
-        ('read', 'Read'),
-        ('failed', 'Failed'),
+        ("pending", "Pending"),
+        ("delivered", "Delivered"),
+        ("read", "Read"),
+        ("failed", "Failed"),
     )
 
     FILE_TYPE_CHOICES = (
-        ('image', 'Image'),
-        ('document', 'Document'),
-        ('audio', 'Audio'),
-        ('video', 'Video'),
-        ('other', 'Other'),
+        ("image", "Image"),
+        ("document", "Document"),
+        ("audio", "Audio"),
+        ("video", "Video"),
+        ("other", "Other"),
     )
 
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages', db_index=True)
-    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sent_messages', db_index=True)
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name="messages", db_index=True
+    )
+    sender = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="sent_messages",
+        db_index=True,
+    )
     content = models.TextField(blank=True)  # Allow empty content for file-only messages
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     is_read = models.BooleanField(default=False, db_index=True)
-    delivery_status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending', db_index=True)
+    delivery_status = models.CharField(
+        max_length=10, choices=STATUS_CHOICES, default="pending", db_index=True
+    )
     delivery_attempts = models.IntegerField(default=0)
     last_delivery_attempt = models.DateTimeField(null=True, blank=True)
     is_edited = models.BooleanField(default=False, db_index=True)
@@ -88,13 +108,24 @@ class Message(models.Model):
     deleted_timestamp = models.DateTimeField(null=True, blank=True)
 
     # File attachment fields
-    file_attachment = models.FileField(upload_to=message_file_path, null=True, blank=True)
-    file_type = models.CharField(max_length=10, choices=FILE_TYPE_CHOICES, null=True, blank=True)
+    file_attachment = models.FileField(
+        upload_to=message_file_path, null=True, blank=True
+    )
+    file_type = models.CharField(
+        max_length=10, choices=FILE_TYPE_CHOICES, null=True, blank=True
+    )
     file_name = models.CharField(max_length=255, null=True, blank=True)
     file_size = models.PositiveIntegerField(null=True, blank=True)  # Size in bytes
 
     class Meta:
-        ordering = ['timestamp']
+        ordering = ["timestamp"]
+        indexes = [
+            models.Index(fields=["conversation", "timestamp"]),
+            models.Index(fields=["sender", "timestamp"]),
+            models.Index(fields=["conversation", "is_read"]),
+            models.Index(fields=["timestamp"]),
+            models.Index(fields=["delivery_status"]),
+        ]
 
     def __str__(self):
         return f"Message from {self.sender.username} at {self.timestamp}"
@@ -102,12 +133,12 @@ class Message(models.Model):
     def mark_as_read(self):
         """Mark the message as read."""
         self.is_read = True
-        self.delivery_status = 'read'
+        self.delivery_status = "read"
         self.save()
 
     def mark_as_delivered(self):
         """Mark the message as delivered."""
-        self.delivery_status = 'delivered'
+        self.delivery_status = "delivered"
         self.save()
 
     def increment_delivery_attempt(self):
@@ -118,7 +149,7 @@ class Message(models.Model):
 
     def mark_as_failed(self):
         """Mark the message as failed after multiple delivery attempts."""
-        self.delivery_status = 'failed'
+        self.delivery_status = "failed"
         self.save()
 
     def edit_message(self, new_content):
@@ -150,9 +181,13 @@ class Message(models.Model):
         self.save()
         return self
 
+
 class UserStatus(models.Model):
     """Model to track user online status."""
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='chat_status', db_index=True)
+
+    user = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, related_name="chat_status", db_index=True
+    )
     is_online = models.BooleanField(default=False, db_index=True)
     last_active = models.DateTimeField(default=timezone.now, db_index=True)
 
