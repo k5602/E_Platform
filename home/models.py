@@ -1,3 +1,4 @@
+import logging
 from django.db import models
 from authentication.models import CustomUser
 from django.utils import timezone
@@ -5,6 +6,8 @@ import re
 
 # Import profile models
 from .models_profile import ProfileUserProfile, ProfileEducation, ProfileExperience, ProfileSkill, ProfileProject, ProfileCertification
+
+logger = logging.getLogger(__name__)
 
 class Post(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='posts')
@@ -30,12 +33,12 @@ class Post(models.Model):
             from home.utils import extract_mentions
             mentioned_users = extract_mentions(self.content)
 
-            print(f"Post save: Found {len(mentioned_users)} mentioned users in post {self.id}")
+            logger.debug(f"Post save: Found {len(mentioned_users)} mentioned users in post {self.id}")
 
             # Create notifications for mentioned users
             for mentioned_user in mentioned_users:
                 if mentioned_user != self.user:  # Don't notify yourself
-                    print(f"Creating mention notification for {mentioned_user.username} from {self.user.username}")
+                    logger.debug(f"Creating mention notification for {mentioned_user.username} from {self.user.username}")
                     notification = Notification.objects.create(
                         recipient=mentioned_user,
                         sender=self.user,
@@ -43,7 +46,7 @@ class Post(models.Model):
                         notification_type='mention',
                         text=f"{self.user.username} mentioned you in a post"
                     )
-                    print(f"Created notification with ID: {notification.id}")
+                    logger.debug(f"Created notification with ID: {notification.id}")
 
 class Like(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='likes')
@@ -90,7 +93,7 @@ class Comment(models.Model):
         if is_new:
             # Create notification for post owner (if not self)
             if self.post.user != self.user:
-                print(f"Creating comment notification for post owner {self.post.user.username}")
+                logger.debug(f"Creating comment notification for post owner {self.post.user.username}")
                 notification = Notification.objects.create(
                     recipient=self.post.user,
                     sender=self.user,
@@ -99,19 +102,19 @@ class Comment(models.Model):
                     notification_type='comment',
                     text=f"{self.user.username} commented on your post"
                 )
-                print(f"Created comment notification with ID: {notification.id}")
+                logger.debug(f"Created comment notification with ID: {notification.id}")
 
             # Process mentions
             if self.content:
                 from home.utils import extract_mentions
                 mentioned_users = extract_mentions(self.content)
 
-                print(f"Comment save: Found {len(mentioned_users)} mentioned users in comment {self.id}")
+                logger.debug(f"Comment save: Found {len(mentioned_users)} mentioned users in comment {self.id}")
 
                 # Create notifications for mentioned users
                 for mentioned_user in mentioned_users:
                     if mentioned_user != self.user:  # Don't notify yourself
-                        print(f"Creating mention notification for {mentioned_user.username} from {self.user.username} in comment")
+                        logger.debug(f"Creating mention notification for {mentioned_user.username} from {self.user.username} in comment")
                         notification = Notification.objects.create(
                             recipient=mentioned_user,
                             sender=self.user,
@@ -120,7 +123,7 @@ class Comment(models.Model):
                             notification_type='mention',
                             text=f"{self.user.username} mentioned you in a comment"
                         )
-                        print(f"Created mention notification with ID: {notification.id}")
+                        logger.debug(f"Created mention notification with ID: {notification.id}")
 
 class Contact(models.Model):
     name = models.CharField(max_length=100)

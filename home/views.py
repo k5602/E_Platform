@@ -12,18 +12,14 @@ from authentication.models import CustomUser
 from .utils import search_users, format_content_with_mentions
 from django.views.decorators.csrf import csrf_exempt
 import json
-from .utils_cache import cache_response
 from django.core.cache import cache
 
-def clear_model_cache(model_name):
-    """Clear all cache entries related to a specific model."""
-    cache.delete_pattern(f"*{model_name}*")
+
 
 @login_required
-@cache_response(timeout=60, key_prefix='home_feed', cache_alias='default')
 def home_view(request):
     """Main home page view that displays the feed of posts."""
-    # Clear cache for authenticated requests and POST requests
+    # Handle post creation
     if request.method == 'POST':
         # Handle post creation with transaction
         form = PostForm(request.POST, request.FILES)
@@ -32,13 +28,11 @@ def home_view(request):
                 post = form.save(commit=False)
                 post.user = request.user
                 post.save()
-                # Clear user's feed cache
-                clear_model_cache('post')
             return redirect('home')
         # If form is invalid, continue to showing the feed
     else:
         form = PostForm()
-    
+
     # Optimize query with proper select_related and prefetch_related
     posts = Post.objects.select_related(
         'user'
@@ -310,16 +304,8 @@ def contact_view(request):
 
 @login_required
 @require_GET
-@cache_response(timeout=30, key_prefix='user_notifications', cache_alias='default')
 def get_notifications(request):
     """API endpoint to fetch user notifications."""
-    # Add cache key based on user ID
-    cache_key = f"notifications_{request.user.id}"
-    cached_data = cache.get(cache_key)
-    
-    if cached_data:
-        return JsonResponse(cached_data)
-    
     # Optimize query with select_related and only needed fields
     notifications = Notification.objects.filter(
         recipient=request.user
@@ -362,22 +348,19 @@ def get_notifications(request):
             }
 
         notifications_data.append(data)
-    
+
     # Count unread notifications with an optimized query
     unread_count = Notification.objects.filter(
-        recipient=request.user, 
+        recipient=request.user,
         is_read=False
     ).values('id').count()
-    
+
     response_data = {
         'status': 'success',
         'notifications': notifications_data,
         'unread_count': unread_count
     }
-    
-    # Cache the result for 30 seconds
-    cache.set(cache_key, response_data, 30)
-    
+
     return JsonResponse(response_data)
 
 @login_required
@@ -444,71 +427,7 @@ def notifications_view(request):
         'active_page': 'notifications'
     })
 
-@login_required
-def debug_mentions_view(request):
-    """Debug view for testing the mention system."""
-    return render(request, 'home/debug_mentions.html', {
-        'active_page': 'debug'
-    })
 
-@login_required
-def debug_notifications_view(request):
-    """Debug view for testing the notification system."""
-    notifications = Notification.objects.all().select_related('recipient', 'sender').order_by('-created_at')[:50]
-    return render(request, 'home/debug_notifications.html', {
-        'active_page': 'debug',
-        'notifications': notifications
-    })
-
-@login_required
-@require_POST
-def create_test_notification(request):
-    """Create a test notification."""
-    recipient_username = request.POST.get('recipient')
-    notification_type = request.POST.get('notification_type')
-    text = request.POST.get('text')
-
-    try:
-        recipient = CustomUser.objects.get(username=recipient_username)
-
-        notification = Notification.objects.create(
-            recipient=recipient,
-            sender=request.user,
-            notification_type=notification_type,
-            text=text
-        )
-
-        messages.success(request, f'Notification created successfully with ID: {notification.id}')
-    except CustomUser.DoesNotExist:
-        messages.error(request, f'User with username {recipient_username} does not exist')
-    except Exception as e:
-        messages.error(request, f'Error creating notification: {str(e)}')
-
-    return redirect('home:debug_notifications')
-
-@login_required
-@require_POST
-def test_extract_mentions(request):
-    """Test the extract_mentions function."""
-    import json
-    data = json.loads(request.body)
-    text = data.get('text', '')
-
-    from home.utils import extract_mentions
-    mentioned_users = extract_mentions(text)
-
-    return JsonResponse({
-        'status': 'success',
-        'mentioned_users': [
-            {
-                'id': user.id,
-                'username': user.username,
-                'first_name': user.first_name,
-                'last_name': user.last_name
-            }
-            for user in mentioned_users
-        ]
-    })
 
 @login_required
 def search_users(request):

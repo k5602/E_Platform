@@ -28,10 +28,7 @@ urlpatterns = [
     # Add a more specific URL pattern for search suggestions
     path('search/suggestions/', views.search_suggestions, name='search_suggestions_alt'),
     path('search/', views.search_users, name='search_users'),
-    path('debug/mentions/', views.debug_mentions_view, name='debug_mentions'),
-    path('debug/notifications/', views.debug_notifications_view, name='debug_notifications'),
-    path('debug/create-test-notification/', views.create_test_notification, name='create_test_notification'),
-    path('api/test-extract-mentions/', views.test_extract_mentions, name='test_extract_mentions'),
+
 ]
 
 # Add subject URL patterns

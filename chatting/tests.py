@@ -109,4 +109,4 @@ class ChatAPITests(TestCase):
                     if os.path.exists(message.file_attachment.path):
                          os.remove(message.file_attachment.path)
                 except Exception as e:
-                    print(f"Error deleting file {message.file_attachment.path}: {e}")
+                    pass  # Silently ignore file deletion errors in tests

@@ -1,10 +1,9 @@
+import logging
 import re
 import random
 from authentication.models import CustomUser
-from .utils_cache import (
-    cache_response, cache_model_method, clear_model_cache, 
-    cached_property_with_ttl, timed_cache
-)
+
+logger = logging.getLogger(__name__)
 
 def extract_mentions(text):
     """
@@ -18,7 +17,7 @@ def extract_mentions(text):
     usernames = re.findall(pattern, text)
 
     # Debug information
-    print(f"Found usernames in text: {usernames}")
+    logger.debug(f"Found usernames in text: {usernames}")
 
     # Get valid users from the database
     if usernames:
@@ -28,12 +27,12 @@ def extract_mentions(text):
                 # Try to find each user individually with case-insensitive matching
                 user = CustomUser.objects.get(username__iexact=username)
                 users.append(user)
-                print(f"Found user: {user.username}")
+                logger.debug(f"Found user: {user.username}")
             except CustomUser.DoesNotExist:
-                print(f"User not found: {username}")
+                logger.debug(f"User not found: {username}")
             except CustomUser.MultipleObjectsReturned:
                 # In case multiple users match (shouldn't happen with iexact)
-                print(f"Multiple users found for: {username}")
+                logger.debug(f"Multiple users found for: {username}")
                 matching_users = CustomUser.objects.filter(username__iexact=username)
                 users.extend(list(matching_users))
 
@@ -57,15 +56,15 @@ def format_content_with_mentions(content):
         # Check if user exists
         try:
             # Debug information
-            print(f"Formatting mention for username: {username}")
+            logger.debug(f"Formatting mention for username: {username}")
             user = CustomUser.objects.get(username__iexact=username)
-            print(f"Found user for formatting: {user.username}")
+            logger.debug(f"Found user for formatting: {user.username}")
             return f'<a href="#" class="mention" data-username="{user.username}">@{user.username}</a>'
         except CustomUser.DoesNotExist:
-            print(f"User not found for formatting: {username}")
+            logger.debug(f"User not found for formatting: {username}")
             return f'@{username}'
         except Exception as e:
-            print(f"Error formatting mention for {username}: {str(e)}")
+            logger.error(f"Error formatting mention for {username}: {str(e)}")
             return f'@{username}'
 
     return re.sub(pattern, replace_mention, content)

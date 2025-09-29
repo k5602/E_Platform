@@ -106,7 +106,6 @@ CHANNEL_LAYERS = {
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 import os
-import psycopg2
 
 DATABASES = {
     'default': {
@@ -119,20 +118,6 @@ DATABASES = {
         'CONN_MAX_AGE': 600,
     }
 }
-
-# Test PostgreSQL connection
-try:
-    conn = psycopg2.connect(
-        dbname=DATABASES['default']['NAME'],
-        user=DATABASES['default']['USER'],
-        password=DATABASES['default']['PASSWORD'],
-        host=DATABASES['default']['HOST'],
-        port=DATABASES['default']['PORT'],
-    )
-    conn.close()
-    print("✅ PostgreSQL connection successful")
-except Exception as e:
-    print(f"❌ PostgreSQL connection failed: {e}")
 
 # Cache configuration using Redis - Always define this regardless of database
 # CACHES = {

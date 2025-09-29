@@ -1,9 +1,12 @@
 import hashlib
 import time
+import logging
 
 from django.core.cache import cache
 from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
+
+logger = logging.getLogger(__name__)
 
 
 class LoginRateLimitMiddleware(MiddlewareMixin):
@@ -24,31 +27,41 @@ class LoginRateLimitMiddleware(MiddlewareMixin):
         """
         # Only apply rate limiting to the login URL
         if request.path == '/authentication/login/' and request.method == 'POST':
-            # Get client IP address
-            ip = self._get_client_ip(request)
+            # Check if cache is available
+            if not hasattr(cache, 'get') or not hasattr(cache, 'set'):
+                logger.warning("Cache not available for login rate limiting")
+                return
 
-            # Create a cache key based on the IP address
-            cache_key = f"login_attempts_{self._get_ip_hash(ip)}"
+            try:
+                # Get client IP address
+                ip = self._get_client_ip(request)
 
-            # Get current login attempts from cache
-            login_attempts = cache.get(cache_key, [])
+                # Create a cache key based on the IP address
+                cache_key = f"login_attempts_{self._get_ip_hash(ip)}"
 
-            # Remove attempts outside the time window
-            current_time = time.time()
-            login_attempts = [attempt for attempt in login_attempts
-                              if current_time - attempt < self.RATE_LIMIT_WINDOW]
+                # Get current login attempts from cache
+                login_attempts = cache.get(cache_key, [])
 
-            # Check if the number of attempts exceeds the limit
-            if len(login_attempts) >= self.MAX_LOGIN_ATTEMPTS:
-                return HttpResponseForbidden(
-                    "Too many login attempts. Please try again later."
-                )
+                # Remove attempts outside the time window
+                current_time = time.time()
+                login_attempts = [attempt for attempt in login_attempts
+                                  if current_time - attempt < self.RATE_LIMIT_WINDOW]
 
-            # Add the current attempt
-            login_attempts.append(current_time)
+                # Check if the number of attempts exceeds the limit
+                if len(login_attempts) >= self.MAX_LOGIN_ATTEMPTS:
+                    return HttpResponseForbidden(
+                        "Too many login attempts. Please try again later."
+                    )
 
-            # Update the cache
-            cache.set(cache_key, login_attempts, self.RATE_LIMIT_WINDOW)
+                # Add the current attempt
+                login_attempts.append(current_time)
+
+                # Update the cache
+                cache.set(cache_key, login_attempts, self.RATE_LIMIT_WINDOW)
+            except Exception as e:
+                # If cache operations fail, log and continue without rate limiting
+                logger.error(f"Error in login rate limiting: {e}")
+                return
 
     def _get_client_ip(self, request):
         """

@@ -31,7 +31,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }
 
         logger.info(f"WebSocket connection attempt: {client_info}")
-        print(f"ChatConsumer.connect called for user {user_id}")
 
         self.user = self.scope["user"]
 
@@ -84,14 +83,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Log successful connection
         user_id = self.user.id if hasattr(self.user, "id") else "anonymous"
         logger.info(f"WebSocket connection established for user {user_id}")
-        print(f"WebSocket connection established for user {user_id}")
 
         # Deliver any pending messages to the user who just came online
         if hasattr(self.user, "id") and not self.user.is_anonymous:
             delivered_count = await self.deliver_pending_messages(self.user.id)
             if delivered_count > 0:
                 logger.info(f"Delivered {delivered_count} pending messages to user {self.user.id} on connect")
-                print(f"Delivered {delivered_count} pending messages to user {self.user.id} on connect")
 
     async def disconnect(self, close_code):
         # Enhanced logging for disconnections
@@ -104,7 +101,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }
 
         logger.info(f"WebSocket disconnection: {client_info}")
-        print(f"ChatConsumer.disconnect called for user {user_id} with code {close_code}")
 
         if hasattr(self, 'user') and not self.user.is_anonymous:
             # Set user as offline
@@ -162,7 +158,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             # Log the received message type (but not content for privacy)
             logger.debug(f"Received WebSocket message of type '{message_type}' from user {self.user.id}")
-            print(f"Received WebSocket message of type '{message_type}' from user {self.user.id}")
 
             # Route to appropriate handler based on message type
             if message_type == 'chat_message':
@@ -172,14 +167,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             elif message_type == 'typing' or message_type == 'typing_indicator':
                 # Handle both 'typing' and 'typing_indicator' for backward compatibility
                 await self.handle_typing(text_data_json)
-                print(f"Handling typing indicator: {text_data_json.get('is_typing')}")
             elif message_type == 'file_message_sent':
                 # Handle notification that a file message was sent via HTTP
                 await self.handle_file_message_sent(text_data_json)
-                print(f"Handling file message sent notification for message {text_data_json.get('message_id')}")
             else:
                 logger.warning(f"Unknown message type '{message_type}' received from user {self.user.id}")
-                print(f"Unknown message type '{message_type}' received from user {self.user.id}")
                 # Notify client about the error
                 await self.send(text_data=json.dumps({
                     "type": "error",
@@ -194,7 +186,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             }))
         except Exception as e:
             logger.error(f"Error processing WebSocket message from user {self.user.id}: {str(e)}", exc_info=True)
-            print(f"Error processing WebSocket message: {str(e)}")
             # Notify client about the error
             await self.send(text_data=json.dumps({
                 "type": "error",
@@ -349,7 +340,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         is_typing = data.get('is_typing', False)
 
         # Log the typing indicator
-        print(f"Handling typing indicator from user {self.user.id}: is_typing={is_typing}")
         logger.debug(f"Handling typing indicator from user {self.user.id}: is_typing={is_typing}")
 
         # Check if the user is a participant in this conversation
@@ -362,8 +352,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         other_participant = await self.get_other_participant(conversation_id, self.user.id)
 
         if other_participant:
-            print(f"Sending typing indicator to user {other_participant}: is_typing={is_typing}")
-
             # Send typing indicator to the other participant
             await self.channel_layer.group_send(
                 f"user_{other_participant}",
@@ -376,7 +364,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         else:
             logger.warning(f"Could not find other participant for conversation {conversation_id}")
-            print(f"Could not find other participant for conversation {conversation_id}")
 
     async def chat_message(self, event):
         """
@@ -418,7 +405,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "user_id": event["user_id"],
             "is_typing": event["is_typing"]
         }))
-        
+
     async def handle_file_message_sent(self, data):
         """
         Handle notification that a file message was sent through HTTP.
@@ -426,23 +413,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """
         conversation_id = data.get('conversation_id')
         message_id = data.get('message_id')
-        
+
         # Validate the data
         if not conversation_id or not message_id:
             return
-        
+
         try:
             # Get message details
             message = await self.get_message(message_id)
             if not message:
                 return
-                
+
             # Get other participants
             other_participants = await self.get_other_participants(conversation_id, self.user.id)
-            
+
             # Format message data for WebSocket
             message_data = await self.format_message_for_ws(message)
-            
+
             # Send to the conversation group for other participants
             for participant_id in other_participants:
                 await self.channel_layer.group_send(
@@ -505,10 +492,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def get_message(self, message_id):
         """
         Get a message by its ID.
-        
+
         Args:
             message_id: The ID of the message
-            
+
         Returns:
             The Message object or None if not found
         """
@@ -516,38 +503,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return Message.objects.select_related('sender', 'conversation').get(id=message_id)
         except Message.DoesNotExist:
             return None
-    
+
     @database_sync_to_async
     def get_other_participants(self, conversation_id, user_id):
         """
         Get the other participants in a conversation.
-        
+
         Args:
             conversation_id: The ID of the conversation
             user_id: The ID of the current user
-            
+
         Returns:
             List of user IDs for other participants
         """
         try:
             # Get the conversation
             conversation = Conversation.objects.get(id=conversation_id)
-            
+
             # Get other participants (excluding current user)
             other_participants = conversation.participants.exclude(id=user_id).values_list('id', flat=True)
-            
+
             return list(other_participants)
         except Conversation.DoesNotExist:
             return []
-    
+
     @database_sync_to_async
     def format_message_for_ws(self, message):
         """
         Format a message for WebSocket transmission.
-        
+
         Args:
             message: The Message object
-            
+
         Returns:
             Dict with message data formatted for WebSocket
         """
@@ -564,7 +551,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'is_read': message.is_read,
             'delivery_status': message.delivery_status,
         }
-        
+
         # Add file info if this is a file message
         if message.file_attachment:
             data['is_file'] = True
@@ -574,9 +561,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             data['file_attachment'] = message.file_attachment.name
             # We can't construct absolute URLs here since we don't have request object
             # The frontend will handle this
-            
+
         return data
-    
+
     @database_sync_to_async
     def create_message(self, conversation_id, user_id, content):
         """
