@@ -10,7 +10,7 @@ E-Platform{% endblock %} {% block extra_css %} {{ block.super }}
     document.addEventListener("DOMContentLoaded", function () {
         if (typeof tailwind !== "undefined") {
             tailwind.config = {
-                darkMode: "class",
+                darkMode: ['class', '.nightmode'],
                 theme: {
                     extend: {
                         colors: {
@@ -23,6 +23,7 @@ E-Platform{% endblock %} {% block extra_css %} {{ block.super }}
                         },
                     },
                 },
+                plugins: [],
             };
         }
     });
@@ -45,3 +46,4 @@ E-Platform{% endblock %} {% block extra_css %} {{ block.super }}
     onload="this.setAttribute('data-loaded', 'true');"
 ></script>
 {% block chat_js %}{% endblock %} {% endblock %}
+e

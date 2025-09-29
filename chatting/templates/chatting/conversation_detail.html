@@ -5,116 +5,153 @@
 
 {% block chat_content %}
 <!-- Drop zone for file drag and drop -->
-<div id="drop-zone" class="drop-zone" tabindex="0" aria-label="Drop files here to send to {{ other_user.first_name }}">
-    <div class="drop-zone-content">
-        <i class="fas fa-cloud-upload-alt drop-zone-icon" aria-hidden="true"></i>
-        <h3 class="drop-zone-text sr-only">Drop files to send</h3>
-        <p class="drop-zone-subtext sr-only">Files will be sent to {{ other_user.first_name }}</p>
-        <p class="sr-only">You can also click to select files.</p>
+<div id="drop-zone" class="drop-zone fixed inset-0 z-50 hidden bg-primary/10 backdrop-blur-sm" tabindex="0" aria-label="Drop files here to send to {{ other_user.first_name }}">
+    <div class="drop-zone-content flex flex-col items-center justify-center h-full">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-12 shadow-2xl border-4 border-dashed border-primary">
+            <i class="fas fa-cloud-upload-alt text-6xl text-primary mb-4 block text-center" aria-hidden="true"></i>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">Drop files to send</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-center">Files will be sent to {{ other_user.first_name }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-500 text-center mt-2">You can also click to select files.</p>
+        </div>
     </div>
 </div>
 
-<div class="chat-container" role="main">
+<div class="flex h-screen bg-gray-50 dark:bg-gray-900" role="main">
     <!-- Sidebar overlay for mobile -->
-    <div class="sidebar-overlay" aria-hidden="true"></div>
+    <div class="sidebar-overlay fixed inset-0 bg-black/50 z-40 md:hidden hidden" aria-hidden="true" id="sidebar-overlay"></div>
 
     <!-- Sidebar - Conversation List -->
-    <div class="chat-sidebar" role="navigation" aria-label="Conversations">
-        <div class="sidebar-header">
-            <h1>Conversations</h1>
-            <a href="{% url 'chatting:users_list' %}" class="new-chat-btn" aria-label="Start a new chat">
-                <i class="fas fa-plus" aria-hidden="true"></i>
-                <span>New Chat</span>
+    <div class="w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col absolute md:relative z-50 md:z-auto transform -translate-x-full md:translate-x-0 transition-transform duration-300" id="conversations-sidebar" role="navigation" aria-label="Conversations">
+        <!-- Header -->
+        <div class="px-4 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-primary to-indigo-600">
+            <h1 class="text-2xl font-bold text-white">Conversations</h1>
+            <a href="{% url 'chatting:users_list' %}" 
+               class="inline-flex items-center gap-2 px-4 py-2 bg-white text-primary rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md" 
+               aria-label="Start a new chat">
+                <i class="fas fa-plus text-sm" aria-hidden="true"></i>
+                <span class="text-sm font-semibold">New Chat</span>
             </a>
         </div>
 
-        <div class="search-container">
-            <div class="search-input-wrapper">
-                <i class="fas fa-search search-icon" aria-hidden="true"></i>
-                <input type="text" id="conversation-search" placeholder="Search conversations..." aria-label="Search conversations">
+        <!-- Search Container -->
+        <div class="px-2 md:px-4 py-2 md:py-3 border-b border-gray-200 dark:border-gray-700">
+            <div class="relative w-full max-w-md mx-auto">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" aria-hidden="true"></i>
+                <input type="text" 
+                       id="conversation-search" 
+                       placeholder="Search conversations..." 
+                       aria-label="Search conversations"
+                       class="w-full pl-10 pr-4 py-2.5 md:py-3 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary focus:outline-none transition-all text-base md:text-lg">
             </div>
         </div>
 
-        <div class="conversation-list" id="conversation-list" role="list">
+        <!-- Conversation List -->
+        <div class="flex-1 overflow-y-auto" id="conversation-list" role="list">
             {% if conversations %}
                 {% for conv in conversations %}
-                    <a href="{% url 'chatting:conversation_detail' conv.id %}" class="conversation-item{% if conv.id == conversation.id %} active{% endif %}" role="listitem" aria-current="{% if conv.id == conversation.id %}page{% endif %}">
-                        <div class="conversation-avatar">
+                    <a href="{% url 'chatting:conversation_detail' conv.id %}" 
+                       class="flex items-center gap-3 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 {% if conv.id == conversation.id %}bg-primary/5 dark:bg-primary/20 border-l-4 border-l-primary{% endif %}" 
+                       role="listitem" 
+                       aria-current="{% if conv.id == conversation.id %}page{% endif %}">
+                        <!-- Avatar -->
+                        <div class="relative flex-shrink-0">
                             {% if conv.other_user.profile_picture %}
-                                <img src="{{ conv.other_user.profile_picture.url }}" alt="{{ conv.other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
+                          <img src="{{ conv.other_user.profile_picture.url }}" 
+                              alt="{{ conv.other_user.username }}'s profile picture" 
+                              class="w-12 h-12 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-600"
+                                     onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
                             {% else %}
-                                <div class="default-avatar" aria-hidden="true">{{ conv.other_user.username|slice:":1"|upper }}</div>
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-lg ring-2 ring-gray-200 dark:ring-gray-600" aria-hidden="true">
+                                    {{ conv.other_user.username|slice:":1"|upper }}
+                                </div>
                             {% endif %}
-                            <span class="status-indicator {% if conv.other_user.chat_status.is_online %}online{% else %}offline{% endif %}" aria-hidden="true" data-user-id="{{ conv.other_user.id }}"></span>
+                            <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 {% if conv.other_user.chat_status.is_online %}bg-green-500{% else %}bg-gray-400{% endif %}" 
+                                  aria-hidden="true" 
+                                  data-user-id="{{ conv.other_user.id }}"></span>
                         </div>
-                        <div class="conversation-info">
-                            <div class="conversation-name">
-                                {{ conv.other_user.first_name }} {{ conv.other_user.last_name }}
-                                <span class="conversation-time">
+                        
+                        <!-- Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-semibold text-gray-900 dark:text-white truncate">{{ conv.other_user.first_name }} {{ conv.other_user.last_name }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                                     {% if conv.updated_at %}
                                         {{ conv.updated_at|date:"h:i A" }}
                                     {% endif %}
                                 </span>
                             </div>
-                            <div class="conversation-preview">
+                            <div class="flex items-center justify-between gap-2">
                                 {% if conv.messages.last %}
-                                    <span class="{% if conv.messages.last.sender == request.user %}outgoing{% endif %}">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400 truncate {% if conv.messages.last.sender == request.user %}text-gray-500{% endif %}">
                                         {{ conv.messages.last.content|truncatechars:30 }}
                                     </span>
                                 {% else %}
-                                    <span class="no-messages">No messages yet</span>
+                                    <span class="text-sm text-gray-400 dark:text-gray-500 italic">No messages yet</span>
                                 {% endif %}
                                 {% if conv.unread_count > 0 %}
-                                    <span class="unread-badge" aria-label="{{ conv.unread_count }} unread messages">{{ conv.unread_count }}</span>
+                                    <span class="flex-shrink-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full" aria-label="{{ conv.unread_count }} unread messages">{{ conv.unread_count }}</span>
                                 {% endif %}
                             </div>
                         </div>
                     </a>
                 {% endfor %}
             {% else %}
-                <div class="no-conversations">
-                    <i class="fas fa-comments" aria-hidden="true"></i>
-                    <p>No conversations yet</p>
-                    <a href="{% url 'chatting:users_list' %}" class="start-chat-btn">Start a new chat</a>
+                <div class="flex flex-col items-center justify-center h-full px-8 text-center">
+                    <div class="w-20 h-20 mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                        <i class="fas fa-comments text-3xl text-gray-400" aria-hidden="true"></i>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">No conversations yet</p>
+                    <a href="{% url 'chatting:users_list' %}" 
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium">
+                        <i class="fas fa-plus"></i>
+                        Start a new chat
+                    </a>
                 </div>
             {% endif %}
         </div>
     </div>
 
     <!-- Main Content - Conversation Detail -->
-    <div class="chat-main" role="region" aria-label="Chat with {{ other_user.first_name }} {{ other_user.last_name }}">
+    <div class="flex-1 flex flex-col" role="region" aria-label="Chat with {{ other_user.first_name }} {{ other_user.last_name }}">
         <!-- Conversation Header -->
-        <div class="conversation-header">
-            <button class="menu-toggle" aria-label="Toggle sidebar menu">
-                <i class="fas fa-bars" aria-hidden="true"></i>
-            </button>
+        <div class="px-4 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-3">
+                <button class="menu-toggle md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" aria-label="Toggle sidebar menu" id="menu-toggle-btn">
+                    <i class="fas fa-bars text-gray-600 dark:text-gray-300" aria-hidden="true"></i>
+                </button>
 
-            <div class="conversation-user">
-                <div class="conversation-avatar">
-                    {% if other_user.profile_picture %}
-                        <img src="{{ other_user.profile_picture.url }}" alt="{{ other_user.username }}'s profile picture" onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
-                    {% else %}
-                        <div class="default-avatar" aria-hidden="true">{{ other_user.username|slice:":1"|upper }}</div>
-                    {% endif %}
-                    <span class="status-indicator {% if other_user.chat_status.is_online %}online{% else %}offline{% endif %}"
-                          aria-hidden="true"
-                          data-user-id="{{ other_user.id }}"></span>
-                </div>
-                <div class="conversation-info">
-                    <h2>{{ other_user.first_name }} {{ other_user.last_name }}</h2>
-                    <p class="status-text" aria-live="polite">
-                        {% if other_user.chat_status.is_online %}
-                            Online
+                <div class="flex items-center gap-3">
+                    <div class="relative flex-shrink-0">
+                        {% if other_user.profile_picture %}
+                       <img src="{{ other_user.profile_picture.url }}" 
+                           alt="{{ other_user.username }}'s profile picture" 
+                           class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-600"
+                                 onerror="this.onerror=null; this.src='{% static 'chatting/images/default_avatar.svg' %}';">
                         {% else %}
-                            Last seen {{ other_user.chat_status.last_active|date:"M d, h:i A" }}
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold" aria-hidden="true">
+                                {{ other_user.username|slice:":1"|upper }}
+                            </div>
                         {% endif %}
-                    </p>
+                        <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 {% if other_user.chat_status.is_online %}bg-green-500{% else %}bg-gray-400{% endif %}"
+                              aria-hidden="true"
+                              data-user-id="{{ other_user.id }}"></span>
+                    </div>
+                    <div>
+                        <h2 class="font-semibold text-gray-900 dark:text-white">{{ other_user.first_name }} {{ other_user.last_name }}</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" aria-live="polite">
+                            {% if other_user.chat_status.is_online %}
+                                <span class="text-green-600 dark:text-green-400">Online</span>
+                            {% else %}
+                                Last seen {{ other_user.chat_status.last_active|date:"M d, h:i A" }}
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="conversation-actions">
-                <button class="action-btn" id="info-btn" aria-label="View conversation information">
-                    <i class="fas fa-info-circle" aria-hidden="true"></i>
+            <div class="flex items-center gap-2">
+                <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" id="info-btn" aria-label="View conversation information">
+                    <i class="fas fa-info-circle text-gray-600 dark:text-gray-300" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
@@ -123,110 +160,122 @@
         <div id="connection-status-container" aria-live="polite"></div>
 
         <!-- Message List -->
-        <div class="message-list" id="message-list" role="log" aria-label="Message history" aria-live="polite">
+        <div class="flex-1 overflow-y-auto px-4 py-6 bg-gray-50 dark:bg-gray-900" id="message-list" role="log" aria-label="Message history" aria-live="polite">
+        <!-- Message List -->
+        <div class="flex-1 overflow-y-auto px-4 py-6 bg-gray-50 dark:bg-gray-900" id="message-list" role="log" aria-label="Message history" aria-live="polite">
             {% if messages|length > 0 %}
                 {% for message in messages %}
-                    <div class="message-item {% if message.sender == request.user %}outgoing{% else %}incoming{% endif %}"
+                    <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %} mb-4"
                          role="article"
                          data-message-id="{{ message.id }}"
                          aria-label="{% if message.sender == request.user %}You{% else %}{{ message.sender.first_name }}{% endif %} at {{ message.timestamp|date:'h:i A' }}">
-                        <div class="message-bubble">
-                            <div class="message-content">{{ message.content }}</div>
-                            <div class="message-meta">
-                                <span class="message-time" title="{{ message.timestamp|date:'F j, Y, g:i a' }}">{{ message.timestamp|date:"h:i A" }}</span>
-                                {% if message.sender == request.user %}
-                                    <span class="message-status" title="{% if message.is_read %}Read{% else %}Sent{% endif %}">
-                                        {% if message.is_read %}
-                                            <i class="fas fa-check-double read-indicator" aria-label="Read"></i>
-                                        {% else %}
-                                            <i class="fas fa-check" aria-label="Sent"></i>
-                                        {% endif %}
+                        <div class="max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl group">
+                            <div class="{% if message.sender == request.user %}bg-primary text-white{% else %}bg-white dark:bg-gray-800 text-gray-900 dark:text-white{% endif %} rounded-2xl px-4 py-2.5 shadow-sm relative">
+                                <p class="text-sm md:text-base break-words">{{ message.content }}</p>
+                                <div class="flex items-center gap-1.5 mt-1 {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+                                    <span class="text-xs {% if message.sender == request.user %}text-white/80{% else %}text-gray-500 dark:text-gray-400{% endif %}" title="{{ message.timestamp|date:'F j, Y, g:i a' }}">
+                                        {{ message.timestamp|date:"h:i A" }}
                                     </span>
+                                    {% if message.sender == request.user %}
+                                        <span class="{% if message.is_read %}text-blue-200{% else %}text-white/70{% endif %}" title="{% if message.is_read %}Read{% else %}Sent{% endif %}">
+                                            {% if message.is_read %}
+                                                <i class="fas fa-check-double text-xs" aria-label="Read"></i>
+                                            {% else %}
+                                                <i class="fas fa-check text-xs" aria-label="Sent"></i>
+                                            {% endif %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                {% if message.sender == request.user %}
+                                <div class="hidden group-hover:flex absolute -left-20 top-1/2 transform -translate-y-1/2 gap-1">
+                                    <button type="button" class="edit-message p-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors" aria-label="Edit message">
+                                        <i class="fas fa-edit text-sm text-gray-700 dark:text-gray-300" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="delete-message p-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-lg transition-colors" aria-label="Delete message">
+                                        <i class="fas fa-trash text-sm text-red-600 dark:text-red-400" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                                 {% endif %}
                             </div>
-                            {% if message.sender == request.user %}
-                            <div class="message-actions">
-                                <button type="button" class="edit-message" aria-label="Edit message">
-                                    <i class="fas fa-edit" aria-hidden="true"></i>
-                                </button>
-                                <button type="button" class="delete-message" aria-label="Delete message">
-                                    <i class="fas fa-trash" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
             {% else %}
-                <div class="empty-messages">
-                    <div class="empty-message-icon">
-                        <i class="fas fa-comment-alt" aria-hidden="true"></i>
+                <div class="flex flex-col items-center justify-center h-full text-center">
+                    <div class="w-20 h-20 mb-4 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                        <i class="fas fa-comment-alt text-3xl text-gray-400" aria-hidden="true"></i>
                     </div>
-                    <p>No messages yet. Start the conversation!</p>
+                    <p class="text-gray-600 dark:text-gray-400 text-lg">No messages yet. Start the conversation!</p>
                 </div>
             {% endif %}
         </div>
 
         <!-- Message Input -->
-        <div class="message-input-container">
-            <div class="typing-indicator" id="typing-indicator" aria-live="polite">
-                <span class="user-name">{{ other_user.first_name }}</span>
-                <div class="typing-dots">
-                    <span class="typing-dot"></span>
-                    <span class="typing-dot"></span>
-                    <span class="typing-dot"></span>
-                </div>
+        <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div class="typing-indicator hidden px-4 py-2 text-sm text-gray-600 dark:text-gray-400" id="typing-indicator" aria-live="polite">
+                <span class="font-medium user-name">{{ other_user.first_name }}</span>
+                <span class="inline-flex gap-1 ml-1">
+                    <span class="typing-dot inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                    <span class="typing-dot inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                    <span class="typing-dot inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                </span>
             </div>
-            <form id="message-form" method="post" enctype="multipart/form-data" action="#" onsubmit="return false;" aria-label="Message form">
-                <div class="message-input-wrapper">
-                    <button type="button" id="emoji-button" class="message-action-btn" aria-label="Add emoji">
-                        <i class="far fa-smile" aria-hidden="true"></i>
+            <form id="message-form" method="post" enctype="multipart/form-data" action="#" onsubmit="return false;" aria-label="Message form" class="p-4">
+                <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-2xl px-4 py-2">
+                    <button type="button" id="emoji-button" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" aria-label="Add emoji">
+                        <i class="far fa-smile text-xl" aria-hidden="true"></i>
                     </button>
-                    <button type="button" id="attachment-button" class="message-action-btn" aria-label="Add attachment" title="Add file attachment">
-                        <i class="fas fa-paperclip" aria-hidden="true"></i>
+                    <button type="button" id="attachment-button" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors" aria-label="Add attachment" title="Add file attachment">
+                        <i class="fas fa-paperclip text-xl" aria-hidden="true"></i>
                     </button>
-                    <input type="text" id="message-input" placeholder="Type a message to {{ other_user.first_name }}..." autocomplete="off" aria-label="Type a message" autofocus>
+                    <input type="text" 
+                           id="message-input" 
+                           placeholder="Type a message to {{ other_user.first_name }}..." 
+                           autocomplete="off" 
+                           aria-label="Type a message" 
+                           autofocus
+                           class="flex-1 bg-transparent border-0 focus:outline-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
                     <input type="file" id="file-input" name="file_attachment" accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx" style="display:none" aria-hidden="true">
-                    <button type="submit" id="send-button" aria-label="Send message">
-                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                    <button type="submit" id="send-button" class="p-2.5 bg-primary hover:bg-indigo-700 rounded-full transition-all duration-200 shadow-md hover:shadow-lg" aria-label="Send message">
+                        <i class="fas fa-paper-plane text-white" aria-hidden="true"></i>
                     </button>
                 </div>
-                <div id="emoji-picker" class="emoji-picker">
-                    <div class="emoji-picker-header">
-                        <span>Emojis</span>
-                        <button type="button" id="close-emoji" aria-label="Close emoji picker">
-                            <i class="fas fa-times" aria-hidden="true"></i>
+                
+                <!-- Emoji Picker -->
+                <div id="emoji-picker" class="hidden absolute bottom-24 left-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 z-50">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                        <span class="font-semibold text-gray-900 dark:text-white">Emojis</span>
+                        <button type="button" id="close-emoji" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" aria-label="Close emoji picker">
+                            <i class="fas fa-times text-gray-600 dark:text-gray-400" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <div class="emoji-container">
-                        <div class="emoji-category">
-                            <span class="emoji" data-emoji="😀">😀</span>
-                            <span class="emoji" data-emoji="😁">😁</span>
-                            <span class="emoji" data-emoji="😂">😂</span>
-                            <span class="emoji" data-emoji="🤣">🤣</span>
-                            <span class="emoji" data-emoji="😊">😊</span>
-                            <span class="emoji" data-emoji="😍">😍</span>
-                            <span class="emoji" data-emoji="🥰">🥰</span>
-                            <span class="emoji" data-emoji="😘">😘</span>
-                            <span class="emoji" data-emoji="👍">👍</span>
-                            <span class="emoji" data-emoji="👎">👎</span>
-                            <span class="emoji" data-emoji="❤️">❤️</span>
-                            <span class="emoji" data-emoji="🔥">🔥</span>
-                            <span class="emoji" data-emoji="👋">👋</span>
-                            <span class="emoji" data-emoji="👏">👏</span>
-                            <span class="emoji" data-emoji="🙏">🙏</span>
-                            <span class="emoji" data-emoji="🤔">🤔</span>
-                            <span class="emoji" data-emoji="😎">😎</span>
-                            <span class="emoji" data-emoji="🥳">🥳</span>
-                            <span class="emoji" data-emoji="😢">😢</span>
-                            <span class="emoji" data-emoji="😭">😭</span>
-                        </div>
+                    <div class="p-4 grid grid-cols-8 gap-2 max-h-64 overflow-y-auto">
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😀">😀</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😁">😁</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😂">😂</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="🤣">🤣</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😊">😊</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😍">😍</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="🥰">🥰</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😘">😘</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="👍">👍</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="👎">👎</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="❤️">❤️</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="🔥">🔥</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="👋">👋</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="👏">👏</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="🙏">🙏</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="🤔">🤔</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😎">😎</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="🥳">🥳</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😢">😢</span>
+                        <span class="emoji text-2xl cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg p-1 text-center transition-colors" data-emoji="😭">😭</span>
                     </div>
                 </div>
                 
                 <!-- Attachment preview area -->
-                <div id="attachment-preview-wrapper" class="hidden">
-                    <div id="attachment-preview" class="attachment-preview-container" role="region" aria-live="polite" aria-label="File attachment preview">
+                <div id="attachment-preview-wrapper" class="hidden mt-3">
+                    <div id="attachment-preview" class="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 border border-gray-200 dark:border-gray-600" role="region" aria-live="polite" aria-label="File attachment preview">
                         <!-- Preview content will be dynamically inserted here -->
                     </div>
                 </div>
@@ -238,6 +287,23 @@
 
 {% block chat_js %}
 <script>
+    // Mobile sidebar toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menu-toggle-btn');
+        const sidebar = document.getElementById('conversations-sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        
+        if (menuToggle && sidebar && sidebarOverlay) {
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            }
+            
+            menuToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    });
+
     // More robust script loading check
     function checkChatScriptLoaded() {
         const chatScript = document.getElementById('chat-js-script');

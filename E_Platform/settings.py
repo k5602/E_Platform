@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-ce+=i=0+%s1u$9sik8$rh7d-_yk7@cdh$aek=s_rnkprn5m+3)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", "0.0.0.0",".vercael.app"]
 
 
 # Application definition
@@ -108,25 +108,16 @@ import os
 # Check if we should use SQLite for development (when PostgreSQL is not available)
 USE_SQLITE = os.environ.get("USE_SQLITE", "false").lower() == "true"
 
-if USE_SQLITE:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME", "e_platform"),
-            "USER": os.environ.get("DB_USER", "iskandrany"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "202520"),
-            "HOST": os.environ.get("DB_HOST", "localhost"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
-            "CONN_MAX_AGE": 600,
-        }
-    }
+}
+
 
 # Cache configuration using Redis - Always define this regardless of database
 # CACHES = {
