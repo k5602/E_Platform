@@ -409,6 +409,3 @@ sudo -u postgres psql
 
 Developed as an educational platform prototype with AI augmentation capabilities.
 
-## Dedication
-
-For The Light of my life Sara.
